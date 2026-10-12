@@ -170,6 +170,7 @@ function Sidebar({
               <div key={group.id} className="mb-1">
                 {group.itineraries.map((it, idx) =>
                   <ItineraryRow
+                    setGroups={setGroups}
                     key={it.id}
                     it={it}
                     idx={idx}
@@ -240,6 +241,7 @@ function Sidebar({
 
                 group.itineraries.map((it, idx) =>
                 <ItineraryRow
+                    setGroups={setGroups}
                   key={it.id}
                   it={it}
                   idx={idx}
@@ -354,6 +356,21 @@ function ItineraryRow({
   const isComposite = stats.isComposite;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  // Pastille de couleur + sélecteur de couleur du tracé
+  const [colorOpen, setColorOpen] = useState(false);
+  const colorRef = useRef(null);
+  useEffect(() => {
+    if (!colorOpen) return;
+    const onDoc = (e) => { if (colorRef.current && !colorRef.current.contains(e.target)) setColorOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setColorOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+  }, [colorOpen]);
+  const setColor = (key) => {
+    setGroups((gs) => gs.map((g) => ({ ...g, itineraries: g.itineraries.map((x) => x.id === it.id ? { ...x, color: key } : x) })));
+    setColorOpen(false);
+  };
   // Inline rename
   const [renaming, setRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(it.name);
@@ -421,6 +438,33 @@ function ItineraryRow({
           {/* Drag handle */}
           <div className={`opacity-0 group-hover:opacity-100 transition-opacity -ml-1 ${dark ? 'text-neutral-500' : 'text-neutral-400'} cursor-grab active:cursor-grabbing`}>
             <I.Drag size={14} />
+          </div>
+
+          {/* Pastille : couleur du tracé, clic = changer la couleur */}
+          <div className="relative shrink-0" ref={colorRef}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setColorOpen((o) => !o); }}
+              title="Couleur du tracé"
+              aria-label="Changer la couleur du tracé"
+              aria-expanded={colorOpen}
+              className={`w-5 h-5 grid place-items-center rounded-full transition-colors ${dark ? 'hover:bg-neutral-700' : 'hover:bg-neutral-200'}`}>
+              <span className="block w-2.5 h-2.5 rounded-full" style={{ background: color, boxShadow: `0 0 0 2px ${dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`, opacity: visible ? 1 : 0.5 }}></span>
+            </button>
+            {colorOpen && (
+              <div onClick={(e) => e.stopPropagation()}
+                className={`absolute left-0 top-full mt-1.5 z-40 w-[194px] p-2 rounded-md shadow-2xl animate-menu glass-strong`}>
+                <div className={`text-[10px] font-semibold uppercase tracking-wider px-0.5 pb-1.5 ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>Couleur du tracé</div>
+                <div className="grid grid-cols-6 gap-1.5">
+                  {Object.entries(ROUTE_COLORS).map(([key, c]) => (
+                    <button key={key} onClick={() => setColor(key)} title={c.name}
+                      className="w-6 h-6 rounded-full grid place-items-center transition-transform hover:scale-110"
+                      style={{ background: c.hex, boxShadow: it.color === key ? `0 0 0 2px ${dark ? '#171717' : '#fff'}, 0 0 0 3.5px ${c.hex}` : 'none' }}>
+                      {it.color === key && <I.Check size={12} stroke="white" strokeWidth="3" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Name + meta */}

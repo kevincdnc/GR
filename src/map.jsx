@@ -646,9 +646,21 @@ function MapView({
       try { endMarker && endMarker.remove(); } catch (e) {}
     });
     routeLayersRef.current.clear();
+    // Jonctions : une extrémité proche (< 400 m) d'une extrémité d'un autre tracé
+    // affiché devient un petit point ; le départ et l'arrivée de la chaîne
+    // gardent leurs marqueurs (cercle de départ, check d'arrivée).
+    const routeCoords = visibleRoutes.map((r) => (r.coords && r.coords.length ? r.coords : samplePathToLatLng(r.path, 100)));
+    const ends = [];
+    routeCoords.forEach((c, i) => { if (c && c.length >= 2) { ends.push({ i, kind: 'start', p: c[0] }); ends.push({ i, kind: 'end', p: c[c.length - 1] }); } });
+    const JUNCTION_M = 400;
+    const isJunction = (i, kind) => {
+      const me = ends.find((e) => e.i === i && e.kind === kind);
+      if (!me) return false;
+      return ends.some((e) => e.i !== i && L.latLng(e.p).distanceTo(L.latLng(me.p)) < JUNCTION_M);
+    };
     // add new
-    visibleRoutes.forEach((r) => {
-      const coords = r.coords && r.coords.length ? r.coords : samplePathToLatLng(r.path, 100);
+    visibleRoutes.forEach((r, routeIdx) => {
+      const coords = routeCoords[routeIdx];
       if (!coords || coords.length < 2) return;
       const color = ROUTE_COLORS[r.color].hex;
       const casing = L.polyline(coords, {
@@ -683,9 +695,20 @@ function MapView({
         iconSize: [18, 18],
         iconAnchor: [9, 9],
       });
-      const startMarker = L.marker(start, { icon: startIcon, interactive: false, zIndexOffset: 400, opacity: creating ? 0.5 : 1 }).addTo(map);
+      // Petit point de jonction entre deux tracés affichés
+      const junctionIcon = L.divIcon({
+        className: 'route-junction',
+        html: `<svg viewBox="0 0 10 10" width="10" height="10" style="display:block;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,0.35));">`
+          + `<circle cx="5" cy="5" r="4" fill="#fff" stroke="${color}" stroke-width="2" />`
+          + `</svg>`,
+        iconSize: [10, 10],
+        iconAnchor: [5, 5],
+      });
+      const startJ = isJunction(routeIdx, 'start');
+      const endJ = isJunction(routeIdx, 'end');
+      const startMarker = L.marker(start, { icon: startJ ? junctionIcon : startIcon, interactive: false, zIndexOffset: startJ ? 300 : 400, opacity: creating ? 0.5 : 1 }).addTo(map);
       const endMarker = !sameStartEnd
-        ? L.marker(end, { icon: endIcon, interactive: false, zIndexOffset: 401, opacity: creating ? 0.5 : 1 }).addTo(map)
+        ? L.marker(end, { icon: endJ ? junctionIcon : endIcon, interactive: false, zIndexOffset: endJ ? 301 : 401, opacity: creating ? 0.5 : 1 }).addTo(map)
         : null;
 
       routeLayersRef.current.set(r.id, { casing, line, startMarker, endMarker, baseColor: color, parentId: r.parentId });
