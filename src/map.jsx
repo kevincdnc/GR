@@ -196,6 +196,34 @@ function savedShowEndpoints() {
   try { return localStorage.getItem(ENDPOINTS_KEY) !== '0'; } catch (e) { return true; }
 }
 
+// Zoom molette / trackpad fluide et réactif. Le zoom molette de Leaflet
+// regroupe les événements et arrondit par paliers : très lent au trackpad
+// (pincement = petits deltas). Ici chaque événement zoome aussitôt, autour
+// du pointeur, proportionnellement au geste.
+function enableSmoothWheelZoom(map) {
+  const el = map.getContainer();
+  let target = null, point = null, raf = 0, idle = 0;
+  const apply = () => {
+    raf = 0;
+    if (target == null) return;
+    map.setZoomAround(point, target, { animate: false });
+  };
+  el.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    let dy = e.deltaY;
+    if (e.deltaMode === 1) dy *= 16; else if (e.deltaMode === 2) dy *= 400;
+    // ctrlKey = pincement trackpad (deltas fins) ; sinon molette ou défilement à deux doigts
+    const step = e.ctrlKey ? 0.022 : 0.006;
+    const d = Math.max(-1, Math.min(1, -dy * step));
+    const base = target == null ? map.getZoom() : target;
+    target = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), base + d));
+    point = map.mouseEventToContainerPoint(e);
+    if (!raf) raf = requestAnimationFrame(apply);
+    clearTimeout(idle);
+    idle = setTimeout(() => { target = null; }, 180);
+  }, { passive: false });
+}
+
 function MapView({
   groups, visibleIds, hoveredId, setHoveredId, accent, dark, showLegend, onToggleVisible,
   creating, draftCoords, previewCoords, draftRouteType, draftDistance, draftActivity,
@@ -299,11 +327,12 @@ function MapView({
     const map = L.map(mapEl.current, {
       zoomControl: false,
       attributionControl: true,
-      zoomSnap: 0.25,
+      zoomSnap: 0, // zoom continu (molette / trackpad fluides) ; boutons +/− : 1 niveau
       maxZoom: MAP_MAX_ZOOM,
-      wheelPxPerZoomLevel: 90
+      scrollWheelZoom: false, // remplacé par enableSmoothWheelZoom
     }).setView([46.6, 2.5], 6);
     mapRef.current = map;
+    enableSmoothWheelZoom(map);
     // Fit roughly the metropolitan France bounding box so the whole country
     // is visible on first paint, regardless of viewport size.
     try {
