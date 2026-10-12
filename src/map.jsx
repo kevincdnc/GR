@@ -119,9 +119,9 @@ const BASE_LAYERS = {
   },
 };
 const MAP_MAX_ZOOM = 20;
-// La carte s'étend sous la navigation flottante (8px + 340px) : on décale le
+// La carte s'étend sous la navigation flottante (16px + 340px) : on décale le
 // cadrage automatique pour que les traces restent dans la partie visible.
-const MAP_UNDERLAY = 348;
+const MAP_UNDERLAY = 356;
 const MAP_STYLE_KEY = 'gr34_map_style';
 function savedMapStyle() {
   try { const v = localStorage.getItem(MAP_STYLE_KEY); return BASE_LAYERS[v] ? v : 'plan'; } catch (e) { return 'plan'; }
@@ -2284,7 +2284,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
             }
           }}
           aria-label="Boussole"
-          className={`w-9 h-9 rounded-full overflow-hidden grid place-items-center transition-colors glass ${dark ? 'hover:bg-white/10' : 'hover:bg-white'}`}
+          className={`w-9 h-9 rounded-md overflow-hidden grid place-items-center transition-colors glass ${dark ? 'hover:bg-white/10' : 'hover:bg-white'}`}
         >
           <img
             src={(window.__resources && window.__resources.boussole) || "assets/boussole.svg"}

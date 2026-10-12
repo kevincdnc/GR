@@ -574,7 +574,7 @@ function App() {
       routes: items.map((it) => ({ id: 'prev_' + it.id, name: it.name, color: it.color, distance: it.distance, ascent: it.ascent, coords: it.coords })),
     });
     if (mapInstance) {
-      try { mapInstance.flyToBounds(L.latLngBounds(items.flatMap((it) => it.coords.map((c) => [c[0], c[1]]))), { paddingTopLeft: [408, 60], paddingBottomRight: [60, 60], duration: 0.9 }); } catch (e) {}
+      try { mapInstance.flyToBounds(L.latLngBounds(items.flatMap((it) => it.coords.map((c) => [c[0], c[1]]))), { paddingTopLeft: [416, 60], paddingBottomRight: [60, 60], duration: 0.9 }); } catch (e) {}
     }
   };
 
@@ -772,9 +772,9 @@ function App() {
   return (
     <div className={`fixed inset-0 ${dark ? 'dark' : ''}`} style={{ background: dark ? '#1b1d22' : '#eef1f5' }}>
       {/* Sidebar (or create panel) */}
-      {/* Navigation flottante en verre, 8px du bord, rayon 6px */}
+      {/* Navigation flottante en verre foncé, alignée sur les contrôles (16px du bord), rayon 6px */}
       <aside
-        className="glass absolute left-2 top-2 bottom-2 w-[340px] flex flex-col z-[1000] rounded-md transition-colors">
+        className="glass glass-nav absolute left-4 top-4 bottom-4 w-[340px] flex flex-col z-[1000] rounded-md transition-colors">
         
         {settingsOpen ?
         <SettingsPanel
@@ -924,14 +924,28 @@ function App() {
 
       {/* Main area: Settings content takes over when in settings mode, otherwise show map */}
       {/* Zone de contenu à droite de la navigation ; la carte s'étend dessous (cf. MAP_UNDERLAY) */}
-      <main className="absolute top-0 right-0 bottom-0 left-[348px]">
+      <main className="absolute top-0 right-0 bottom-0 left-[356px]">
         {settingsOpen ? (
           <SettingsContent tab={settingsTab} dark={dark} accent={t.accent} />
         ) : (
           <>
-            {/* Recherche de lieu — en haut à droite (contrôles de carte à gauche) */}
-            <div className="absolute top-4 right-4 z-[500] flex items-center gap-2">
-              <PlaceSearch map={mapInstance} dark={dark} accent={t.accent} />
+            {/* En haut à droite : recherche de lieu + sélecteur Carte / Stats.
+                Au-dessus de la vue Stats (z-[1060]) pour pouvoir revenir à la carte. */}
+            <div className="absolute top-4 right-4 z-[1060] flex items-center gap-2">
+              {view === 'map' && <PlaceSearch map={mapInstance} dark={dark} accent={t.accent} />}
+              {!creating && !importing && (
+                <div role="tablist" aria-label="Vue" className="glass rounded-md p-[3px] flex">
+                  {[{ value: 'map', label: 'Carte', icon: <I.Layers size={14} /> }, { value: 'metrics', label: 'Stats', icon: <I.TrendingUp size={14} /> }].map((o) => {
+                    const sel = view === o.value;
+                    return (
+                      <button key={o.value} role="tab" aria-selected={sel} onClick={() => setView(o.value)}
+                        className={`flex items-center gap-1.5 rounded-[4px] text-[12.5px] font-medium px-3 py-[5px] transition-colors ${sel ? (dark ? 'bg-white/15 text-white' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-300 hover:text-white hover:bg-white/5' : 'text-neutral-600 hover:text-neutral-900')}`}>
+                        {o.icon}{o.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Floating, draggable custom-marker card (over the map) */}
@@ -1012,7 +1026,7 @@ function App() {
 
         {/* Empty state when no routes visible */}
         {visibleIds.size === 0 && !creating &&
-        <div className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-2xl px-5 py-4 glass ${dark ? 'text-neutral-200' : 'text-neutral-700'}`}>
+        <div className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-md px-5 py-4 glass ${dark ? 'text-neutral-200' : 'text-neutral-700'}`}>
             <div className="flex items-center gap-3">
               <I.Eye size={18} className={dark ? 'text-neutral-400' : 'text-neutral-500'} />
               <span className="text-[13px]">Cliquez sur un itinéraire pour l'afficher.</span>
@@ -1029,7 +1043,7 @@ function App() {
               onClick={() => setConfirm(null)}
             ></div>
             <div
-              className={`relative w-[440px] max-w-full rounded-xl shadow-2xl overflow-hidden animate-tip-fixed ${dark ? 'bg-neutral-900 border border-neutral-700/60 text-neutral-100' : 'bg-white border border-neutral-200/80 text-neutral-900'}`}
+              className={`relative w-[440px] max-w-full rounded-md shadow-2xl overflow-hidden animate-tip-fixed ${dark ? 'bg-neutral-900 border border-neutral-700/60 text-neutral-100' : 'bg-white border border-neutral-200/80 text-neutral-900'}`}
             >
               <div className="px-6 pt-5 pb-5">
                 <div className="flex items-start gap-3">
@@ -1080,7 +1094,7 @@ function App() {
 
         {/* Toast */}
         {toast &&
-        <div className="absolute left-1/2 bottom-6 -translate-x-1/2 z-[700] px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-[13px] font-medium animate-in" style={{ background: t.accent, color: '#fff' }}>
+        <div className="absolute left-1/2 bottom-6 -translate-x-1/2 z-[700] px-4 py-2.5 rounded-md shadow-xl flex items-center gap-2.5 text-[13px] font-medium animate-in" style={{ background: t.accent, color: '#fff' }}>
             <I.Check size={15} stroke="white" strokeWidth="2.5" />
             {toast}
           </div>

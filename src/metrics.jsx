@@ -137,7 +137,7 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
 
   const muted = dark ? 'text-neutral-500' : 'text-neutral-500';
   const strong = dark ? 'text-white' : 'text-neutral-900';
-  const cardCls = `rounded-xl border ${dark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-neutral-200/80'}`;
+  const cardCls = `rounded-md border ${dark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-neutral-200/80'}`;
 
   const cols = [
     { key: 'num', label: '#', num: true },
@@ -166,7 +166,7 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
   return (
     <div className="flex flex-col h-full glass-backdrop">
       {/* Top bar */}
-      <div className={`px-8 pt-7 pb-5 border-b flex items-end justify-between gap-4 flex-wrap ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
+      <div className={`px-8 pt-16 pb-5 border-b flex items-end justify-between gap-4 flex-wrap ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
         <div>
           <div className={`text-[11px] font-semibold uppercase tracking-wider ${muted}`}>GR34 · Sentier des douaniers</div>
           <h1 className={`mt-0.5 text-[22px] font-semibold tracking-tight ${strong}`}>Statistiques</h1>
@@ -305,7 +305,7 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
 
 function MetKpi({ dark, icon, label, value, unit, sub }) {
   return (
-    <div className={`rounded-xl border px-4 py-3 ${dark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-neutral-200/80'}`}>
+    <div className={`rounded-md border px-4 py-3 ${dark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-neutral-200/80'}`}>
       <div className={`flex items-center gap-1.5 text-[11.5px] ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>{icon}{label}</div>
       <div className={`mt-1 font-mono text-[22px] font-medium tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>
         {value}{unit && <span className={`ml-1 text-[12px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{unit}</span>}
@@ -358,7 +358,7 @@ function MetDurationCell({ row, dark, onCommit }) {
 
 function MetChartCard({ dark, title, legend, children }) {
   return (
-    <section className={`rounded-xl border p-4 ${dark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-neutral-200/80'}`}>
+    <section className={`rounded-md border p-4 ${dark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-neutral-200/80'}`}>
       <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
         <h3 className={`text-[13px] font-semibold tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>{title}</h3>
         {legend && (
