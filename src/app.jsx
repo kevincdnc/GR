@@ -852,15 +852,9 @@ function App() {
           <SettingsContent tab={settingsTab} dark={dark} accent={t.accent} />
         ) : (
           <>
-            {/* Top-left place search + POI filter */}
+            {/* Top-left place search */}
             <div className="absolute top-4 left-4 z-[500] flex items-center gap-2">
               <PlaceSearch map={mapInstance} dark={dark} accent={t.accent} />
-              <PoiFilterButton
-                dark={dark}
-                accent={t.accent}
-                active={poiFilters}
-                onChange={setPoiFilters}
-              />
             </div>
 
             {/* Floating, draggable custom-marker card (over the map) */}

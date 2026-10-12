@@ -24,15 +24,6 @@ function CreatePanel({
   const setStep = onChangeStep || (() => {});
   const nameRef = useCreateRef(null);
   const activityBtnRef = useCreateRef(null);
-  // "Nouveau repère" dropdown
-  const [poiMenuOpen, setPoiMenuOpen] = useCreateState(false);
-  const poiMenuRef = useCreateRef(null);
-  useCreateEffect(() => {
-    if (!poiMenuOpen) return;
-    const onDoc = (e) => { if (poiMenuRef.current && !poiMenuRef.current.contains(e.target)) setPoiMenuOpen(false); };
-    document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
-  }, [poiMenuOpen]);
 
   // On mount, focus the Activity field first — it can't be changed once the
   // trace has started, so it should get the user's attention immediately.
@@ -310,58 +301,12 @@ function CreatePanel({
           )}
           {/* Placement opens a floating card (see below). The inline list +
               "Nouveau repère" dropdown stay here. */}
-          <div className="relative" ref={poiMenuRef}>
-            <button
-              onClick={() => setPoiMenuOpen((o) => !o)}
-              className={`w-full flex items-center justify-center gap-1.5 text-[12px] font-medium rounded-md px-3 py-1.5 border border-dashed transition-colors ${dark ? 'border-neutral-700 text-neutral-300 hover:border-neutral-600 hover:bg-neutral-900' : 'border-neutral-300 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'}`}
-              aria-haspopup="menu"
-              aria-expanded={poiMenuOpen}
-            >
-              <I.Plus size={13} /> Nouveau repère
-              <I.ChevronDown size={13} className={`ml-0.5 transition-transform ${poiMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {poiMenuOpen && (
-              <div
-                role="menu"
-                className={`absolute left-0 right-0 top-full mt-1 z-30 rounded-lg shadow-2xl overflow-hidden animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}
-              >
-                <button
-                  role="menuitem"
-                  onClick={() => { setPoiMenuOpen(false); onShowAllPois && onShowAllPois(); }}
-                  className={`w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-colors ${dark ? 'hover:bg-neutral-800' : 'hover:bg-neutral-50'}`}
-                >
-                  <span className="w-7 h-7 rounded-md grid place-items-center shrink-0" style={{ background: accent + '1f', color: accent }}>
-                    <I.MarkerPin size={15} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className={`block text-[12.5px] font-medium ${dark ? 'text-white' : 'text-neutral-900'}`}>
-                      {poiFiltersActive ? 'Masquer les points d’intérêt' : 'Afficher les points d’intérêt'}
-                    </span>
-                    <span className={`block text-[11px] leading-snug mt-0.5 ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                      Parking, eau, refuges… autour de votre tracé
-                    </span>
-                  </span>
-                </button>
-                <button
-                  role="menuitem"
-                  onClick={() => { setPoiMenuOpen(false); onStartPlacingPoi && onStartPlacingPoi({ name: '', color: 'blue', icon: 'Pin' }); }}
-                  className={`w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-colors ${dark ? 'hover:bg-neutral-800' : 'hover:bg-neutral-50'}`}
-                >
-                  <span className="w-7 h-7 rounded-md grid place-items-center shrink-0" style={{ background: accent + '1f', color: accent }}>
-                    <I.Plus size={15} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className={`block text-[12.5px] font-medium ${dark ? 'text-white' : 'text-neutral-900'}`}>
-                      Ajouter un repère personnalisé
-                    </span>
-                    <span className={`block text-[11px] leading-snug mt-0.5 ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                      Placez votre propre marqueur sur le tracé
-                    </span>
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => onStartPlacingPoi && onStartPlacingPoi({ name: '', color: 'blue', icon: 'Pin' })}
+            className={`w-full flex items-center justify-center gap-1.5 text-[12px] font-medium rounded-md px-3 py-1.5 border border-dashed transition-colors ${dark ? 'border-neutral-700 text-neutral-300 hover:border-neutral-600 hover:bg-neutral-900' : 'border-neutral-300 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'}`}
+          >
+            <I.Plus size={13} /> Nouveau repère
+          </button>
         </div>
 
         {/* Route type */}

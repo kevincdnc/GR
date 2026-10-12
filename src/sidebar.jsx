@@ -137,21 +137,24 @@ function Sidebar({
             <div className={`font-semibold text-[15px] tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>GR planner</div>
           </div>
         </div>
-        {/* Carte / Statistiques (GR34) */}
-        {onViewChange && (
-          <div role="tablist" aria-label="Vue" className={`flex p-0.5 rounded-md border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`}>
-            {[{ value: 'map', label: 'Carte', icon: <I.Layers size={13} /> }, { value: 'metrics', label: 'Stats', icon: <I.TrendingUp size={13} /> }].map((o) => {
+      </div>
+
+      {/* Carte / Statistiques — même largeur que le bouton principal */}
+      {onViewChange && (
+        <div className="px-4 pt-1 pb-1.5">
+          <div role="tablist" aria-label="Vue" className={`flex p-0.5 rounded-lg border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`}>
+            {[{ value: 'map', label: 'Carte', icon: <I.Layers size={14} /> }, { value: 'metrics', label: 'Stats', icon: <I.TrendingUp size={14} /> }].map((o) => {
               const sel = view === o.value;
               return (
                 <button key={o.value} role="tab" aria-selected={sel} onClick={() => onViewChange(o.value)}
-                  className={`flex items-center gap-1 rounded text-[11.5px] font-medium px-2 py-1 transition-colors ${sel ? (dark ? 'bg-blue-500/20 text-blue-300' : 'bg-white text-blue-700 shadow-sm') : (dark ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-600 hover:text-neutral-900')}`}>
+                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-md text-[12.5px] font-medium py-1.5 transition-colors ${sel ? (dark ? 'bg-blue-500/20 text-blue-300' : 'bg-white text-blue-700 shadow-sm') : (dark ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-600 hover:text-neutral-900')}`}>
                   {o.icon}{o.label}
                 </button>
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Primary action — dropdown CTA */}
       <div className="px-4 pt-1 pb-2 relative" ref={menuRef}>

@@ -18,7 +18,7 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 | Création / édition d'itinéraires, sections, repères, groupes, glisser-déposer | Réel, sauvegardé dans le navigateur |
 | Recherche de lieu | Réel (Nominatim) |
 | Altitudes d'un tracé dessiné à la main | Simulé (pas de service d'altitude) |
-| Strava / Komoot / Garmin, POI, partage (lien, iframe) | Simulé, comme dans le design |
+| Strava / Komoot / Garmin, partage (lien, iframe) | Simulé, comme dans le design |
 | Panneau « Réglages design » (mode sombre, accent, densité) | Visible seulement dans l'éditeur Claude Design |
 
 ## Ajouter une étape
