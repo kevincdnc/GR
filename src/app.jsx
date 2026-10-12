@@ -21,8 +21,8 @@ function App() {
     if (nextPlan === 'pro') {
       // Deep clone so editing the data doesn't mutate the seed
       setGroups(JSON.parse(JSON.stringify(PRO_SEED_GROUPS)));
-      // Show a couple of routes visible by default
-      setVisibleIds(new Set(['i_douaniers', 'i_baie']));
+      // Toutes les étapes du GR34 visibles par défaut
+      setVisibleIds(new Set(PRO_SEED_GROUPS.flatMap((g) => g.itineraries.flatMap((it) => it.sections ? it.sections.map((sec) => sec.id) : [it.id]))));
       // Hide the geolocation prompt when on Pro
       setLocationPrompt('declined');
       setUserLocation(null);
@@ -35,7 +35,7 @@ function App() {
     }
     setSelectedId(null);
   };
-  const [visibleIds, setVisibleIds] = useAppState(new Set(['i_douaniers', 'i_baie']));
+  const [visibleIds, setVisibleIds] = useAppState(new Set());
   const [hoveredId, setHoveredId] = useAppState(null);
   const [selectedId, setSelectedId] = useAppState(null);
   const [creating, setCreating] = useAppState(false);
@@ -844,13 +844,26 @@ function App() {
           locationPrompt={locationPrompt}
           userLocation={userLocation}
           onAcceptLocation={() => {
-            // Fake-accept geolocation: drop the user on Quimper (Bretagne)
-            const quimper = [47.997, -4.103];
-            setUserLocation(quimper);
-            setLocationPrompt('accepted');
-            if (mapInstance) {
-              try { mapInstance.flyTo(quimper, 13, { duration: 0.9 }); } catch (e) {}
+            // Vraie géolocalisation du navigateur, suivie en continu
+            if (!navigator.geolocation) {
+              setLocationPrompt('declined');
+              showToast('Géolocalisation indisponible sur cet appareil.');
+              return;
             }
+            let first = true;
+            const id = navigator.geolocation.watchPosition((pos) => {
+              const here = [pos.coords.latitude, pos.coords.longitude];
+              setUserLocation(here);
+              setLocationPrompt('accepted');
+              if (first && mapInstance) {
+                first = false;
+                try { mapInstance.flyTo(here, 15, { duration: 0.9 }); } catch (e) {}
+              }
+            }, () => {
+              navigator.geolocation.clearWatch(id);
+              setLocationPrompt('declined');
+              showToast('Position refusée ou introuvable.');
+            }, { enableHighAccuracy: true, maximumAge: 10000 });
           }}
           onDeclineLocation={() => setLocationPrompt('declined')}
           onRequestLocation={() => setLocationPrompt('pending')}

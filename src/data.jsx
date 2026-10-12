@@ -35,156 +35,47 @@ const ACTIVITIES = {
 // They roughly cluster by group to feel like a real region.
 const SEED_GROUPS = [];
 
-// Demo data restored for Pro users (toggle from the bottom-bar Pro/Free tag).
-const PRO_SEED_GROUPS = [
-  {
-    id: 'g_bretagne',
-    name: 'Bretagne côtière',
-    icon: 'Folder',
-    expanded: true,
-    itineraries: [
-      {
-        id: 'i_douaniers',
-        name: 'Sentier des Douaniers',
-        activity: 'hiking',
-        distance: 20.95,
-        ascent: 854,
-        time: '5h 20',
-        color: 'rose',
-        difficulty: 'Modérée',
-        path: 'M180,540 C220,520 260,500 300,470 S360,430 400,410 460,380 500,360 540,310 580,280 620,240 660,210 700,180 740,170',
-      },
-      {
-        id: 'i_baie',
-        name: 'Baie de Douarnenez',
-        activity: 'trail',
-        distance: 14.2,
-        ascent: 412,
-        time: '3h 15',
-        color: 'emerald',
-        difficulty: 'Facile',
-        path: 'M200,600 C260,610 320,590 380,560 S480,530 540,510 620,490 680,470',
-      },
-      {
-        id: 'i_crozon',
-        name: 'Presqu\'île de Crozon',
-        activity: 'hiking',
-        distance: 28.6,
-        ascent: 1180,
-        time: '7h 40',
-        color: 'amber',
-        difficulty: 'Difficile',
-        path: 'M120,400 C160,380 200,360 240,340 S320,310 380,290 460,260 500,230 580,200 620,180 700,170 740,160 800,140 860,120',
-      },
-      {
-        id: 'i_pointe',
-        name: 'Pointe du Raz boucle',
-        activity: 'running',
-        distance: 8.4,
-        ascent: 220,
-        time: '1h 10',
-        color: 'violet',
-        difficulty: 'Facile',
-        path: 'M280,250 C310,260 340,280 370,300 S420,340 410,380 360,420 320,400 270,360 280,320 290,280 280,250',
-      },
-    ],
-  },
-  {
-    id: 'g_courses',
-    name: 'Mes courses',
-    icon: 'Folder',
-    expanded: false,
-    itineraries: [
-      {
-        id: 'i_marathon',
-        name: 'Marathon du Mont-Blanc',
-        activity: 'trail',
-        color: 'orange',
-        difficulty: 'Extrême',
-        sectionsExpanded: false,
-        sections: [
-          { id: 's_mb_1', name: 'Étape 1 — Chamonix → Plan Praz',    distance: 8.4,  ascent: 720, path: 'M150,650 C190,630 230,605 270,580 S330,540 360,520' },
-          { id: 's_mb_2', name: 'Étape 2 — Plan Praz → Flegere',     distance: 11.2, ascent: 680, path: 'M360,520 S430,480 490,440 560,395 620,360' },
-          { id: 's_mb_3', name: 'Étape 3 — Flegere → Tete aux Vents', distance: 13.0, ascent: 740, path: 'M620,360 S720,310 800,265 880,225 930,200' },
-          { id: 's_mb_4', name: 'Étape 4 — Descente Argentière',     distance: 9.4,  ascent: 400, path: 'M930,200 S1000,170 1040,150 1060,130 1060,120' },
-        ],
-      },
-      {
-        id: 'i_ttg',
-        name: 'Trail des Templiers',
-        activity: 'trail',
-        color: 'teal',
-        difficulty: 'Extrême',
-        sectionsExpanded: false,
-        sections: [
-          { id: 's_tt_1', name: 'Section 1 — Millau → Causse Noir',  distance: 24.0, ascent: 1120, path: 'M100,700 C160,680 220,650 280,620 S360,560 400,530' },
-          { id: 's_tt_2', name: 'Section 2 — Causse → Templiers',    distance: 28.0, ascent: 1280, path: 'M400,530 S480,470 540,440 640,380 720,330' },
-          { id: 's_tt_3', name: 'Section 3 — Templiers → Roquefort', distance: 23.0, ascent: 1000, path: 'M720,330 S830,250 920,200 1020,160 1080,140' },
-        ],
-      },
-      {
-        id: 'i_10k',
-        name: '10K parc municipal',
-        activity: 'running',
-        distance: 10.0,
-        ascent: 65,
-        time: '0h 52',
-        color: 'pink',
-        difficulty: 'Facile',
-        path: 'M520,420 C540,400 570,395 600,400 S640,420 650,450 640,490 610,500 570,495 550,475 520,450 520,420',
-      },
-    ],
-  },
-  {
-    id: 'g_mercantour',
-    name: 'Voyage Mercantour',
-    icon: 'Folder',
-    expanded: false,
-    itineraries: [
-      {
-        id: 'i_madone',
-        name: 'Cime de la Madone',
-        activity: 'hiking',
-        distance: 16.8,
-        ascent: 1320,
-        time: '5h 50',
-        color: 'lime',
-        difficulty: 'Difficile',
-        path: 'M300,620 C340,580 380,540 420,500 S480,440 520,400 580,360 620,330',
-      },
-      {
-        id: 'i_gelas',
-        name: 'Mont Gelas',
-        activity: 'trail',
-        distance: 22.4,
-        ascent: 1850,
-        time: '8h 15',
-        color: 'sky',
-        difficulty: 'Difficile',
-        path: 'M400,680 C440,640 480,600 520,560 S580,500 620,460 680,420 720,390 780,360 820,340',
-      },
-    ],
-  },
-  {
-    id: 'g_explorer',
-    name: 'À explorer plus tard',
-    icon: 'Folder',
-    expanded: false,
-    itineraries: [
-      {
-        id: 'i_gr20',
-        name: 'GR20 — étape 4',
-        activity: 'hiking',
-        distance: 18.3,
-        ascent: 1420,
-        time: '7h 00',
-        color: 'amber',
-        difficulty: 'Difficile',
-        path: 'M500,500 C540,470 580,440 620,410 S680,360 720,330 780,290 820,270',
-      },
-    ],
-  },
-];
+// GR34 — étapes réelles, calculées au build depuis les fichiers gpx/*.gpx
+// (window.GR34_STAGES, cf. scripts/build.mjs). Chaque étape devient une section
+// de l'itinéraire « GR34 » ; ses coords portent l'altitude : [lat, lng, ele].
+const GR34_SECTION_COLORS = ['rose', 'sky', 'amber', 'emerald', 'violet', 'orange', 'teal', 'pink', 'indigo', 'lime', 'blue', 'fuchsia'];
+
+function buildGr34Groups() {
+  const stages = window.GR34_STAGES || [];
+  if (!stages.length) return [];
+  return [
+    {
+      id: 'g_gr34',
+      name: 'GR34 · Sentier des douaniers',
+      icon: 'Folder',
+      expanded: true,
+      itineraries: [
+        {
+          id: 'i_gr34',
+          name: 'GR34',
+          activity: 'hiking',
+          color: GR34_SECTION_COLORS[0],
+          difficulty: 'Modérée',
+          fromRepo: true,
+          sectionsExpanded: true,
+          sections: stages.map((st, i) => ({
+            id: 's_gr34_' + st.num,
+            num: st.num,
+            name: 'Étape ' + st.num + ' — ' + st.name,
+            color: GR34_SECTION_COLORS[i % GR34_SECTION_COLORS.length],
+            distance: st.distanceKm,
+            ascent: st.elevationGain,
+            descent: st.elevationLoss,
+            coords: st.coords,
+          })),
+        },
+      ],
+    },
+  ];
+}
+
+// Données affichées en plan Pro (bascule Pro/Free dans la barre du bas).
+const PRO_SEED_GROUPS = buildGr34Groups();
 
 function fmtDist(km) {
   if (km < 10) return km.toFixed(1) + ' km';
@@ -227,7 +118,7 @@ function itineraryStats(it) {
   return { distance: it.distance || 0, ascent: it.ascent || 0, isComposite: false, sectionCount: 1 };
 }
 
-Object.assign(window, { ROUTE_COLORS, ACTIVITIES, SEED_GROUPS, PRO_SEED_GROUPS, fmtDist, fmtAscent, itineraryStats, estimateDurationMin, fmtDuration });
+Object.assign(window, { ROUTE_COLORS, ACTIVITIES, SEED_GROUPS, PRO_SEED_GROUPS, buildGr34Groups, GR34_SECTION_COLORS, fmtDist, fmtAscent, itineraryStats, estimateDurationMin, fmtDuration });
 
 // ---- Map projection helpers ---------------------------------------------
 // The original seed routes are encoded as SVG paths in a 1200x800 viewport.

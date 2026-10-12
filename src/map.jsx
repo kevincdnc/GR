@@ -10,8 +10,11 @@ function computeElevationStats(coords) {
   if (!coords || coords.length < 2) {
     return { profile: [], minAlt: 0, maxAlt: 0, ascent: 0, descent: 0, slopeMin: 0, slopeMax: 0 };
   }
+  // Vraies altitudes (traces GPX : [lat, lng, ele]) -> profil réel, sans bruit
+  // simulé ; D+/D- avec hystérésis de 1 m, comme au calcul des étapes.
+  const hasRealEle = coords.every((c) => c.length >= 3 && typeof c[2] === 'number');
   const baseAlt = 50 + Math.abs(Math.round(((coords[0][0] * 113) % 200)));
-  const elev = coords.map(([lat, lng], i) => {
+  const elev = hasRealEle ? coords.map((c) => c[2]) : coords.map(([lat, lng], i) => {
     const h = Math.sin(lat * 12.4 + lng * 7.7) * 18
            + Math.sin(lng * 9.1 + i * 0.8) * 9
            + Math.cos(lat * 4.3 - lng * 5.1) * 14;
@@ -23,7 +26,7 @@ function computeElevationStats(coords) {
     for (let j = 0; j < SAMPLES_PER_SEG; j++) {
       const t = j / SAMPLES_PER_SEG;
       const a = elev[i] * (1 - t) + elev[i + 1] * t;
-      const wobble = Math.sin((i + t) * 5.3) * 3 + Math.sin((i + t) * 12) * 1.4;
+      const wobble = hasRealEle ? 0 : Math.sin((i + t) * 5.3) * 3 + Math.sin((i + t) * 12) * 1.4;
       profile.push(a + wobble);
     }
   }
@@ -38,16 +41,39 @@ function computeElevationStats(coords) {
       if (d > 0) asc += d; else desc += -d;
     }
   }
+  if (hasRealEle) {
+    asc = 0; desc = 0;
+    let anchor = elev[0];
+    for (const e of elev) {
+      if (e - anchor >= 1) { asc += e - anchor; anchor = e; }
+      else if (anchor - e >= 1) { desc += anchor - e; anchor = e; }
+    }
+  }
   const total = typeof L !== 'undefined' && coords.length >= 2
     ? coords.reduce((acc, c, i) => i === 0 ? 0 : acc + L.latLng(coords[i - 1]).distanceTo(L.latLng(c)), 0)
     : 1000;
   const hStep = total / Math.max(profile.length - 1, 1);
   let slopeMin = 0, slopeMax = 0;
-  for (let i = 1; i < profile.length; i++) {
-    const slope = (profile[i] - profile[i - 1]) / Math.max(hStep, 1);
-    const deg = Math.atan(slope) * 180 / Math.PI;
-    if (deg < slopeMin) slopeMin = deg;
-    if (deg > slopeMax) slopeMax = deg;
+  if (hasRealEle && typeof L !== 'undefined') {
+    // Pente réelle sur des tronçons d'au moins 50 m (les points GPX ne sont pas
+    // également espacés : un pas fixe donnerait des pentes absurdes).
+    let a = 0, dist = 0;
+    for (let i = 1; i < coords.length; i++) {
+      dist += L.latLng(coords[i - 1]).distanceTo(L.latLng(coords[i]));
+      if (dist >= 50) {
+        const deg = Math.atan((elev[i] - elev[a]) / dist) * 180 / Math.PI;
+        if (deg < slopeMin) slopeMin = deg;
+        if (deg > slopeMax) slopeMax = deg;
+        a = i; dist = 0;
+      }
+    }
+  } else {
+    for (let i = 1; i < profile.length; i++) {
+      const slope = (profile[i] - profile[i - 1]) / Math.max(hStep, 1);
+      const deg = Math.atan(slope) * 180 / Math.PI;
+      if (deg < slopeMin) slopeMin = deg;
+      if (deg > slopeMax) slopeMax = deg;
+    }
   }
   return {
     profile,
@@ -58,6 +84,71 @@ function computeElevationStats(coords) {
     slopeMin: Math.round(slopeMin),
     slopeMax: Math.round(slopeMax),
   };
+}
+
+// ---- Fonds de carte réels ------------------------------------------------
+// « Plan » = fond CARTO Voyager du design (par défaut). Les autres fonds
+// remplacent les cartes simulées du prototype par de vraies tuiles.
+const IGN_WMTS = (layer, fmt) =>
+  'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=' + layer +
+  '&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/' + fmt;
+const IGN_ATTR = '© <a href="https://www.ign.fr/">IGN</a> – Géoplateforme';
+const OSM_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const BASE_LAYERS = {
+  plan: {
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: OSM_ATTR + ' · © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd', maxNativeZoom: 20,
+  },
+  topo: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: OSM_ATTR + ', SRTM · © <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
+    subdomains: 'abc', maxNativeZoom: 17,
+  },
+  ign: { url: IGN_WMTS('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'png'), attribution: IGN_ATTR, maxNativeZoom: 19 },
+  ortho: { url: IGN_WMTS('ORTHOIMAGERY.ORTHOPHOTOS', 'jpeg'), attribution: IGN_ATTR, maxNativeZoom: 19 },
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics', maxNativeZoom: 19,
+  },
+  winter: {
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: OSM_ATTR + ' · © OpenTopoMap · Pistes © <a href="https://www.opensnowmap.org">OpenSnowMap</a>',
+    subdomains: 'abc', maxNativeZoom: 17,
+    overlay: { url: 'https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png', maxNativeZoom: 18 },
+  },
+};
+const MAP_MAX_ZOOM = 20;
+const MAP_STYLE_KEY = 'gr34_map_style';
+function savedMapStyle() {
+  try { const v = localStorage.getItem(MAP_STYLE_KEY); return BASE_LAYERS[v] ? v : 'plan'; } catch (e) { return 'plan'; }
+}
+// Remplace le fond de carte courant (et sa surcouche éventuelle).
+function applyBaseLayer(map, key) {
+  if (!map) return;
+  const def = BASE_LAYERS[key] || BASE_LAYERS.plan;
+  (map.__baseLayers || []).forEach((l) => { try { map.removeLayer(l); } catch (e) {} });
+  const opts = (d) => ({
+    attribution: d.attribution, maxZoom: MAP_MAX_ZOOM, maxNativeZoom: d.maxNativeZoom,
+    ...(d.subdomains ? { subdomains: d.subdomains } : {}),
+  });
+  const layers = [L.tileLayer(def.url, opts(def))];
+  if (def.overlay) layers.push(L.tileLayer(def.overlay.url, { ...opts(def.overlay), attribution: '' }));
+  layers.forEach((l, i) => { l.addTo(map); l.setZIndex(i); });
+  map.__baseLayers = layers;
+  map.__baseLayerKey = key;
+}
+// Ombrage du relief (« Enrichissement ») : vraie couche Esri, en multiplication.
+function applyHillshade(map, on) {
+  if (!map) return;
+  if (map.__hillshade) { try { map.removeLayer(map.__hillshade); } catch (e) {} map.__hillshade = null; }
+  if (!on) return;
+  const l = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: MAP_MAX_ZOOM, maxNativeZoom: 16, opacity: 0.22, className: 'hillshade-layer',
+    attribution: 'Relief © Esri',
+  });
+  l.addTo(map); l.setZIndex(5);
+  map.__hillshade = l;
 }
 
 function MapView({
@@ -155,7 +246,9 @@ function MapView({
     const map = L.map(mapEl.current, {
       zoomControl: false,
       attributionControl: true,
-      zoomSnap: 0.25
+      zoomSnap: 0.25,
+      maxZoom: MAP_MAX_ZOOM,
+      wheelPxPerZoomLevel: 90
     }).setView([46.6, 2.5], 6);
     mapRef.current = map;
     // Fit roughly the metropolitan France bounding box so the whole country
@@ -189,20 +282,11 @@ function MapView({
     };
   }, []);
 
-  // Tile layer — always use the light Voyager tiles, even in dark mode,
-  // so the map's colors stay consistent regardless of the app theme.
+  // Fond de carte : celui choisi dans « Cartes » (mémorisé), « Plan » par défaut.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (tileLayerRef.current) map.removeLayer(tileLayerRef.current);
-    const url = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-    const layer = L.tileLayer(url, {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
-      maxZoom: 20,
-      subdomains: 'abcd'
-    });
-    layer.addTo(map);
-    tileLayerRef.current = layer;
+    applyBaseLayer(map, savedMapStyle());
   }, []);
 
   // User geolocation marker (pulsing live dot) ----------------------------
@@ -2010,7 +2094,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
   };
   // Replaced by the global 2-step guided tour (see App). Keep disabled here.
   const locateHintVisible = false;
-  const [mapStyle, setMapStyle] = useState('topo'); // 'topo' | 'winter' | 'satellite'
+  const [mapStyle, setMapStyle] = useState(savedMapStyle); // cf. BASE_LAYERS
   const [forecastDay, setForecastDay] = useState(0); // -2 .. +5 days
   const [enrichment, setEnrichment] = useState({ poi: false, hillshade: true });
   const [overlayTab, setOverlayTab] = useState('weather'); // weather | surface | snow
@@ -2018,6 +2102,19 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
   const [theme, setTheme] = useState('auto');
   const [units, setUnits] = useState('km');
   const wrapRef = useRef(null);
+
+  // Applique le fond choisi et le mémorise
+  useEffect(() => {
+    const map = mapRef && mapRef.current;
+    if (!map || map.__baseLayerKey === mapStyle) return;
+    applyBaseLayer(map, mapStyle);
+    try { localStorage.setItem(MAP_STYLE_KEY, mapStyle); } catch (e) {}
+  }, [mapStyle]);
+  // Ombrage du relief
+  useEffect(() => {
+    const apply = () => applyHillshade(mapRef && mapRef.current, enrichment.hillshade);
+    if (mapRef && mapRef.current) apply(); else { const t = setTimeout(apply, 300); return () => clearTimeout(t); }
+  }, [enrichment.hillshade]);
 
   useEffect(() => {
     if (!open) return;
@@ -2290,6 +2387,9 @@ function PreviewTopo({ dark }) {
 function CartesPopover({ dark, mapStyle, setMapStyle, forecastDay, setForecastDay, enrichment, setEnrichment, overlayTab, setOverlayTab, overlay, setOverlay }) {
   // Resolve a maps/*.png to its inlined blob URL in the standalone build.
   const M = (name) => (window.__resources && window.__resources['map_' + name]) || ('assets/maps/' + name + '.png');
+  // Vignette = vraie tuile (zoom 12, autour de Quimper) pour les fonds sans image dédiée
+  const TILE_THUMB = (key) => BASE_LAYERS[key].url
+    .replace('{s}', 'a').replace('{r}', '@2x').replace('{z}', '12').replace('{x}', '2001').replace('{y}', '1423');
   const OVERLAYS = {
     weather: [
       { key: 'temp', label: 'T° ressentie', img: M('temperature') },
@@ -2322,9 +2422,12 @@ function CartesPopover({ dark, mapStyle, setMapStyle, forecastDay, setForecastDa
       {/* Terrains */}
       <PopSection dark={dark} label="Terrains">
         <div className="grid grid-cols-3 gap-2">
+          <TerrainCard dark={dark} label="Plan" selected={mapStyle === 'plan'} onClick={() => setMapStyle('plan')} img={TILE_THUMB('plan')} />
           <TerrainCard dark={dark} label="Topo" selected={mapStyle === 'topo'} onClick={() => setMapStyle('topo')} img={M('topo')} />
-          <TerrainCard dark={dark} label="Hiver" selected={mapStyle === 'winter'} onClick={() => setMapStyle('winter')} img={M('winter')} />
+          <TerrainCard dark={dark} label="IGN" selected={mapStyle === 'ign'} onClick={() => setMapStyle('ign')} img={TILE_THUMB('ign')} />
+          <TerrainCard dark={dark} label="Photos IGN" selected={mapStyle === 'ortho'} onClick={() => setMapStyle('ortho')} img={TILE_THUMB('ortho')} />
           <TerrainCard dark={dark} label="Satellite" selected={mapStyle === 'satellite'} onClick={() => setMapStyle('satellite')} img={M('satellite')} />
+          <TerrainCard dark={dark} label="Hiver" selected={mapStyle === 'winter'} onClick={() => setMapStyle('winter')} img={M('winter')} />
         </div>
       </PopSection>
 
