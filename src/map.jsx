@@ -1064,6 +1064,7 @@ function MapView({
   // Cursor for creating + track mouse (pixel + latlng) for custom cursor & ghost line
   const [cursorPos, setCursorPos] = useState(null);
   const [expandedLegend, setExpandedLegend] = useState(null);
+  const [legendOpen, setLegendOpen] = useState(false); // légende repliée par défaut : seulement les totaux
   const [cursorLatLng, setCursorLatLng] = useState(null);
   const ghostLineRef = useRef(null);
   const loopHintLineRef = useRef(null);
@@ -1569,7 +1570,9 @@ function MapView({
       {/* Quick-stats live legend */}
       {showLegend && totals.count > 0 && !creating && !singleRouteStats &&
       <div className={`absolute bottom-4 right-4 z-[500] rounded-md overflow-hidden glass ${dark ? 'text-neutral-100' : 'text-neutral-900'}`} style={{ width: 'min(560px, 90vw)' }}>
-          <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-8">
+          <button type="button" onClick={() => setLegendOpen((o) => !o)} aria-expanded={legendOpen}
+            title={legendOpen ? 'Masquer le détail' : 'Afficher le détail des itinéraires'}
+            className={`w-full text-left px-5 pt-4 pb-3 flex items-center justify-between gap-8 transition-colors ${dark ? 'hover:bg-white/[0.03]' : 'hover:bg-black/[0.02]'}`}>
             <div>
               <div className={`text-[10px] font-medium uppercase tracking-wider ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>Affichés</div>
               <div className="text-sm font-semibold mt-1">{totals.count} itinéraire{totals.count > 1 ? 's' : ''}</div>
@@ -1583,8 +1586,12 @@ function MapView({
                 <div className={`text-[10px] font-medium uppercase tracking-wider ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>D+ total</div>
                 <div className="text-sm font-semibold tabular-nums mt-1">{fmtAscent(totals.ascent)}</div>
               </div>
+              <span className={`self-center w-7 h-7 -mr-1.5 grid place-items-center rounded-md ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                <span className="block transition-transform" style={{ transform: legendOpen ? 'rotate(180deg)' : 'none' }}><I.ChevronUp size={16} /></span>
+              </span>
             </div>
-          </div>
+          </button>
+          {legendOpen &&
           <div className={`px-3 py-3 max-h-72 overflow-y-auto sb-scroll ${dark ? 'border-t border-neutral-700/60' : 'border-t border-neutral-200/80'}`}>
             <div className="flex flex-col gap-0.5">
               {visibleRoutes.map((r) => (
@@ -1599,6 +1606,7 @@ function MapView({
               ))}
             </div>
           </div>
+          }
         </div>
       }
     </div>);

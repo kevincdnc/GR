@@ -545,7 +545,7 @@ function App() {
           sections: items.map((it, i) => ({
             id: 's_imp_' + stamp + '_' + i,
             num: it.num || i + 1,
-            name: it.num > 0 ? 'Étape ' + it.num + ' — ' + it.name : it.name,
+            name: it.num > 0 ? 'Étape ' + it.num + ' — ' + it.name.trim() : it.name.trim(),
             color: it.color,
             distance: it.distance,
             ascent: it.ascent,
@@ -554,7 +554,7 @@ function App() {
         }]
       : items.map((it, i) => ({
           id: 'i_imp_' + stamp + '_' + i,
-          name: it.name, activity, privacy,
+          name: it.name.trim(), activity, privacy,
           color: it.color,
           distance: it.distance, ascent: it.ascent,
           time: it.time, difficulty: '—',
@@ -579,13 +579,13 @@ function App() {
       : `${items.length} itinéraires importés.`);
   };
 
-  const previewImportBatch = (items) => {
+  const previewImportBatch = (items, opts) => {
     if (!items || !items.length) { setImportPreview(null); return; }
     setImportPreview({
       id: 'i_imp_preview',
       routes: items.map((it) => ({ id: 'prev_' + it.id, name: it.name, color: it.color, distance: it.distance, ascent: it.ascent, coords: it.coords })),
     });
-    if (mapInstance) {
+    if (mapInstance && !(opts && opts.fit === false)) {
       try { mapInstance.flyToBounds(L.latLngBounds(items.flatMap((it) => it.coords.map((c) => [c[0], c[1]]))), { paddingTopLeft: [416, 60], paddingBottomRight: [60, 60], duration: 0.9 }); } catch (e) {}
     }
   };

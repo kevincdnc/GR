@@ -145,7 +145,13 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
     if (onPreviewBatch) onPreviewBatch(next);
   };
 
-  const canSaveBatch = batch.length > 0 && groupId;
+  const updateBatchItem = (id, patch) => {
+    const next = batch.map((b) => (b.id === id ? { ...b, ...patch } : b));
+    setBatch(next);
+    if (patch.color && onPreviewBatch) onPreviewBatch(next, { fit: false });
+  };
+
+  const canSaveBatch = batch.length > 0 && groupId && batch.every((b) => b.name.trim());
   const submitBatch = () => {
     if (!canSaveBatch || !onSaveBatch) return;
     onSaveBatch({ mode: batchMode, groupId, activity, privacy, items: batch });
@@ -380,7 +386,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
       {/* ---- Plusieurs fichiers ---- */}
       {stage === 'batch' && (
         <div className="flex-1 overflow-y-auto px-4 pb-4 sb-scroll">
-          <div className={`mb-4 rounded-xl border overflow-hidden ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-50 border-neutral-200'}`}>
+          <div className={`mb-4 rounded-xl border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-50 border-neutral-200'}`}>
             <div className={`px-3 py-2.5 flex items-center justify-between border-b ${dark ? 'border-neutral-800' : 'border-neutral-200'}`}>
               <span className={`text-[12.5px] font-semibold ${dark ? 'text-white' : 'text-neutral-900'}`}>{batch.length} fichiers</span>
               <span className={`text-[11.5px] tabular-nums ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
@@ -388,21 +394,9 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
               </span>
             </div>
             {batch.map((b, i) => (
-              <div key={b.id} className={`group flex items-center gap-2.5 px-3 py-2 ${i < batch.length - 1 ? (dark ? 'border-b border-neutral-800' : 'border-b border-neutral-200/70') : ''}`}>
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: ROUTE_COLORS[b.color].hex }}></span>
-                <div className="flex-1 min-w-0">
-                  <div className={`text-[12.5px] font-medium truncate ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}>
-                    {b.num > 0 && <span className={dark ? 'text-neutral-500' : 'text-neutral-400'}>#{b.num} </span>}{b.name}
-                  </div>
-                  <div className={`text-[11px] tabular-nums truncate ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
-                    {fmtDist(b.distance)} · ↑ {fmtAscent(b.ascent)} · {b.file}
-                  </div>
-                </div>
-                <button onClick={() => removeBatchItem(b.id)} title="Retirer ce fichier"
-                  className={`p-1 rounded-md transition-colors ${dark ? 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800' : 'text-neutral-400 hover:text-neutral-800 hover:bg-neutral-200'}`}>
-                  <I.X size={13} />
-                </button>
-              </div>
+              <BatchRow key={b.id} item={b} last={i === batch.length - 1} dark={dark}
+                onChange={(patch) => updateBatchItem(b.id, patch)}
+                onRemove={() => removeBatchItem(b.id)} />
             ))}
           </div>
           {batchSkipped.length > 0 && (
@@ -880,3 +874,58 @@ function Stat({ dark, icon, label, value }) {
 }
 
 window.ImportPanel = ImportPanel;
+
+// Ligne d'un import multiple : nom modifiable sur place, pastille = choix de la couleur du tracé.
+function BatchRow({ item: b, last, dark, onChange, onRemove }) {
+  const [colorOpen, setColorOpen] = useImportState(false);
+  const colorRef = useImportRef(null);
+  React.useEffect(() => {
+    if (!colorOpen) return;
+    const onDoc = (e) => { if (colorRef.current && !colorRef.current.contains(e.target)) setColorOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setColorOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+  }, [colorOpen]);
+
+  return (
+    <div className={`group flex items-center gap-2 px-2 py-2 ${!last ? (dark ? 'border-b border-neutral-800' : 'border-b border-neutral-200/70') : ''}`}>
+      <div className="relative shrink-0" ref={colorRef}>
+        <button onClick={() => setColorOpen((o) => !o)} title="Couleur du tracé" aria-label="Changer la couleur du tracé" aria-expanded={colorOpen}
+          className={`w-5 h-5 grid place-items-center rounded-full transition-colors ${dark ? 'hover:bg-neutral-700' : 'hover:bg-neutral-200'}`}>
+          <span className="block w-2.5 h-2.5 rounded-full" style={{ background: ROUTE_COLORS[b.color].hex }}></span>
+        </button>
+        {colorOpen && (
+          <div className="absolute left-0 top-full mt-1.5 z-40 w-[194px] p-2 rounded-md shadow-2xl animate-menu glass-strong">
+            <div className={`text-[10px] font-semibold uppercase tracking-wider px-0.5 pb-1.5 ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>Couleur du tracé</div>
+            <div className="grid grid-cols-6 gap-1.5">
+              {Object.entries(ROUTE_COLORS).map(([key, c]) => (
+                <button key={key} onClick={() => { onChange({ color: key }); setColorOpen(false); }} title={c.name}
+                  className="w-6 h-6 rounded-full grid place-items-center transition-transform hover:scale-110"
+                  style={{ background: c.hex, boxShadow: b.color === key ? `0 0 0 2px ${dark ? '#171717' : '#fff'}, 0 0 0 3.5px ${c.hex}` : 'none' }}>
+                  {b.color === key && <I.Check size={12} stroke="white" strokeWidth="3" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center">
+          {b.num > 0 && <span className={`text-[12.5px] font-medium shrink-0 pl-1 ${dark ? 'text-neutral-500' : 'text-neutral-400'}`}>#{b.num}</span>}
+          <input value={b.name} onChange={(e) => onChange({ name: e.target.value })}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            placeholder="Nom du tracé" aria-label="Nom du tracé" title="Cliquer pour renommer"
+            className={`flex-1 min-w-0 text-[12.5px] font-medium bg-transparent outline-none rounded px-1 py-0.5 transition-colors ${dark ? 'text-neutral-100 placeholder-neutral-600 hover:bg-neutral-800 focus:bg-neutral-950 focus:ring-1 focus:ring-neutral-600' : 'text-neutral-900 placeholder-neutral-400 hover:bg-neutral-100 focus:bg-white focus:ring-1 focus:ring-neutral-300'} ${b.name.trim() ? '' : 'ring-1 ring-red-500/60'}`} />
+        </div>
+        <div className={`text-[11px] tabular-nums truncate px-1 ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
+          {fmtDist(b.distance)} · ↑ {fmtAscent(b.ascent)} · {b.file}
+        </div>
+      </div>
+      <button onClick={onRemove} title="Retirer ce fichier"
+        className={`p-1 rounded-md transition-colors ${dark ? 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800' : 'text-neutral-400 hover:text-neutral-800 hover:bg-neutral-200'}`}>
+        <I.X size={13} />
+      </button>
+    </div>
+  );
+}
