@@ -20,10 +20,10 @@
 <meta name="ext-resource-dependency" content="assets/maps/winter.png" data-resource-id="map_winter" />
 <meta name="ext-resource-dependency" content="assets/maps/satellite.png" data-resource-id="map_satellite" />
 
-<template id="__bundler_thumbnail" data-bg-color="#f8fafc">
+<template id="__bundler_thumbnail" data-bg-color="#fafafa">
   <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-    <rect x="7.6" y="4.5" width="2.4" height="27.5" rx="1.2" fill="#334155"/>
-    <path d="M10 6.4C14.6 4.9 18.8 7.9 23.6 6.7C26.6 6 28.8 6.2 30.6 6.9V13.5C28.8 12.8 26.6 12.6 23.6 13.3C18.8 14.5 14.6 11.5 10 13Z" fill="#fff" stroke="#cbd5e1" stroke-width="0.8"/>
+    <rect x="7.6" y="4.5" width="2.4" height="27.5" rx="1.2" fill="#404040"/>
+    <path d="M10 6.4C14.6 4.9 18.8 7.9 23.6 6.7C26.6 6 28.8 6.2 30.6 6.9V13.5C28.8 12.8 26.6 12.6 23.6 13.3C18.8 14.5 14.6 11.5 10 13Z" fill="#fff" stroke="#d4d4d4" stroke-width="0.8"/>
     <path d="M10 13C14.6 11.5 18.8 14.5 23.6 13.3C26.6 12.6 28.8 12.8 30.6 13.5V20.1C28.8 19.4 26.6 19.2 23.6 19.9C18.8 21.1 14.6 18.1 10 19.6Z" fill="#dc2626"/>
   </svg>
 </template>
@@ -54,7 +54,7 @@
     font-feature-settings: 'kern', 'liga';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    color: #0f172a;
+    color: #171717;
     overflow: hidden;
   }
   /* Chiffres : condensé à chiffres tabulaires (remplace la chasse fixe du design) */
@@ -72,17 +72,17 @@
   .sb-scroll::-webkit-scrollbar { width: 10px; }
   .sb-scroll::-webkit-scrollbar-track { background: transparent; }
   .sb-scroll::-webkit-scrollbar-thumb {
-    background: rgba(100,116,139,.25);
+    background: rgba(115,115,115,.25);
     border-radius: 999px;
     border: 3px solid transparent;
     background-clip: content-box;
   }
   .sb-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(100,116,139,.45);
+    background: rgba(115,115,115,.45);
     border: 3px solid transparent;
     background-clip: content-box;
   }
-  .sb-scroll { scrollbar-width: thin; scrollbar-color: rgba(100,116,139,.3) transparent; }
+  .sb-scroll { scrollbar-width: thin; scrollbar-color: rgba(115,115,115,.3) transparent; }
 
   /* Menu dropdown */
   @keyframes menuIn {
@@ -167,10 +167,10 @@
     padding: 1px 5px !important;
   }
   .dark .leaflet-control-attribution {
-    background: rgba(2,6,23,0.7) !important;
-    color: #94a3b8 !important;
+    background: rgba(10,10,10,0.7) !important;
+    color: #a3a3a3 !important;
   }
-  .dark .leaflet-control-attribution a { color: #94a3b8 !important; }
+  .dark .leaflet-control-attribution a { color: #a3a3a3 !important; }
   /* Ombrage du relief réel (cf. applyHillshade dans map.jsx) */
   .hillshade-layer { mix-blend-mode: multiply; }
   /* ---- Verre dépoli (GR planner) : navigation et éléments flottants ---- */
@@ -179,36 +179,36 @@
     -webkit-backdrop-filter: blur(18px) saturate(160%);
     backdrop-filter: blur(18px) saturate(160%);
     border: 1px solid rgba(255,255,255,0.6);
-    box-shadow: 0 8px 30px rgba(15,23,42,0.16);
+    box-shadow: 0 8px 30px rgba(23,23,23,0.16);
   }
   .dark .glass {
-    background: rgba(30,32,38,0.66);
+    background: rgba(23,23,23,0.66);
     border-color: rgba(255,255,255,0.09);
     box-shadow: 0 10px 34px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.05);
   }
   /* Navigation : verre plus foncé */
   .glass-nav { background: rgba(255,255,255,0.8); }
-  .dark .glass-nav { background: rgba(17,18,22,0.82); }
+  .dark .glass-nav { background: rgba(10,10,10,0.82); }
   /* Variante plus couvrante pour les menus / popovers (lisibilité) */
   .glass-strong {
     background: rgba(255,255,255,0.86);
     -webkit-backdrop-filter: blur(22px) saturate(160%);
     backdrop-filter: blur(22px) saturate(160%);
     border: 1px solid rgba(255,255,255,0.7);
-    box-shadow: 0 16px 44px rgba(15,23,42,0.22);
+    box-shadow: 0 16px 44px rgba(23,23,23,0.22);
   }
   .dark .glass-strong {
-    background: rgba(30,32,38,0.84);
+    background: rgba(23,23,23,0.84);
     border-color: rgba(255,255,255,0.1);
     box-shadow: 0 16px 44px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
   }
   /* Vues plein écran (Stats, Paramètres) : voile de verre sur la carte */
   .glass-backdrop {
-    background: rgba(248,250,252,0.78);
+    background: rgba(250,250,250,0.78);
     -webkit-backdrop-filter: blur(26px) saturate(140%);
     backdrop-filter: blur(26px) saturate(140%);
   }
-  .dark .glass-backdrop { background: rgba(18,19,24,0.74); }
+  .dark .glass-backdrop { background: rgba(23,23,23,0.74); }
   /* Séparateurs plus doux sur le verre sombre */
   .dark .glass .border-neutral-800, .dark .glass-backdrop .border-neutral-800 { border-color: rgba(255,255,255,0.08); }
   /* Hide default zoom controls (we provide our own) */

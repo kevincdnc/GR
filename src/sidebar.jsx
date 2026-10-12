@@ -498,7 +498,7 @@ function ItineraryRow({
           <button
             onClick={(e) => {e.stopPropagation();onToggleVisible();}}
             className={`shrink-0 p-1 rounded transition-colors ${dark ? 'hover:bg-neutral-700' : 'hover:bg-neutral-200'}`}
-            style={{ color: visible ? accent : dark ? '#525252' : '#a3a3a3' }}
+            style={{ color: visible ? (dark ? '#d4d4d4' : '#525252') : dark ? '#525252' : '#a3a3a3' }}
             title={visState === 'all' ? 'Masquer de la carte' : 'Afficher sur la carte'}>
             
             {EyeIcon ? <EyeIcon size={15} /> : <EyeMix dark={dark} />}
@@ -553,7 +553,7 @@ function SectionRow({ section, parentColor, visible, onToggle, onHover, hoveredI
       
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ background: visible ? sectionColor : dark ? '#475569' : '#cbd5e1' }}>
+        style={{ background: visible ? sectionColor : dark ? '#525252' : '#d4d4d4' }}>
       </span>
       <div className="flex-1 min-w-0">
         <div className={`text-[12px] truncate ${visible ? dark ? 'text-neutral-100' : 'text-neutral-800' : dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{section.name}</div>
@@ -590,7 +590,7 @@ function SectionRow({ section, parentColor, visible, onToggle, onHover, hoveredI
       <button
         onClick={(e) => {e.stopPropagation();onToggle();}}
         className={`p-1 rounded transition-all ${dark ? 'hover:bg-neutral-700' : 'hover:bg-neutral-200'}`}
-        style={{ color: visible ? accent : dark ? '#525252' : '#a3a3a3' }}
+        style={{ color: visible ? (dark ? '#d4d4d4' : '#525252') : dark ? '#525252' : '#a3a3a3' }}
         title={visible ? 'Masquer cette section' : 'Afficher cette section'}>
         
         {visible ? <I.Eye size={13} /> : <I.EyeOff size={13} />}
@@ -818,7 +818,7 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
         </div> :
 
       <span
-        className={`flex-1 text-[13px] font-medium truncate select-none ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}
+        className={`flex-1 text-[13px] font-medium truncate select-none transition-opacity ${vState === 'none' ? 'opacity-50' : ''} ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}
         onDoubleClick={(e) => {e.stopPropagation();setEditing(true);}}
         title="Double-cliquez pour renommer">
         {group.name}</span>
@@ -854,7 +854,7 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
         onClick={(e) => {e.stopPropagation();onToggleVisibility();}}
         className={`shrink-0 p-1 rounded transition-colors ${dark ? 'hover:bg-neutral-700' : 'hover:bg-neutral-200'}`}
         title={vState === 'all' ? 'Masquer tout le groupe' : 'Afficher tout le groupe'}
-        style={{ color: vState !== 'none' ? accent : (dark ? '#525252' : '#a3a3a3') }}>
+        style={{ color: vState !== 'none' ? (dark ? '#d4d4d4' : '#525252') : (dark ? '#525252' : '#a3a3a3') }}>
         {vState === 'all' ? <I.Eye size={15} /> : vState === 'some' ? <EyeMix dark={dark} /> : <I.EyeOff size={15} />}
       </button>
     </div>);

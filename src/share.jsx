@@ -34,7 +34,7 @@ function SharePanel({ itinerary, dark, accent, plan, onClose }) {
   };
 
   return (
-    <div className="absolute inset-0 z-[700] flex flex-col" style={{ background: 'rgba(10,12,18,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+    <div className="absolute inset-0 z-[700] flex flex-col" style={{ background: 'rgba(10,10,10,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
       {/* Top bar */}
       <div className="px-8 pt-7 pb-5 border-b border-white/15 flex items-start justify-between gap-4">
         <div>

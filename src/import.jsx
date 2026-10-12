@@ -90,8 +90,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
 
   // ---- Import de plusieurs GPX en une fois -------------------------------
   const [batch, setBatch] = useImportState([]); // [{ id, file, num, name, distance, ascent, time, coords, color }]
-  const [batchMode, setBatchMode] = useImportState('sections'); // 'sections' | 'separate'
-  const [batchName, setBatchName] = useImportState('');
+  const batchMode = 'separate'; // plusieurs GPX = plusieurs tracés
   const [batchSkipped, setBatchSkipped] = useImportState([]);
 
   const handleFiles = (list) => {
@@ -124,16 +123,9 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
           coords: r.st.coords,
           color: palette[i % palette.length],
         }));
-        const numbered = items.every((it) => it.num > 0);
         const finish = () => {
           setProgress(100);
           setBatch(items);
-          setBatchMode(numbered ? 'sections' : 'separate');
-          const nums = items.map((it) => it.num);
-          const consecutive = nums.every((n, i) => i === 0 || n === nums[i - 1] + 1);
-          setBatchName(numbered
-            ? (consecutive ? 'Étapes ' + nums[0] + ' à ' + nums[nums.length - 1] : 'Étapes ' + nums.join(', '))
-            : 'Import de ' + items.length + ' fichiers');
           setStage('batch');
           if (onPreviewBatch) onPreviewBatch(items);
         };
@@ -153,10 +145,10 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
     if (onPreviewBatch) onPreviewBatch(next);
   };
 
-  const canSaveBatch = batch.length > 0 && groupId && (batchMode === 'separate' || batchName.trim().length > 0);
+  const canSaveBatch = batch.length > 0 && groupId;
   const submitBatch = () => {
     if (!canSaveBatch || !onSaveBatch) return;
-    onSaveBatch({ mode: batchMode, name: batchName.trim(), groupId, activity, privacy, items: batch });
+    onSaveBatch({ mode: batchMode, groupId, activity, privacy, items: batch });
   };
   const handleFile = (f) => {
     if (!f) return;
@@ -353,7 +345,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
                     className={`w-6 h-6 rounded-full grid place-items-center transition-transform shrink-0 ${color === key ? 'scale-110' : 'hover:scale-105'}`}
                     style={{
                       background: c.hex,
-                      boxShadow: color === key ? `0 0 0 1.5px ${dark ? '#0f172a' : '#fff'}, 0 0 0 3px ${c.hex}` : 'none',
+                      boxShadow: color === key ? `0 0 0 1.5px ${dark ? '#171717' : '#fff'}, 0 0 0 3px ${c.hex}` : 'none',
                     }}
                     title={c.name}
                   >
@@ -420,30 +412,6 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
           )}
 
           <div className="mb-4">
-            <div className={labelCls}>Importer comme</div>
-            <div className={`flex p-0.5 rounded-lg border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`}>
-              {[{ v: 'sections', l: 'Un itinéraire à étapes' }, { v: 'separate', l: 'Itinéraires séparés' }].map((o) => (
-                <button key={o.v} onClick={() => setBatchMode(o.v)}
-                  className={`flex-1 rounded-md py-1.5 text-[12px] font-medium transition-colors ${batchMode === o.v ? (dark ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-600 hover:text-neutral-900')}`}>
-                  {o.l}
-                </button>
-              ))}
-            </div>
-            <p className={`mt-1.5 text-[11px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
-              {batchMode === 'sections'
-                ? 'Chaque fichier devient une étape (section) d\'un même itinéraire, dans l\'ordre ci-dessus.'
-                : 'Chaque fichier devient un itinéraire indépendant.'}
-            </p>
-          </div>
-
-          {batchMode === 'sections' && (
-            <div className="mb-4">
-              <label className={labelCls}>Nom de l'itinéraire <span className="text-rose-500">*</span></label>
-              <input value={batchName} onChange={(e) => setBatchName(e.target.value)} className={inputCls} placeholder="Ex. GR34 — Finistère sud" />
-            </div>
-          )}
-
-          <div className="mb-4">
             <label className={labelCls}>Ranger dans</label>
             <div className="relative">
               <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className={inputCls + ' appearance-none pr-8'}>
@@ -477,7 +445,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
             style={{ background: accent }}
           >
             <I.Download size={15} stroke="white" strokeWidth="2.4" />
-            {batchMode === 'sections' ? `Importer ${batch.length} étapes` : `Importer ${batch.length} itinéraires`}
+            {`Importer ${batch.length} tracés`}
           </button>
         </div>
       )}

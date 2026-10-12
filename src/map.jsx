@@ -1109,7 +1109,7 @@ function MapView({
       <div
         ref={mapEl}
         className="absolute top-0 right-0 bottom-0"
-        style={{ '--accent': accent, left: -MAP_UNDERLAY, background: dark ? '#1b1d22' : '#f1ede4' }}>
+        style={{ '--accent': accent, left: -MAP_UNDERLAY, background: dark ? '#171717' : '#f1ede4' }}>
       </div>
 
       {/* Custom POI placement cursor — when in POI step and a POI template is selected */}
@@ -2071,8 +2071,8 @@ function GeoIllustration({ dark }) {
 
         {/* Drapeau GR planner — centré */}
         <g transform="translate(130, 52) scale(2.3)">
-          <rect x="7.6" y="4.5" width="2.4" height="27.5" rx="1.2" fill="#334155" />
-          <path d="M10 6.4C14.6 4.9 18.8 7.9 23.6 6.7C26.6 6 28.8 6.2 30.6 6.9V13.5C28.8 12.8 26.6 12.6 23.6 13.3C18.8 14.5 14.6 11.5 10 13Z" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.8" strokeLinejoin="round" />
+          <rect x="7.6" y="4.5" width="2.4" height="27.5" rx="1.2" fill="#404040" />
+          <path d="M10 6.4C14.6 4.9 18.8 7.9 23.6 6.7C26.6 6 28.8 6.2 30.6 6.9V13.5C28.8 12.8 26.6 12.6 23.6 13.3C18.8 14.5 14.6 11.5 10 13Z" fill="#ffffff" stroke="#d4d4d4" strokeWidth="0.8" strokeLinejoin="round" />
           <path d="M10 13C14.6 11.5 18.8 14.5 23.6 13.3C26.6 12.6 28.8 12.8 30.6 13.5V20.1C28.8 19.4 26.6 19.2 23.6 19.9C18.8 21.1 14.6 18.1 10 19.6Z" fill="#dc2626" />
         </g>
       </svg>
@@ -2517,7 +2517,7 @@ function ForecastSlider({ dark, value, onChange }) {
                 className="rounded-full"
                 style={{
                   width: isNow ? 4 : 3, height: isNow ? 4 : 3,
-                  background: isNow ? (dark ? '#e5e5e5' : '#525252') : (reached ? '#3b82f6' : (dark ? '#525252' : '#cbd5e1')),
+                  background: isNow ? (dark ? '#e5e5e5' : '#525252') : (reached ? '#3b82f6' : (dark ? '#525252' : '#d4d4d4')),
                 }}
               ></span>
             );

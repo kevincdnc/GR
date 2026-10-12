@@ -317,14 +317,14 @@ function CreatePanel({
               dark={dark} accent={accent}
               selected={draftRouteType === 'oneWay'}
               onClick={() => onChangeRouteType('oneWay')}
-              icon={<RouteTypeOneWay color={draftRouteType === 'oneWay' ? accent : (dark ? '#64748b' : '#94a3b8')} />}
+              icon={<RouteTypeOneWay color={draftRouteType === 'oneWay' ? accent : (dark ? '#737373' : '#a3a3a3')} />}
               label="Aller simple"
             />
             <RouteTypeBtn
               dark={dark} accent={accent}
               selected={draftRouteType === 'outAndBack'}
               onClick={() => onChangeRouteType('outAndBack')}
-              icon={<RouteTypeOutBack color={draftRouteType === 'outAndBack' ? accent : (dark ? '#64748b' : '#94a3b8')} />}
+              icon={<RouteTypeOutBack color={draftRouteType === 'outAndBack' ? accent : (dark ? '#737373' : '#a3a3a3')} />}
               label="Aller-retour"
             />
           </div>
@@ -673,7 +673,7 @@ function ActivityDropdown({ value, onChange, dark, accent, disabled, btnRef, hig
               >
                 <span
                   className="w-6 h-6 rounded grid place-items-center shrink-0"
-                  style={{ background: sel ? accent + '22' : (dark ? '#0f172a' : '#f1f5f9'), color: sel ? accent : (dark ? '#94a3b8' : '#64748b') }}
+                  style={{ background: sel ? accent + '22' : (dark ? '#171717' : '#f5f5f5'), color: sel ? accent : (dark ? '#a3a3a3' : '#737373') }}
                 >
                   <Icon size={13} />
                 </span>

@@ -257,7 +257,7 @@ function App() {
   const dark = !!t.dark;
 
   useAppEffect(() => {
-    document.body.style.background = dark ? '#020617' : '#f8fafc';
+    document.body.style.background = dark ? '#0a0a0a' : '#fafafa';
   }, [dark]);
 
   const showToast = (msg) => {
@@ -770,7 +770,7 @@ function App() {
   const sidebarSide = t.sidebarOnRight ? 'right' : 'left';
 
   return (
-    <div className={`fixed inset-0 ${dark ? 'dark' : ''}`} style={{ background: dark ? '#1b1d22' : '#eef1f5' }}>
+    <div className={`fixed inset-0 ${dark ? 'dark' : ''}`} style={{ background: dark ? '#171717' : '#f5f5f5' }}>
       {/* Sidebar (or create panel) */}
       {/* Navigation flottante en verre foncé, alignée sur les contrôles (16px du bord), rayon 6px */}
       <aside
@@ -1126,7 +1126,7 @@ function App() {
                   left: tourAnchor.left - 7, top: tourAnchor.top - 7,
                   width: tourAnchor.width + 14, height: tourAnchor.height + 14,
                   borderRadius: 14,
-                  boxShadow: '0 0 0 3px rgba(59,130,246,0.95), 0 0 0 9999px rgba(10,12,20,0.42)',
+                  boxShadow: '0 0 0 3px rgba(59,130,246,0.95), 0 0 0 9999px rgba(10,10,10,0.42)',
                   pointerEvents: 'none',
                   animation: 'onboardRing 1.8s ease-out infinite',
                 }}
