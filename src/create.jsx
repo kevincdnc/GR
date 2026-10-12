@@ -1143,7 +1143,7 @@ function FloatingPoiCard({ dark, accent, template, onChange, onClose }) {
     window.addEventListener('touchend', up);
   };
   const style = pos.x == null
-    ? { left: 16, top: 72 }
+    ? { left: 64, top: 16 }
     : { left: pos.x, top: pos.y };
   return (
     <div

@@ -156,59 +156,6 @@ function Sidebar({
         </div>
       )}
 
-      {/* Primary action — dropdown CTA */}
-      <div className="px-4 pt-1 pb-2 relative" ref={menuRef}>
-        <button
-          onClick={() => setMenuOpen((o) => !o)}
-          data-onboard="cta"
-          className={`btn-cta-primary w-full flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-white shadow-sm transition-all hover:shadow active:scale-[0.99] ${menuOpen ? 'shadow-md' : ''}`}
-          style={{ background: accent }}
-          aria-haspopup="menu"
-          aria-expanded={ctaOpen}>
-          
-          <I.Plus size={16} stroke="white" strokeWidth="2.4" />
-          Créer ou importer un itinéraire
-          <I.ChevronDown
-            size={14}
-            stroke="white"
-            strokeWidth="2.4"
-            className={`ml-0.5 transition-transform ${ctaOpen ? 'rotate-180' : ''}`} />
-          
-        </button>
-
-        {ctaOpen &&
-        <div
-          role="menu"
-          className={`absolute left-4 right-4 top-full mt-1.5 z-30 rounded-xl shadow-2xl overflow-hidden origin-top animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}>
-          
-            <MenuItem
-            dark={dark} accent={accent}
-            icon={<I.Edit size={16} />}
-            title="Créer un itinéraire"
-            desc="Tracer point par point sur la carte"
-            onClick={pick(onCreate)} />
-          
-            <MenuDivider dark={dark} />
-            <MenuItem
-            dark={dark} accent={accent}
-            icon={<I.Upload size={16} />}
-            title="Importer un GPX"
-            desc="Depuis Strava, Garmin, Komoot…"
-            onClick={pick(onImport)} />
-          
-            <MenuDivider dark={dark} />
-            <MenuItem
-            dark={dark} accent={accent}
-            icon={<I.Sparkle size={16} />}
-            title="Me suggérer un itinéraire"
-            desc="Selon distance, dénivelé et zone"
-            onClick={pick(onSuggest)}
-            badge="Beta" />
-          
-          </div>
-        }
-      </div>
-
       {/* Subtle divider */}
       <div className={`mx-4 mt-2 mb-1 h-px ${dark ? 'bg-neutral-800' : 'bg-neutral-200'}`} />
 
@@ -216,14 +163,6 @@ function Sidebar({
       <div className="px-4 pt-2 pb-1 flex items-center justify-between">
         <span className={`text-[10px] font-semibold uppercase tracking-wider ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>Mes itinéraires</span>
         <div className="flex items-center gap-0.5">
-          <Tooltip dark={dark} label="Définir une zone sur la carte" sub="Délimiter une aire à éviter ou à explorer">
-            <button
-              onClick={onDrawZone}
-              className={`p-1 rounded transition-colors ${dark ? 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800' : 'text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100'}`}>
-              
-              <I.DrawZone size={15} />
-            </button>
-          </Tooltip>
           <Tooltip dark={dark} label="Nouveau groupe" sub="Ranger vos itinéraires dans un dossier">
             <button
               onClick={onCreateGroup}
@@ -357,6 +296,60 @@ function Sidebar({
         <EmptyStateIllustration dark={dark} accent={accent} onOpenMenu={() => setMenuOpen(true)} />
         }
       </div>
+
+      {/* Primary action — dropdown CTA, en bas de la navigation (menu vers le haut) */}
+      <div className={`px-4 pt-3 pb-3 relative border-t ${dark ? 'border-neutral-800' : 'border-neutral-200'}`} ref={menuRef}>
+        <button
+          onClick={() => setMenuOpen((o) => !o)}
+          data-onboard="cta"
+          className={`btn-cta-primary w-full flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-white shadow-sm transition-all hover:shadow active:scale-[0.99] ${menuOpen ? 'shadow-md' : ''}`}
+          style={{ background: accent }}
+          aria-haspopup="menu"
+          aria-expanded={ctaOpen}>
+          
+          <I.Plus size={16} stroke="white" strokeWidth="2.4" />
+          Créer ou importer un itinéraire
+          <I.ChevronDown
+            size={14}
+            stroke="white"
+            strokeWidth="2.4"
+            className={`ml-0.5 transition-transform ${ctaOpen ? '' : 'rotate-180'}`} />
+          
+        </button>
+
+        {ctaOpen &&
+        <div
+          role="menu"
+          className={`absolute left-4 right-4 bottom-full mb-1.5 z-30 rounded-xl shadow-2xl overflow-hidden origin-bottom animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}>
+          
+            <MenuItem
+            dark={dark} accent={accent}
+            icon={<I.Edit size={16} />}
+            title="Créer un itinéraire"
+            desc="Tracer point par point sur la carte"
+            onClick={pick(onCreate)} />
+          
+            <MenuDivider dark={dark} />
+            <MenuItem
+            dark={dark} accent={accent}
+            icon={<I.Upload size={16} />}
+            title="Importer un GPX"
+            desc="Depuis Strava, Garmin, Komoot…"
+            onClick={pick(onImport)} />
+          
+            <MenuDivider dark={dark} />
+            <MenuItem
+            dark={dark} accent={accent}
+            icon={<I.Sparkle size={16} />}
+            title="Me suggérer un itinéraire"
+            desc="Selon distance, dénivelé et zone"
+            onClick={pick(onSuggest)}
+            badge="Beta" />
+          
+          </div>
+        }
+      </div>
+
     </div>);
 
 }
@@ -853,9 +846,9 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
           onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
           className={`p-1 rounded transition-all ${menuOpen
             ? (dark ? 'opacity-100 text-neutral-100 bg-neutral-700' : 'opacity-100 text-neutral-900 bg-neutral-200')
-            : (dark ? 'opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700' : 'opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200')
+            : (dark ? 'opacity-60 group-hover:opacity-100 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700' : 'opacity-60 group-hover:opacity-100 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200')
           }`}
-          title="Actions du groupe"
+          title="Actions du groupe (renommer, supprimer)"
           aria-haspopup="menu"
           aria-expanded={menuOpen}>
           <I.More size={15} />

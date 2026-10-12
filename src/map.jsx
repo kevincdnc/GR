@@ -2145,7 +2145,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
   const cardCls = `rounded-lg overflow-hidden shadow-lg ${dark ? 'bg-neutral-900 border border-neutral-700/50' : 'bg-white border border-neutral-200/80'}`;
 
   return (
-    <div ref={wrapRef} className="absolute right-4 top-4 flex flex-col gap-2 z-[600]">
+    <div ref={wrapRef} className="absolute left-4 top-4 flex flex-col gap-2 z-[600]">
       {/* Zoom stack */}
       <div className={`flex flex-col ${cardCls}`}>
         <MapBtn dark={dark} title="Zoomer" onClick={zoomIn}><I.ZoomIn size={16} /></MapBtn>
@@ -2156,7 +2156,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
       {/* Cartes + Settings combined stack */}
       <div className="relative">
         <div className={`flex flex-col ${cardCls}`}>
-          <Tooltip dark={dark} label="Cartes" sub="Choisir le fond de carte" side="left">
+          <Tooltip dark={dark} label="Cartes" sub="Choisir le fond de carte" side="right">
             <MapBtn
               dark={dark}
               active={open === 'cartes'}
@@ -2164,7 +2164,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
             ><I.Stack size={15} /></MapBtn>
           </Tooltip>
           <div className={`h-px ${dark ? 'bg-neutral-700/50' : 'bg-neutral-200'}`} />
-          <Tooltip dark={dark} label="Préférences carte" sub="Apparence, unités, options" side="left">
+          <Tooltip dark={dark} label="Préférences carte" sub="Apparence, unités, options" side="right">
             <MapBtn
               dark={dark}
               active={open === 'settings'}
@@ -2229,7 +2229,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
           dark={dark}
           label={userLocation ? 'Recentrer sur ma position' : 'Localisation désactivée'}
           sub={userLocation ? 'Cliquez pour revenir à votre position' : 'Cliquez pour activer'}
-          side="left"
+          side="right"
         >
           <button
             onClick={() => {
@@ -2262,7 +2262,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
         dark={dark}
         label="Boussole"
         sub={bearing ? `Orienté ${Math.round(bearing)}° — cliquez pour remettre au nord` : 'Le haut indique le nord'}
-        side="left"
+        side="right"
       >
         <button
           onClick={() => {
@@ -2293,7 +2293,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
 function PopoverShell({ dark, children, width = 340 }) {
   return (
     <div
-      className={`absolute right-[44px] top-0 rounded-xl shadow-2xl animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800 text-neutral-100' : 'bg-white border border-neutral-200 text-neutral-900'}`}
+      className={`absolute left-[44px] top-0 rounded-xl shadow-2xl animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800 text-neutral-100' : 'bg-white border border-neutral-200 text-neutral-900'}`}
       style={{ width }}
     >
       {children}

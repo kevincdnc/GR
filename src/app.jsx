@@ -530,7 +530,7 @@ function App() {
   // Itinerary / section action dispatcher (share / export / move / rename / delete / edit)
   const handleAction = (action, payload) => {
     const { itinerary, section, groupId } = payload || {};
-    const target = section ? section.name : itinerary.name;
+    const target = section ? section.name : (itinerary ? itinerary.name : ''); // (bug du design : plantait pour un groupe)
     if (action === 'edit') {
       // Reopen the create panel pre-filled from this itinerary's data
       // Use the parent itinerary's coords (or rebuild from path samples).
@@ -577,9 +577,20 @@ function App() {
       setConfirm({
         title: `Supprimer « ${group.name} » ?`,
         body: count > 0
-          ? `Les ${count} itinéraire${count > 1 ? 's' : ''} de ce groupe ne ${count > 1 ? 'seront' : 'sera'} pas supprimé${count > 1 ? 's' : ''} : ${count > 1 ? 'ils resteront visibles' : 'il restera visible'} dans la liste, sans groupe.`
+          ? `Ce groupe contient ${count} itinéraire${count > 1 ? 's' : ''}. Vous pouvez supprimer le groupe seul (${count > 1 ? 'ils restent' : 'il reste'} dans la liste, sans groupe) ou le supprimer avec ${count > 1 ? 'ses itinéraires' : 'son itinéraire'}.`
           : 'Le groupe sera définitivement supprimé.',
-        confirmLabel: 'Supprimer le groupe',
+        confirmLabel: count > 0 ? 'Groupe seul' : 'Supprimer le groupe',
+        // Supprimer aussi le contenu du groupe
+        secondaryLabel: count > 0 ? 'Avec les itinéraires' : null,
+        onSecondary: () => {
+          const ids = new Set();
+          group.itineraries.forEach((it) => { ids.add(it.id); (it.sections || []).forEach((sec) => ids.add(sec.id)); });
+          setGroups((gs) => gs.filter((g) => g.id !== group.id));
+          setVisibleIds((v) => new Set([...v].filter((id) => !ids.has(id))));
+          if (ids.has(selectedId)) setSelectedId(null);
+          showToast(`Groupe « ${group.name} » et ses itinéraires supprimés.`);
+          setConfirm(null);
+        },
         onConfirm: () => {
           // Move all itineraries into a virtual "ungrouped" bucket (kept at top
           // of the sidebar list, no header). Create it if missing.
@@ -791,7 +802,6 @@ function App() {
           onImport={() => { endTour(); setView('map'); setImporting(true); }}
           onSuggest={() => { endTour(); showToast('Suggestion d’itinéraire — bientôt disponible.'); }}
           onCreateGroup={handleCreateGroup}
-          onDrawZone={() => showToast('Outil zones — bientôt disponible.')}
           onAction={handleAction}
           forceCreateMenu={onboardStep === 2}
           view={view}
@@ -852,8 +862,8 @@ function App() {
           <SettingsContent tab={settingsTab} dark={dark} accent={t.accent} />
         ) : (
           <>
-            {/* Top-left place search */}
-            <div className="absolute top-4 left-4 z-[500] flex items-center gap-2">
+            {/* Recherche de lieu — en haut à droite (contrôles de carte à gauche) */}
+            <div className="absolute top-4 right-4 z-[500] flex items-center gap-2">
               <PlaceSearch map={mapInstance} dark={dark} accent={t.accent} />
             </div>
 
@@ -952,7 +962,7 @@ function App() {
               onClick={() => setConfirm(null)}
             ></div>
             <div
-              className={`relative w-[400px] max-w-full rounded-xl shadow-2xl overflow-hidden animate-tip-fixed ${dark ? 'bg-neutral-900 border border-neutral-700/60 text-neutral-100' : 'bg-white border border-neutral-200/80 text-neutral-900'}`}
+              className={`relative w-[440px] max-w-full rounded-xl shadow-2xl overflow-hidden animate-tip-fixed ${dark ? 'bg-neutral-900 border border-neutral-700/60 text-neutral-100' : 'bg-white border border-neutral-200/80 text-neutral-900'}`}
             >
               <div className="px-6 pt-5 pb-5">
                 <div className="flex items-start gap-3">
@@ -977,12 +987,24 @@ function App() {
                   </button>
                   <button
                     onClick={confirm.onConfirm}
-                    className="btn-cta-primary flex-1 rounded-md px-3 py-2.5 text-[12.5px] font-medium text-white shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
-                    style={{ background: '#dc2626' }}
+                    className={confirm.secondaryLabel
+                      ? `flex-1 rounded-md px-3 py-2.5 text-[12.5px] font-medium border transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap ${dark ? 'border-rose-500/40 text-rose-400 hover:bg-rose-500/10' : 'border-rose-200 text-rose-600 hover:bg-rose-50'}`
+                      : 'btn-cta-primary flex-1 rounded-md px-3 py-2.5 text-[12.5px] font-medium text-white shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap'}
+                    style={confirm.secondaryLabel ? undefined : { background: '#dc2626' }}
                   >
-                    <I.Trash size={13} />
+                    {!confirm.secondaryLabel && <I.Trash size={13} />}
                     {confirm.confirmLabel || 'Supprimer'}
                   </button>
+                  {confirm.secondaryLabel && (
+                    <button
+                      onClick={confirm.onSecondary}
+                      className="btn-cta-primary flex-1 rounded-md px-3 py-2.5 text-[12.5px] font-medium text-white shadow-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                      style={{ background: '#dc2626' }}
+                    >
+                      <I.Trash size={13} />
+                      {confirm.secondaryLabel}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
