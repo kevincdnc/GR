@@ -25,7 +25,7 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 
 ## Ajouter une étape
 
-Déposer le `.gpx` dans [`gpx/`](gpx/). Au prochain build, l'étape s'ajoute à l'itinéraire « GR34 » (le numéro
+Déposer le `.gpx` dans [`gpx/`](gpx/). Au prochain build, l'étape s'ajoute au groupe GR34, comme un itinéraire à part (le numéro
 est lu dans le nom de la trace `#6` ou du fichier `GR34_6_…`). Les dates et durées réelles se saisissent dans
 *Stats* ; le bouton **Exporter etapes.json** donne le fichier à mettre dans `gpx/etapes.json` pour les garder.
 

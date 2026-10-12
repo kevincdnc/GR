@@ -552,7 +552,7 @@ function SectionRow({ section, parentColor, visible, onToggle, onHover, hoveredI
     <div
       onMouseEnter={() => onHover(section.id)}
       onMouseLeave={() => onHover(null)}
-      className={`group flex items-center gap-2 pl-2 pr-1.5 py-1.5 rounded-md transition-colors ${dark ? 'hover:bg-neutral-800/60' : 'hover:bg-neutral-50'}`}>
+      className={`group flex items-center gap-2 pl-2 pr-0 py-1.5 rounded-md transition-colors ${dark ? 'hover:bg-neutral-800/60' : 'hover:bg-neutral-50'}`}>
       
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -592,11 +592,11 @@ function SectionRow({ section, parentColor, visible, onToggle, onHover, hoveredI
 
       <button
         onClick={(e) => {e.stopPropagation();onToggle();}}
-        className={`p-1 rounded transition-all ${dark ? 'hover:bg-neutral-700' : 'hover:bg-neutral-200'}`}
+        className={`shrink-0 p-1 rounded transition-all ${dark ? 'hover:bg-neutral-700' : 'hover:bg-neutral-200'}`}
         style={{ color: visible ? (dark ? '#d4d4d4' : '#525252') : dark ? '#525252' : '#a3a3a3' }}
         title={visible ? 'Masquer cette section' : 'Afficher cette section'}>
         
-        {visible ? <I.Eye size={13} /> : <I.EyeOff size={13} />}
+        {visible ? <I.Eye size={15} /> : <I.EyeOff size={15} />}
       </button>
     </div>);
 

@@ -36,8 +36,8 @@ const ACTIVITIES = {
 const SEED_GROUPS = [];
 
 // GR34 — étapes réelles, calculées au build depuis les fichiers gpx/*.gpx
-// (window.GR34_STAGES, cf. scripts/build.mjs). Chaque étape devient une section
-// de l'itinéraire « GR34 » ; ses coords portent l'altitude : [lat, lng, ele].
+// (window.GR34_STAGES, cf. scripts/build.mjs). Chaque étape (fichier GPX) devient
+// un itinéraire du groupe GR34 ; ses coords portent l'altitude : [lat, lng, ele].
 const GR34_SECTION_COLORS = ['rose', 'sky', 'amber', 'emerald', 'violet', 'orange', 'teal', 'pink', 'indigo', 'lime', 'blue', 'fuchsia'];
 
 function buildGr34Groups() {
@@ -49,27 +49,21 @@ function buildGr34Groups() {
       name: 'GR34 · Sentier des douaniers',
       icon: 'Folder',
       expanded: true,
-      itineraries: [
-        {
-          id: 'i_gr34',
-          name: 'GR34',
-          activity: 'hiking',
-          color: GR34_SECTION_COLORS[0],
-          difficulty: 'Modérée',
-          fromRepo: true,
-          sectionsExpanded: true,
-          sections: stages.map((st, i) => ({
-            id: 's_gr34_' + st.num,
-            num: st.num,
-            name: 'Étape ' + st.num + ' — ' + st.name,
-            color: GR34_SECTION_COLORS[i % GR34_SECTION_COLORS.length],
-            distance: st.distanceKm,
-            ascent: st.elevationGain,
-            descent: st.elevationLoss,
-            coords: st.coords,
-          })),
-        },
-      ],
+      // Un itinéraire par fichier GPX (une étape = un tracé)
+      itineraries: stages.map((st, i) => ({
+        id: 'i_gr34_' + st.num,
+        num: st.num,
+        name: 'Étape ' + st.num + ' — ' + st.name,
+        activity: 'hiking',
+        color: GR34_SECTION_COLORS[i % GR34_SECTION_COLORS.length],
+        distance: st.distanceKm,
+        ascent: st.elevationGain,
+        descent: st.elevationLoss,
+        time: '—',
+        difficulty: '—',
+        fromRepo: true,
+        coords: st.coords,
+      })),
     },
   ];
 }

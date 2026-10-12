@@ -30,8 +30,9 @@ function saveState(groups, visibleIds) {
     const slim = groups.map((g) => ({
       ...g,
       __newlyCreated: undefined,
+      // Étapes du dépôt : on ne garde que ce que l'utilisateur peut changer
       itineraries: g.itineraries.map((it) => it.fromRepo
-        ? { ...it, sections: (it.sections || []).map((sec) => ({ id: sec.id, num: sec.num, name: sec.name, color: sec.color })) }
+        ? { id: it.id, num: it.num, name: it.name, color: it.color, privacy: it.privacy, pois: it.pois, fromRepo: true }
         : it),
     }));
     localStorage.setItem(GR34_GROUPS_KEY, JSON.stringify({ groups: slim, visible: [...visibleIds], sig: gr34Signature() }));
@@ -41,30 +42,41 @@ function saveState(groups, visibleIds) {
 // Réinjecte les données GPX fraîches dans l'état sauvegardé.
 function mergeSavedWithRepo(saved) {
   const fresh = buildGr34Groups();
-  const freshIt = fresh[0] && fresh[0].itineraries[0];
+  const freshList = fresh[0] ? fresh[0].itineraries : [];
+  const freshById = new Map(freshList.map((it) => [it.id, it]));
   const repoChanged = saved.sig !== gr34Signature();
-  let found = false;
+  const seen = new Set();
   let groups = saved.groups.map((g) => ({
     ...g,
-    itineraries: g.itineraries.map((it) => {
-      if (it.id !== 'i_gr34' || !freshIt) return it;
-      found = true;
-      const old = new Map((it.sections || []).map((sec) => [sec.id, sec]));
-      return {
-        ...freshIt,
-        name: it.name, color: it.color, activity: it.activity, privacy: it.privacy, pois: it.pois,
-        sectionsExpanded: it.sectionsExpanded,
-        sections: freshIt.sections.map((sec) => {
-          const o = old.get(sec.id);
-          return o ? { ...sec, name: o.name || sec.name, color: o.color || sec.color } : sec;
-        }),
-      };
+    itineraries: g.itineraries.flatMap((it) => {
+      // Ancien format : un itinéraire « GR34 » à sections -> un itinéraire par étape
+      if (it.id === 'i_gr34') {
+        const old = new Map((it.sections || []).map((sec) => [sec.num, sec]));
+        return freshList.filter((f) => !seen.has(f.id)).map((f) => {
+          seen.add(f.id);
+          const o = old.get(f.num);
+          return o && o.color ? { ...f, color: o.color } : f;
+        });
+      }
+      if (it.fromRepo) {
+        const f = freshById.get(it.id);
+        if (!f) return []; // fichier retiré du dépôt
+        seen.add(f.id);
+        return [{ ...f, name: it.name || f.name, color: it.color || f.color, privacy: it.privacy, pois: it.pois }];
+      }
+      return [it];
     }),
   }));
-  // GR34 supprimé de la liste : on le remet seulement si le dépôt a changé (nouvelle étape…)
-  if (!found && freshIt && repoChanged) groups = [...fresh, ...groups];
-  const visible = new Set(saved.visible || []);
-  if (repoChanged && freshIt) freshIt.sections.forEach((sec) => visible.add(sec.id));
+  // Étapes nouvelles dans le dépôt : ajoutées au groupe GR34 (recréé si besoin)
+  const missing = freshList.filter((f) => !seen.has(f.id));
+  if (missing.length && repoChanged) {
+    const gi = groups.findIndex((g) => g.id === 'g_gr34');
+    if (gi >= 0) groups[gi] = { ...groups[gi], itineraries: [...groups[gi].itineraries, ...missing] };
+    else groups = [{ ...fresh[0], itineraries: missing }, ...groups];
+  }
+  // Visibilité : anciens ids de sections (s_gr34_N) -> ids d'itinéraires (i_gr34_N)
+  const visible = new Set((saved.visible || []).map((id) => id.replace(/^s_gr34_/, 'i_gr34_')));
+  if (repoChanged) missing.forEach((f) => visible.add(f.id));
   return { groups, visible };
 }
 

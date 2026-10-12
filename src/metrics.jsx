@@ -37,13 +37,13 @@ function fmtDateShort(iso) {
   return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-// Construit les lignes du tableau à partir de l'itinéraire GR34 courant
+// Construit les lignes du tableau à partir des étapes GR34 (itinéraires du dépôt)
 function useGr34Rows(groups, meta) {
   return useMetMemo(() => {
-    const it = groups.flatMap((g) => g.itineraries).find((x) => x.id === 'i_gr34');
+    // Étapes du dépôt : un itinéraire par fichier GPX
+    const stagesIts = groups.flatMap((g) => g.itineraries).filter((x) => x.fromRepo && x.num).sort((a, b) => a.num - b.num);
     const byNum = new Map((window.GR34_STAGES || []).map((st) => [st.num, st]));
-    if (!it || !it.sections) return [];
-    return it.sections.map((sec) => {
+    return stagesIts.map((sec) => {
       const st = byNum.get(sec.num) || {};
       const m = meta[String(sec.num)] || {};
       const distance = sec.distance || 0;
