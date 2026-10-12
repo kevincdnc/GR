@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>GR planner</title>
+<title>Trek Studio</title>
 <link rel="icon" href="assets/logo-gr.svg" type="image/svg+xml" />
 
 <meta name="ext-resource-dependency" content="assets/logo-gr.svg" data-resource-id="logoGr" />
@@ -21,8 +21,7 @@
 <meta name="ext-resource-dependency" content="assets/maps/satellite.png" data-resource-id="map_satellite" />
 
 <template id="__bundler_thumbnail" data-bg-color="#fafafa">
-  <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
-    <rect x="7.6" y="4.5" width="2.4" height="27.5" rx="1.2" fill="#404040"/>
+  <svg viewBox="8.6 2.2 23.4 23.4" xmlns="http://www.w3.org/2000/svg">
     <path d="M10 6.4C14.6 4.9 18.8 7.9 23.6 6.7C26.6 6 28.8 6.2 30.6 6.9V13.5C28.8 12.8 26.6 12.6 23.6 13.3C18.8 14.5 14.6 11.5 10 13Z" fill="#fff" stroke="#d4d4d4" stroke-width="0.8"/>
     <path d="M10 13C14.6 11.5 18.8 14.5 23.6 13.3C26.6 12.6 28.8 12.8 30.6 13.5V20.1C28.8 19.4 26.6 19.2 23.6 19.9C18.8 21.1 14.6 18.1 10 19.6Z" fill="#dc2626"/>
   </svg>
@@ -37,7 +36,7 @@
 <script src="vendor/react-dom.js"></script>
 
 <style>
-  /* Typographie GR planner : Barlow (texte) + Barlow Semi Condensed (chiffres,
+  /* Typographie Trek Studio : Barlow (texte) + Barlow Semi Condensed (chiffres,
      titres) — servies avec le site (fonts/, cf. scripts/build.mjs). */
   @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/barlow-latin-400-normal.woff2) format('woff2'); }
   @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/barlow-latin-500-normal.woff2) format('woff2'); }
@@ -47,6 +46,18 @@
   @font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/barlow-semi-condensed-latin-500-normal.woff2) format('woff2'); }
   @font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/barlow-semi-condensed-latin-600-normal.woff2) format('woff2'); }
   @font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/barlow-semi-condensed-latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Barlow Condensed'; font-style: italic; font-weight: 700; font-display: swap; src: url(fonts/barlow-condensed-latin-700-italic.woff2) format('woff2'); }
+  @font-face { font-family: 'Barlow Condensed'; font-style: italic; font-weight: 800; font-display: swap; src: url(fonts/barlow-condensed-latin-800-italic.woff2) format('woff2'); }
+  /* Logotype « Trek Studio » : condensé italique extra-gras, esprit maillot */
+  .logo-type {
+    font-family: 'Barlow Condensed', 'Barlow Semi Condensed', ui-sans-serif, sans-serif;
+    font-style: italic;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size-adjust: none;
+    line-height: 1;
+  }
   html, body, #root { height: 100%; margin: 0; }
   body {
     font-family: 'Barlow', ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -173,7 +184,7 @@
   .dark .leaflet-control-attribution a { color: #a3a3a3 !important; }
   /* Ombrage du relief réel (cf. applyHillshade dans map.jsx) */
   .hillshade-layer { mix-blend-mode: multiply; }
-  /* ---- Verre dépoli (GR planner) : navigation et éléments flottants ---- */
+  /* ---- Verre dépoli (Trek Studio) : navigation et éléments flottants ---- */
   .glass {
     background: rgba(255,255,255,0.72);
     -webkit-backdrop-filter: blur(18px) saturate(160%);

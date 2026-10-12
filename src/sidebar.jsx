@@ -132,9 +132,12 @@ function Sidebar({
       {/* Header */}
       <div className={`px-4 pt-5 pb-3 flex items-center justify-between`}>
         <div className="flex items-center gap-2" style={{ gap: "8px" }}>
-          <img src={(window.__resources && window.__resources.logoGr) || "assets/logo-gr.svg"} alt="" className="w-9 h-9 shrink-0" draggable="false" />
+          <img src={(window.__resources && window.__resources.logoGr) || "assets/logo-gr.svg"} alt="" className="w-8 h-8 shrink-0" draggable="false" />
           <div className="leading-tight">
-            <div className={`font-semibold text-[15px] tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>GR planner</div>
+            <div className="logo-type text-[22px] select-none" aria-label="Trek Studio">
+              <span className={dark ? 'text-white' : 'text-neutral-900'}>Trek</span>
+              <span className="ml-[0.18em] text-red-600">Studio</span>
+            </div>
           </div>
         </div>
       </div>
@@ -829,7 +832,7 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
           onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
           className={`p-1 rounded transition-all ${menuOpen
             ? (dark ? 'opacity-100 text-neutral-100 bg-neutral-700' : 'opacity-100 text-neutral-900 bg-neutral-200')
-            : (dark ? 'opacity-60 group-hover:opacity-100 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700' : 'opacity-60 group-hover:opacity-100 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200')
+            : (dark ? 'opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700' : 'opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200')
           }`}
           title="Actions du groupe (renommer, supprimer)"
           aria-haspopup="menu"

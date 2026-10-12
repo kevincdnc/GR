@@ -248,13 +248,13 @@ function SharePanel({ itinerary, dark, accent, plan, onClose }) {
                         />
                         <div className="flex-1 min-w-0">
                           <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider mb-2.5" style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}>
-                            GR planner Pro
+                            Trek Studio Pro
                           </span>
                           <h3 className="text-[19px] font-bold tracking-tight text-white leading-snug">
-                            Libérez toute la puissance de GR planner
+                            Libérez toute la puissance de Trek Studio
                           </h3>
                           <p className="text-[12.5px] mt-2.5 mb-1 leading-relaxed" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                            Restez fidèle à votre marque et débloquez tout GR planner :
+                            Restez fidèle à votre marque et débloquez tout Trek Studio :
                           </p>
                           <ul className="mt-2 space-y-1.5">
                             {['Itinéraires illimités', 'Customisation des cartes', 'Cartes météo & avalanche avancées', 'Export illimité'].map((feat) => (
@@ -396,11 +396,11 @@ function SharePreview({ itinerary, dark, color, compact, controls, short, metric
             <span className={`w-7 h-7 grid place-items-center rounded-md shadow ${dark ? 'bg-neutral-900/90 text-neutral-300' : 'bg-white/95 text-neutral-700'}`}><I.Stack size={14} /></span>
           </div>
         )}
-        {/* GR planner watermark — top-left. Icon only by default, name on hover. */}
+        {/* Trek Studio watermark — top-left. Icon only by default, name on hover. */}
         {watermark && (
           <div className="group/wm absolute left-2.5 top-2.5 flex items-center rounded-md px-1.5 py-1 transition-all" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}>
             <img src={(window.__resources && window.__resources.logoGr) || "assets/logo-gr.svg"} alt="" width="16" height="16" draggable="false" style={{ display: 'block' }} />
-            <span className="text-[10px] font-semibold tracking-tight max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/wm:max-w-[80px] group-hover/wm:opacity-100 group-hover/wm:ml-1.5" style={{ color: '#fff' }}>GR planner</span>
+            <span className="text-[10px] font-semibold tracking-tight max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover/wm:max-w-[80px] group-hover/wm:opacity-100 group-hover/wm:ml-1.5" style={{ color: '#fff' }}>Trek Studio</span>
           </div>
         )}
       </div>

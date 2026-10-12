@@ -1511,7 +1511,7 @@ function MapView({
                 Activer votre localisation&nbsp;?
               </h3>
               <p className={`mt-2 text-[12.5px] leading-relaxed ${dark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                Pour vous afficher sur la carte et vous suggérer des itinéraires près de chez vous, GR planner peut accéder à votre position.
+                Pour vous afficher sur la carte et vous suggérer des itinéraires près de chez vous, Trek Studio peut accéder à votre position.
               </p>
               <div className="flex gap-2.5 mt-5">
                 <button
@@ -2024,7 +2024,7 @@ function ExpandStat({ dark, icon, label, value }) {
 function GeoIllustration({ dark }) {
   return (
     <div className={`relative w-full h-full overflow-hidden ${dark ? 'bg-neutral-900' : 'bg-blue-50'}`}>
-      {/* Centered GR planner flag + symmetric live location waves */}
+      {/* Drapeau GR centré + ondes de localisation */}
       <svg viewBox="0 0 340 200" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         <defs>
           <linearGradient id="geo-pin-body" x1="0.5" y1="0" x2="0.5" y2="1">
@@ -2069,9 +2069,8 @@ function GeoIllustration({ dark }) {
         {/* Ground shadow ellipse beneath the pin */}
         <ellipse cx="170" cy="172" rx="28" ry="5" fill="#3b82f6" opacity="0.22" />
 
-        {/* Drapeau GR planner — centré */}
-        <g transform="translate(130, 52) scale(2.3)">
-          <rect x="7.6" y="4.5" width="2.4" height="27.5" rx="1.2" fill="#404040" />
+        {/* Drapeau GR — centré */}
+        <g transform="translate(124, 52) scale(2.6)">
           <path d="M10 6.4C14.6 4.9 18.8 7.9 23.6 6.7C26.6 6 28.8 6.2 30.6 6.9V13.5C28.8 12.8 26.6 12.6 23.6 13.3C18.8 14.5 14.6 11.5 10 13Z" fill="#ffffff" stroke="#d4d4d4" strokeWidth="0.8" strokeLinejoin="round" />
           <path d="M10 13C14.6 11.5 18.8 14.5 23.6 13.3C26.6 12.6 28.8 12.8 30.6 13.5V20.1C28.8 19.4 26.6 19.2 23.6 19.9C18.8 21.1 14.6 18.1 10 19.6Z" fill="#dc2626" />
         </g>

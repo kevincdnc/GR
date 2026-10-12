@@ -1,7 +1,5 @@
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- GR planner : drapeau du balisage GR (blanc sur rouge) -->
-  <rect x="7.6" y="4.5" width="2.4" height="27.5" rx="1.2" fill="#404040"/>
+<svg width="36" height="36" viewBox="8.6 2.2 23.4 23.4" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Trek Studio : drapeau du balisage GR (blanc sur rouge), sans mât -->
   <path d="M10 6.4C14.6 4.9 18.8 7.9 23.6 6.7C26.6 6 28.8 6.2 30.6 6.9V13.5C28.8 12.8 26.6 12.6 23.6 13.3C18.8 14.5 14.6 11.5 10 13Z" fill="#ffffff" stroke="#d4d4d4" stroke-width="0.8" stroke-linejoin="round"/>
   <path d="M10 13C14.6 11.5 18.8 14.5 23.6 13.3C26.6 12.6 28.8 12.8 30.6 13.5V20.1C28.8 19.4 26.6 19.2 23.6 19.9C18.8 21.1 14.6 18.1 10 19.6Z" fill="#dc2626"/>
-  <ellipse cx="8.8" cy="32.2" rx="3.4" ry="0.9" fill="#404040" opacity="0.18"/>
 </svg>

@@ -389,7 +389,7 @@ function PlanCard({ dark, accent, name, price, desc, highlight, coin }) {
 function ApiTab({ dark, accent }) {
   return (
     <>
-      <SectionTitle dark={dark} sub="Utilisez ces clés pour interroger l'API GR planner depuis votre backend.">Clés API</SectionTitle>
+      <SectionTitle dark={dark} sub="Utilisez ces clés pour interroger l'API Trek Studio depuis votre backend.">Clés API</SectionTitle>
       <PanelCard dark={dark}>
         <KeyRow dark={dark} label="Publishable key" value="pk_live_abf3…2c9d" />
         <KeyRow dark={dark} label="Secret key" value="sk_live_•••••••••••" />
