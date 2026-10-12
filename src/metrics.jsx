@@ -26,7 +26,9 @@ function parseDurationInput(input) {
   return null;
 }
 
-const fmtNum = (n, d = 1) => Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+// Espace insécable « normale » comme séparateur de milliers (l'espace fine
+// U+202F de fr-FR est quasi invisible en Barlow)
+const fmtNum = (n, d = 1) => Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }).replace(/\u202f/g, '\u00a0');
 
 function fmtDateShort(iso) {
   if (!iso) return '';

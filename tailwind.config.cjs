@@ -1,11 +1,11 @@
-// Même configuration que le `tailwind.config` inline du prototype (CDN Tailwind 3)
+// Configuration Tailwind 3 (reprise du prototype) — polices GR planner : Barlow
 module.exports = {
   content: ['./index.html', './src/**/*.jsx', './tweaks-panel.jsx'],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        sans: ['Barlow', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['Barlow Semi Condensed', 'Barlow', 'ui-sans-serif', 'sans-serif'],
       },
     },
   },

@@ -9,7 +9,7 @@ import { build } from './build.mjs'
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const DIST = join(ROOT, 'dist')
 const PORT = Number(process.env.PORT) || 5173
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json' }
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json' }
 
 // build() est synchrone : une modification pendant un build est notée et
 // déclenche un nouveau build juste après.

@@ -91,6 +91,11 @@ export function build({ single = false } = {}) {
   ], { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString()
 
   const nm = (p) => join(ROOT, 'node_modules', p)
+  // Polices Barlow (index.html les référence en url(fonts/…))
+  const fontFiles = ['barlow', 'barlow-semi-condensed'].flatMap((fam) => [400, 500, 600, 700].map((w) => {
+    const name = `${fam}-latin-${w}-normal.woff2`
+    return { name, path: nm(`@fontsource/${fam}/files/${name}`) }
+  }))
   const vendor = {
     'vendor/react.js': nm('react/umd/react.production.min.js'),
     'vendor/react-dom.js': nm('react-dom/umd/react-dom.production.min.js'),
@@ -109,6 +114,8 @@ export function build({ single = false } = {}) {
     mkdirSync(join(out, 'vendor'), { recursive: true })
     for (const [dest, src] of Object.entries(vendor)) cpSync(src, join(out, dest))
     writeFileSync(join(out, 'tailwind.css'), tailwindCss)
+    mkdirSync(join(out, 'fonts'), { recursive: true })
+    for (const f of fontFiles) cpSync(f.path, join(out, 'fonts', f.name))
     writeFileSync(join(out, 'index.html'), html)
     console.log(`dist/ prêt en ${Date.now() - t0} ms (${scripts.length} scripts)`)
     return
@@ -122,6 +129,9 @@ export function build({ single = false } = {}) {
   }
   const inline = (code) => `<script>${code.replace(/<\/script/gi, '<\\/script')}</script>`
   const style = (css) => `<style>${css}</style>`
+  for (const f of fontFiles) {
+    html = html.replace(`url(fonts/${f.name})`, `url(data:font/woff2;base64,${readFileSync(f.path).toString('base64')})`)
+  }
   html = html
     .replace('<link rel="stylesheet" href="tailwind.css" />', () => style(tailwindCss))
     .replace('<link rel="stylesheet" href="vendor/leaflet.css" />', () => style(readFileSync(vendor['vendor/leaflet.css'], 'utf8')))

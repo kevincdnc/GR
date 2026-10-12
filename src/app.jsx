@@ -4,7 +4,7 @@ const { useState: useAppState, useEffect: useAppEffect, useMemo: useAppMemo } = 
 const { useTweaks, TweaksPanel, TweakSection, TweakToggle, TweakColor, TweakRadio, SettingsPanel, SettingsContent, Tooltip, SharePanel } = window;
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "dark": false,
+  "dark": true,
   "accent": "#3b82f6",
   "density": "comfy",
   "showLegend": true,

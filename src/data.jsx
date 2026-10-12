@@ -83,7 +83,7 @@ function fmtDist(km) {
 }
 function fmtAscent(m) {
   const n = Math.round(m);
-  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' m';
+  return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') + ' m';
 }
 
 // Estimated moving time, based on an average pace per activity plus a climbing

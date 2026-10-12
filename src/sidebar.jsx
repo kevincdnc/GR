@@ -296,6 +296,9 @@ function Sidebar({
                 handleDrop={handleDrop}
                 onToggleExpand={() => toggleGroup(group.id)}
                 onToggleVisibility={() => toggleGroupVisibility(group)}
+                onSetEmoji={(emoji) => {
+                  setGroups((gs) => gs.map((g) => g.id === group.id ? { ...g, emoji: emoji || undefined } : g));
+                }}
                 onRename={(next) => {
                   setGroups((gs) => gs.map((g) => g.id === group.id ? { ...g, name: next } : g));
                 }}
@@ -439,16 +442,6 @@ function ItineraryRow({
           {/* Drag handle */}
           <div className={`opacity-0 group-hover:opacity-100 transition-opacity -ml-1 ${dark ? 'text-neutral-500' : 'text-neutral-400'} cursor-grab active:cursor-grabbing`}>
             <I.Drag size={14} />
-          </div>
-
-          {/* Color dot + activity icon (with expand chevron overlay for composites) */}
-          <div className="relative shrink-0">
-            <div
-              className="w-7 h-7 rounded-lg grid place-items-center"
-              style={{ background: visible ? accent + '22' : dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)', color: visible ? accent : dark ? '#94a3b8' : '#64748b' }}>
-              
-              <Icon size={14} strokeWidth="2" />
-            </div>
           </div>
 
           {/* Name + meta */}
@@ -658,9 +651,27 @@ const COMMON_EMOJIS = [
 '🔥', '⭐', '❤️', '⚡', '✨', '🎯', '🏁', '🏆',
 '☀️', '☁️', '🌧️', '❄️', '🌊', '🌀', '🌍', '📍'];
 
+// Icônes proposées pour un groupe (rando, côte, voyage…)
+const GROUP_EMOJIS = [
+'🚩', '🥾', '🏔️', '⛰️', '🏕️', '⛺', '🌲', '🌿',
+'🌊', '🏖️', '🏝️', '⛵', '🐚', '🦀', '🌅', '🌄',
+'🧭', '🗺️', '📍', '🏁', '🎯', '🏆', '⭐', '❤️',
+'🏃', '🚴', '⛷️', '🧗', '☀️', '🌧️', '❄️', '🔥'];
 
-function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setDragOver, handleDrop, onToggleExpand, onToggleVisibility, onRename, onDelete, onClearNewlyCreated }) {
+
+function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setDragOver, handleDrop, onToggleExpand, onToggleVisibility, onRename, onSetEmoji, onDelete, onClearNewlyCreated }) {
   const [editing, setEditing] = useState(false);
+  // Icône du groupe : emoji au choix (ou dossier par défaut)
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const iconPickerRef = useRef(null);
+  useEffect(() => {
+    if (!iconPickerOpen) return;
+    const onDoc = (e) => { if (iconPickerRef.current && !iconPickerRef.current.contains(e.target)) setIconPickerOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setIconPickerOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+  }, [iconPickerOpen]);
   const [draft, setDraft] = useState(group.name);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -751,8 +762,41 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
         
         <I.ChevronRight size={14} />
       </button>
-      <div className={`w-5 h-5 mr-2 grid place-items-center rounded-md ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-        <I.Folder size={15} />
+      <div className="relative mr-2 shrink-0" ref={iconPickerRef}>
+        <button
+          onClick={(e) => { e.stopPropagation(); setIconPickerOpen((o) => !o); }}
+          title="Choisir l'icône du groupe"
+          aria-label="Choisir l'icône du groupe"
+          className={`w-6 h-6 grid place-items-center rounded-md transition-colors ${iconPickerOpen ? (dark ? 'bg-neutral-700' : 'bg-neutral-200') : (dark ? 'hover:bg-neutral-700' : 'hover:bg-neutral-200')} ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+          {group.emoji ? <span className="text-[15px] leading-none">{group.emoji}</span> : <I.Folder size={15} />}
+        </button>
+        {iconPickerOpen && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={`absolute z-40 left-0 top-full mt-1 w-[236px] p-1.5 rounded-lg shadow-2xl animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}>
+            <div className="flex items-center justify-between px-1.5 py-1">
+              <span className={`text-[10px] font-semibold uppercase tracking-wider ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>Icône du groupe</span>
+              {group.emoji && (
+                <button
+                  onClick={() => { onSetEmoji && onSetEmoji(null); setIconPickerOpen(false); }}
+                  className={`flex items-center gap-1 text-[11px] font-medium rounded px-1.5 py-0.5 transition-colors ${dark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'}`}>
+                  <I.Folder size={12} /> Dossier
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-8 gap-0.5">
+              {GROUP_EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => { onSetEmoji && onSetEmoji(e); setIconPickerOpen(false); }}
+                  className={`text-[16px] leading-none p-1 rounded-md transition-colors ${group.emoji === e ? (dark ? 'bg-neutral-700' : 'bg-neutral-200') : (dark ? 'hover:bg-neutral-800' : 'hover:bg-neutral-100')}`}
+                  title={e}>
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       {editing ?
       <div ref={editRef} className="relative flex-1 flex items-center min-w-0" onClick={(e) => e.stopPropagation()}>
