@@ -15,7 +15,7 @@ const FAKE_PARSES = [
   { name: 'Trail de Chamonix',        distance: 31.2, ascent: 2380, time: '8h 10', maxAlt: 2480, points: 2864, center: [45.929, 6.876], zoom: 12 },
 ];
 
-function ImportPanel({ onClose, onSave, onPreview, onColorChange, groups, dark, accent }) {
+function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, onColorChange, groups, dark, accent }) {
   const [stage, setStage] = useImportState('drop'); // drop | parsing | preview
   const [parsed, setParsed] = useImportState(null);
   const [name, setName] = useImportState('');
@@ -87,6 +87,77 @@ function ImportPanel({ onClose, onSave, onPreview, onColorChange, groups, dark, 
   // Vrai fichier GPX : lu et analysé dans le navigateur (lib/gpx.mjs), avec la
   // même barre de progression que le prototype.
   const [importError, setImportError] = useImportState(null);
+
+  // ---- Import de plusieurs GPX en une fois -------------------------------
+  const [batch, setBatch] = useImportState([]); // [{ id, file, num, name, distance, ascent, time, coords, color }]
+  const [batchMode, setBatchMode] = useImportState('sections'); // 'sections' | 'separate'
+  const [batchName, setBatchName] = useImportState('');
+  const [batchSkipped, setBatchSkipped] = useImportState([]);
+
+  const handleFiles = (list) => {
+    const files = Array.from(list || []).filter((f) => /\.gpx$/i.test(f.name || ''));
+    if (files.length === 0) { setImportError('Aucun fichier .gpx dans la sélection.'); return; }
+    if (files.length === 1 || !window.GpxLib) { handleFile(files[0]); return; }
+    setImportError(null);
+    setFilename(files.length + ' fichiers GPX');
+    setStage('parsing');
+    setProgress(0);
+    const start = Date.now();
+    Promise.all(files.map((f) => f.text()
+      .then((xml) => ({ f, st: window.GpxLib.buildStage(xml, f.name) }))
+      .catch(() => ({ f, st: null }))))
+      .then((res) => {
+        const ok = res.filter((r) => r.st && r.st.coords && r.st.coords.length >= 2);
+        setBatchSkipped(res.filter((r) => !ok.includes(r)).map((r) => r.f.name));
+        if (ok.length === 0) { setStage('drop'); setImportError('Aucun de ces fichiers n\'a pu être lu.'); return; }
+        // Ordre des étapes : numéro (#3, _3_…) puis nom de fichier
+        ok.sort((a, b) => (a.st.num || 9999) - (b.st.num || 9999) || a.f.name.localeCompare(b.f.name));
+        const palette = (window.GR34_SECTION_COLORS || Object.keys(ROUTE_COLORS));
+        const items = ok.map((r, i) => ({
+          id: 'b_' + i + '_' + Date.now(),
+          file: r.f.name,
+          num: r.st.num || 0,
+          name: r.st.to ? r.st.from + ' → ' + r.st.to : r.st.from,
+          distance: r.st.distanceKm,
+          ascent: r.st.elevationGain,
+          time: fmtDuration(r.st.gpxMovingMin || estimateDurationMin(r.st.distanceKm, r.st.elevationGain, 'hiking')),
+          coords: r.st.coords,
+          color: palette[i % palette.length],
+        }));
+        const numbered = items.every((it) => it.num > 0);
+        const finish = () => {
+          setProgress(100);
+          setBatch(items);
+          setBatchMode(numbered ? 'sections' : 'separate');
+          const nums = items.map((it) => it.num);
+          const consecutive = nums.every((n, i) => i === 0 || n === nums[i - 1] + 1);
+          setBatchName(numbered
+            ? (consecutive ? 'Étapes ' + nums[0] + ' à ' + nums[nums.length - 1] : 'Étapes ' + nums.join(', '))
+            : 'Import de ' + items.length + ' fichiers');
+          setStage('batch');
+          if (onPreviewBatch) onPreviewBatch(items);
+        };
+        const tick = () => {
+          const p = Math.min(1, (Date.now() - start) / 700);
+          setProgress(Math.round((1 - Math.pow(1 - p, 3)) * 100));
+          if (p < 1) requestAnimationFrame(tick); else finish();
+        };
+        requestAnimationFrame(tick);
+      });
+  };
+
+  const removeBatchItem = (id) => {
+    const next = batch.filter((b) => b.id !== id);
+    if (next.length === 0) { setBatch([]); setStage('drop'); if (onPreviewBatch) onPreviewBatch([]); return; }
+    setBatch(next);
+    if (onPreviewBatch) onPreviewBatch(next);
+  };
+
+  const canSaveBatch = batch.length > 0 && groupId && (batchMode === 'separate' || batchName.trim().length > 0);
+  const submitBatch = () => {
+    if (!canSaveBatch || !onSaveBatch) return;
+    onSaveBatch({ mode: batchMode, name: batchName.trim(), groupId, activity, privacy, items: batch });
+  };
   const handleFile = (f) => {
     if (!f) return;
     if (!window.GpxLib || typeof f.text !== 'function') { fakeUpload(f.name || 'parcours.gpx'); return; }
@@ -169,7 +240,8 @@ function ImportPanel({ onClose, onSave, onPreview, onColorChange, groups, dark, 
             <div className={`font-semibold text-[15px] tracking-tight truncate ${dark ? 'text-white' : 'text-neutral-900'}`}>Importer un GPX</div>
             <div className={`text-[11px] truncate ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
               {stage === 'drop' && 'Glissez votre fichier ou choisissez-le'}
-              {stage === 'parsing' && 'Analyse du fichier…'}
+              {stage === 'parsing' && (batch.length || /fichiers/.test(filename) ? 'Analyse des fichiers…' : 'Analyse du fichier…')}
+              {stage === 'batch' && batch.length + ' fichiers prêts à importer'}
               {stage === 'preview' && 'Fichier prêt à importer'}
             </div>
           </div>
@@ -183,7 +255,7 @@ function ImportPanel({ onClose, onSave, onPreview, onColorChange, groups, dark, 
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 sb-scroll">
+      <div className={`flex-1 overflow-y-auto px-4 sb-scroll ${stage === 'batch' ? 'hidden' : ''}`}>
         {stage === 'drop' && (
           <DropZone
             dark={dark}
@@ -191,6 +263,7 @@ function ImportPanel({ onClose, onSave, onPreview, onColorChange, groups, dark, 
             dragOver={dragOver}
             setDragOver={setDragOver}
             onFile={handleFile}
+            onFiles={handleFiles}
             onPick={() => inputRef.current?.click()}
           />
         )}
@@ -312,14 +385,102 @@ function ImportPanel({ onClose, onSave, onPreview, onColorChange, groups, dark, 
         )}
       </div>
 
+      {/* ---- Plusieurs fichiers ---- */}
+      {stage === 'batch' && (
+        <div className="flex-1 overflow-y-auto px-4 pb-4 sb-scroll">
+          <div className={`mb-4 rounded-xl border overflow-hidden ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-50 border-neutral-200'}`}>
+            <div className={`px-3 py-2.5 flex items-center justify-between border-b ${dark ? 'border-neutral-800' : 'border-neutral-200'}`}>
+              <span className={`text-[12.5px] font-semibold ${dark ? 'text-white' : 'text-neutral-900'}`}>{batch.length} fichiers</span>
+              <span className={`text-[11.5px] tabular-nums ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                {fmtDist(batch.reduce((a, b) => a + b.distance, 0))} · ↑ {fmtAscent(batch.reduce((a, b) => a + b.ascent, 0))}
+              </span>
+            </div>
+            {batch.map((b, i) => (
+              <div key={b.id} className={`group flex items-center gap-2.5 px-3 py-2 ${i < batch.length - 1 ? (dark ? 'border-b border-neutral-800' : 'border-b border-neutral-200/70') : ''}`}>
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: ROUTE_COLORS[b.color].hex }}></span>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-[12.5px] font-medium truncate ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}>
+                    {b.num > 0 && <span className={dark ? 'text-neutral-500' : 'text-neutral-400'}>#{b.num} </span>}{b.name}
+                  </div>
+                  <div className={`text-[11px] tabular-nums truncate ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                    {fmtDist(b.distance)} · ↑ {fmtAscent(b.ascent)} · {b.file}
+                  </div>
+                </div>
+                <button onClick={() => removeBatchItem(b.id)} title="Retirer ce fichier"
+                  className={`p-1 rounded-md transition-colors ${dark ? 'text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800' : 'text-neutral-400 hover:text-neutral-800 hover:bg-neutral-200'}`}>
+                  <I.X size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+          {batchSkipped.length > 0 && (
+            <p className={`mb-4 text-[11.5px] rounded-md px-3 py-2 ${dark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700'}`}>
+              Ignoré{batchSkipped.length > 1 ? 's' : ''} (illisible{batchSkipped.length > 1 ? 's' : ''}) : {batchSkipped.join(', ')}
+            </p>
+          )}
+
+          <div className="mb-4">
+            <div className={labelCls}>Importer comme</div>
+            <div className={`flex p-0.5 rounded-lg border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`}>
+              {[{ v: 'sections', l: 'Un itinéraire à étapes' }, { v: 'separate', l: 'Itinéraires séparés' }].map((o) => (
+                <button key={o.v} onClick={() => setBatchMode(o.v)}
+                  className={`flex-1 rounded-md py-1.5 text-[12px] font-medium transition-colors ${batchMode === o.v ? (dark ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-600 hover:text-neutral-900')}`}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+            <p className={`mt-1.5 text-[11px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
+              {batchMode === 'sections'
+                ? 'Chaque fichier devient une étape (section) d\'un même itinéraire, dans l\'ordre ci-dessus.'
+                : 'Chaque fichier devient un itinéraire indépendant.'}
+            </p>
+          </div>
+
+          {batchMode === 'sections' && (
+            <div className="mb-4">
+              <label className={labelCls}>Nom de l'itinéraire <span className="text-rose-500">*</span></label>
+              <input value={batchName} onChange={(e) => setBatchName(e.target.value)} className={inputCls} placeholder="Ex. GR34 — Finistère sud" />
+            </div>
+          )}
+
+          <div className="mb-4">
+            <label className={labelCls}>Ranger dans</label>
+            <div className="relative">
+              <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className={inputCls + ' appearance-none pr-8'}>
+                {!groups.some((g) => g.name === 'Import GPX') && (
+                  <option value="__import_gpx">Import GPX (nouveau groupe)</option>
+                )}
+                {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+              <I.ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${dark ? 'text-neutral-500' : 'text-neutral-400'}`} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hidden input */}
       <input
         ref={inputRef}
         type="file"
         accept=".gpx"
-        onChange={(e) => handleFile(e.target.files?.[0])}
+        multiple
+        onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
         className="hidden"
       />
+
+      {stage === 'batch' && (
+        <div className={`px-4 py-3 border-t ${dark ? 'border-neutral-800 bg-neutral-950' : 'border-neutral-200 bg-white'}`}>
+          <button
+            onClick={submitBatch}
+            disabled={!canSaveBatch}
+            className={`btn-cta-primary w-full flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-white transition-all ${canSaveBatch ? 'hover:shadow active:scale-[0.99]' : 'opacity-40 cursor-not-allowed'}`}
+            style={{ background: accent }}
+          >
+            <I.Download size={15} stroke="white" strokeWidth="2.4" />
+            {batchMode === 'sections' ? `Importer ${batch.length} étapes` : `Importer ${batch.length} itinéraires`}
+          </button>
+        </div>
+      )}
 
       {/* Footer / CTA */}
       {stage === 'preview' && (
@@ -339,7 +500,7 @@ function ImportPanel({ onClose, onSave, onPreview, onColorChange, groups, dark, 
   );
 }
 
-function DropZone({ dark, accent, dragOver, setDragOver, onFile, onPick }) {
+function DropZone({ dark, accent, dragOver, setDragOver, onFile, onFiles, onPick }) {
   return (
     <div className="mt-2">
       <div
@@ -348,8 +509,8 @@ function DropZone({ dark, accent, dragOver, setDragOver, onFile, onPick }) {
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
-          const f = e.dataTransfer.files?.[0];
-          if (f) onFile(f);
+          const files = e.dataTransfer.files;
+          if (files && files.length) (onFiles ? onFiles(files) : onFile(files[0]));
         }}
         onClick={onPick}
         className={`relative rounded-2xl border-2 border-dashed transition-all cursor-pointer ${dragOver ? 'scale-[1.01]' : ''} ${dark ? (dragOver ? 'border-sky-500 bg-neutral-900/80' : 'border-neutral-700 hover:border-neutral-600 bg-neutral-900/40') : (dragOver ? 'border-sky-400 bg-sky-50' : 'border-neutral-300 hover:border-neutral-400 bg-neutral-50/60')}`}
@@ -363,14 +524,14 @@ function DropZone({ dark, accent, dragOver, setDragOver, onFile, onPick }) {
             <I.Upload size={22} />
           </div>
           <div className={`text-[14px] font-semibold ${dark ? 'text-white' : 'text-neutral-900'}`}>
-            Glissez votre fichier ici
+            Glissez vos fichiers ici
           </div>
           <div className={`text-[12px] mt-1 ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
             ou <span style={{ color: accent }} className="font-medium underline-offset-2 hover:underline">parcourez vos fichiers</span>
           </div>
           <div className={`mt-4 inline-flex items-center gap-1.5 text-[10px] tabular-nums px-2 py-1 rounded-md ${dark ? 'bg-neutral-800 text-neutral-400' : 'bg-white text-neutral-500 border border-neutral-200'}`}>
             <I.FileGpx size={11} />
-            .gpx jusqu'à 10 Mo
+            un ou plusieurs .gpx
           </div>
         </div>
       </div>

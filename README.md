@@ -15,7 +15,7 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 | Statistiques (bouton *Stats*) : tableau triable, km effort, durées, graphiques | **Réel** |
 | Fonds de carte (*Cartes* → Plan, Topo, IGN, Photos IGN, Satellite, Hiver) | **Réel** |
 | Zoom (jusqu'à 20, pas de 0,25), géolocalisation | **Réel** |
-| Import d'un fichier GPX | **Réel** (analysé dans le navigateur) |
+| Import de fichiers GPX (un ou plusieurs à la fois, en étapes ou séparés) | **Réel** (analysés dans le navigateur) |
 | Création / édition d'itinéraires, sections, repères, groupes, glisser-déposer | Réel, sauvegardé dans le navigateur |
 | Recherche de lieu | Réel (Nominatim) |
 | Altitudes d'un tracé dessiné à la main | Simulé (pas de service d'altitude) |

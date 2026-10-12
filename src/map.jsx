@@ -183,6 +183,14 @@ function MapView({
   // during route creation but dim them via the polyline opacity logic below.
   // When an import preview is active, REPLACE visibleRoutes with just the preview.
   const visibleRoutes = useMemo(() => {
+    // Import de plusieurs GPX : une trace par fichier
+    if (importPreview && importPreview.routes && importPreview.routes.length) {
+      return importPreview.routes.map((r) => ({
+        id: r.id, parentId: r.id, name: r.name, shortName: r.name, parentName: 'Import GPX',
+        color: r.color || 'emerald', distance: r.distance || 0, ascent: r.ascent || 0,
+        coords: r.coords, isSection: false,
+      }));
+    }
     if (importPreview && importPreview.coords && importPreview.coords.length >= 2) {
       return [{
         id: importPreview.id,

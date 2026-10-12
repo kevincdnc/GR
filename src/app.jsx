@@ -515,6 +515,69 @@ function App() {
     }
   };
 
+  // Import de plusieurs GPX : un itinéraire à étapes ou des itinéraires séparés
+  const handleSaveImportBatch = ({ mode, name, groupId, activity, privacy, items }) => {
+    const IMPORT_GROUP_NAME = 'Import GPX';
+    const stamp = Date.now();
+    const sum = (k) => items.reduce((a, it) => a + (it[k] || 0), 0);
+    const newItins = mode === 'sections'
+      ? [{
+          id: 'i_imp_' + stamp,
+          name: name || 'Import GPX',
+          activity, privacy,
+          color: items[0].color,
+          distance: sum('distance'),
+          ascent: sum('ascent'),
+          time: '—', difficulty: '—',
+          sectionsExpanded: true,
+          sections: items.map((it, i) => ({
+            id: 's_imp_' + stamp + '_' + i,
+            num: it.num || i + 1,
+            name: it.num > 0 ? 'Étape ' + it.num + ' — ' + it.name : it.name,
+            color: it.color,
+            distance: it.distance,
+            ascent: it.ascent,
+            coords: it.coords,
+          })),
+        }]
+      : items.map((it, i) => ({
+          id: 'i_imp_' + stamp + '_' + i,
+          name: it.name, activity, privacy,
+          color: it.color,
+          distance: it.distance, ascent: it.ascent,
+          time: it.time, difficulty: '—',
+          coords: it.coords,
+        }));
+    setGroups((gs) => {
+      const target = gs.find((g) => g.id === groupId) || gs.find((g) => g.name === IMPORT_GROUP_NAME);
+      if (target) {
+        return gs.map((g) => g.id === target.id ? { ...g, expanded: true, itineraries: [...g.itineraries, ...newItins] } : g);
+      }
+      return [{ id: 'g_import_' + stamp, name: IMPORT_GROUP_NAME, icon: 'FileGpx', expanded: true, itineraries: newItins }, ...gs];
+    });
+    setVisibleIds((v) => {
+      const n = new Set(v);
+      newItins.forEach((it) => (it.sections ? it.sections.forEach((sec) => n.add(sec.id)) : n.add(it.id)));
+      return n;
+    });
+    setImportPreview(null);
+    setImporting(false);
+    showToast(mode === 'sections'
+      ? `« ${name} » importé (${items.length} étapes).`
+      : `${items.length} itinéraires importés.`);
+  };
+
+  const previewImportBatch = (items) => {
+    if (!items || !items.length) { setImportPreview(null); return; }
+    setImportPreview({
+      id: 'i_imp_preview',
+      routes: items.map((it) => ({ id: 'prev_' + it.id, name: it.name, color: it.color, distance: it.distance, ascent: it.ascent, coords: it.coords })),
+    });
+    if (mapInstance) {
+      try { mapInstance.flyToBounds(L.latLngBounds(items.flatMap((it) => it.coords.map((c) => [c[0], c[1]]))), { padding: [60, 60], duration: 0.9 }); } catch (e) {}
+    }
+  };
+
   const handleCreateGroup = () => {
     // Prepend a new untitled group at the top of the list and immediately
     // enter inline-edit on its name so the user can rename without opening a
@@ -764,6 +827,8 @@ function App() {
         <ImportPanel
           onClose={() => { setImporting(false); setImportPreview(null); }}
           onSave={handleSaveImport}
+          onSaveBatch={handleSaveImportBatch}
+          onPreviewBatch={previewImportBatch}
           onPreview={(p) => {
             setImportPreview({
               id: 'i_imp_preview',
@@ -1013,7 +1078,7 @@ function App() {
 
         {/* Toast */}
         {toast &&
-        <div className="absolute left-1/2 bottom-6 -translate-x-1/2 z-20 px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-[13px] font-medium animate-in" style={{ background: t.accent, color: '#fff' }}>
+        <div className="absolute left-1/2 bottom-6 -translate-x-1/2 z-[700] px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2.5 text-[13px] font-medium animate-in" style={{ background: t.accent, color: '#fff' }}>
             <I.Check size={15} stroke="white" strokeWidth="2.5" />
             {toast}
           </div>
