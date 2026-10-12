@@ -144,7 +144,7 @@ function Sidebar({
       {onViewChange && (
         <div className="px-4 pt-1 pb-1.5">
           <div role="tablist" aria-label="Vue" className={`flex p-[3px] rounded-md border ${dark ? 'bg-black/25 border-white/10' : 'bg-white/50 border-neutral-200/70'}`}>
-            {[{ value: 'map', label: 'Carte', icon: <I.Layers size={14} /> }, { value: 'metrics', label: 'Stats', icon: <I.TrendingUp size={14} /> }].map((o) => {
+            {[{ value: 'map', label: 'Carte', icon: <I.MapGrid size={14} /> }, { value: 'metrics', label: 'Stats', icon: <I.TrendUp01 size={14} /> }].map((o) => {
               const sel = view === o.value;
               return (
                 <button key={o.value} role="tab" aria-selected={sel} onClick={() => onViewChange(o.value)}
@@ -1081,7 +1081,7 @@ function Tooltip({ label, sub, dark, children, delay = 350, side = 'bottom' }) {
           ref={tipRef}
           role="tooltip"
           style={pos ? { position: 'fixed', top: pos.top, left: pos.left, zIndex: 99999 } : { position: 'fixed', visibility: 'hidden', top: 0, left: 0, zIndex: 99999 }}
-          className={`pointer-events-none whitespace-nowrap rounded-lg px-2.5 py-1.5 shadow-xl animate-tip-fixed bg-black text-white ring-1 ring-white/10`}>
+          className={`pointer-events-none whitespace-nowrap rounded-lg px-2.5 py-1.5 shadow-xl animate-tip-fixed bg-black text-white`}>
           <span className="block text-[11.5px] font-medium leading-tight">{label}</span>
           {sub && <span className="block text-[10.5px] mt-0.5 leading-tight text-neutral-400">{sub}</span>}
           {pos && (

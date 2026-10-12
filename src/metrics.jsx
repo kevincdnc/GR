@@ -426,7 +426,7 @@ function MetTooltip({ dark, x, y, children }) {
   return (
     <div className="absolute z-10 pointer-events-none animate-tip-fixed"
       style={{ left: `${x * 100}%`, top: y, transform: `translate(${x > 0.7 ? '-100%' : x < 0.3 ? '0' : '-50%'}, -100%)` }}>
-      <div className={`rounded-lg px-2.5 py-1.5 text-[11px] shadow-lg whitespace-nowrap bg-black text-white ring-1 ring-white/10`}>
+      <div className={`rounded-lg px-2.5 py-1.5 text-[11px] shadow-lg whitespace-nowrap bg-black text-white`}>
         {children}
       </div>
     </div>
