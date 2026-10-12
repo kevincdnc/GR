@@ -247,7 +247,7 @@ function Sidebar({
               
 
               {group.expanded &&
-              <div className="pl-1.5 mt-0.5 mb-1 relative">
+              <div className="mt-0.5 mb-1 relative">
                   {group.itineraries.length === 0 ?
                 <div className={`text-[11px] py-2 px-2 ${dark ? 'text-neutral-500' : 'text-neutral-400'}`}>Aucun itinéraire</div> :
 
@@ -444,7 +444,7 @@ function ItineraryRow({
           onDragEnd={() => {setDrag(null);setDragOver(null);}}
           onMouseEnter={() => onHover(it.id)}
           onMouseLeave={() => onHover(null)}
-          className={`group relative flex items-center gap-2 ${rowPad} px-2 rounded-lg ${isComposite ? 'cursor-pointer' : ''} transition-colors ${dark ? 'hover:bg-neutral-800/70' : 'hover:bg-neutral-100'} ${visible ? dark ? 'bg-neutral-800/40' : 'bg-neutral-50/60' : ''}`}
+          className={`group relative flex items-center gap-2 ${rowPad} pl-3.5 pr-2 rounded-lg ${isComposite ? 'cursor-pointer' : ''} transition-colors ${dark ? 'hover:bg-neutral-800/70' : 'hover:bg-neutral-100'} ${visible ? dark ? 'bg-neutral-800/40' : 'bg-neutral-50/60' : ''}`}
           onClick={handleRowClick}>
           
           {/* Drag handle */}
