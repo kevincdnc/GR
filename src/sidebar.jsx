@@ -8,7 +8,8 @@ const { useState, useRef, useEffect } = React;
 function Sidebar({
   groups, setGroups, visibleIds, setVisibleIds, hoveredId, setHoveredId,
   selectedId, setSelectedId, dark, accent, density,
-  onCreate, onImport, onSuggest, onCreateGroup, onDrawZone, onAction, forceCreateMenu
+  onCreate, onImport, onSuggest, onCreateGroup, onDrawZone, onAction, forceCreateMenu,
+  view, onViewChange
 }) {
   const [drag, setDrag] = useState(null); // {itineraryId, fromGroupId}
   const [dragOver, setDragOver] = useState(null);
@@ -137,6 +138,20 @@ function Sidebar({
             <div className={`text-[11px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`} style={{ padding: "0px" }}>Map Studio</div>
           </div>
         </div>
+        {/* Carte / Statistiques (GR34) */}
+        {onViewChange && (
+          <div role="tablist" aria-label="Vue" className={`flex p-0.5 rounded-md border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`}>
+            {[{ value: 'map', label: 'Carte', icon: <I.Layers size={13} /> }, { value: 'metrics', label: 'Stats', icon: <I.TrendingUp size={13} /> }].map((o) => {
+              const sel = view === o.value;
+              return (
+                <button key={o.value} role="tab" aria-selected={sel} onClick={() => onViewChange(o.value)}
+                  className={`flex items-center gap-1 rounded text-[11.5px] font-medium px-2 py-1 transition-colors ${sel ? (dark ? 'bg-blue-500/20 text-blue-300' : 'bg-white text-blue-700 shadow-sm') : (dark ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-600 hover:text-neutral-900')}`}>
+                  {o.icon}{o.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Primary action — dropdown CTA */}

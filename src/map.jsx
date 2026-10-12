@@ -447,7 +447,9 @@ function MapView({
           try { coords = samplePathToLatLng(r.path, 48); } catch (e) { coords = null; }
         }
         if (!coords || coords.length < 2) return null;
-        const stats = computeElevationStats(coords);
+        const rawStats = computeElevationStats(coords);
+        // D+ de l'itinéraire / de la section quand il est connu (calculé sur la trace complète)
+        const stats = r.ascent ? { ...rawStats, ascent: r.ascent } : rawStats;
         // Cumulative distance per coord (for POI projection on the chart).
         const cumKmA = [0];
         if (typeof L !== 'undefined') {

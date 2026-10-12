@@ -75,6 +75,9 @@ export function build({ single = false } = {}) {
   mkdirSync(out, { recursive: true })
 
   const data = buildStagesData()
+  // Parseur GPX (lib/gpx.mjs) exposé au navigateur pour l'import de fichiers
+  const gpxLib = '(function () {\n' + readFileSync(join(ROOT, 'lib', 'gpx.mjs'), 'utf8').replace(/^export /gm, '') +
+    '\nwindow.GpxLib = { buildStage: buildStage, parseGpx: parseGpx };\n})();\n'
 
   // Scripts JSX dans l'ordre de index.html
   const babelRe = /<script type="text\/babel" src="([^"]+)"><\/script>/g
@@ -100,6 +103,7 @@ export function build({ single = false } = {}) {
     mkdirSync(join(out, 'data'), { recursive: true })
     for (const [src, code] of compiled) writeFileSync(join(out, 'js', src.replace(/\.jsx$/, '.js')), code)
     writeFileSync(join(out, 'data', 'gr34.js'), data)
+    writeFileSync(join(out, 'js', 'gpx.js'), gpxLib)
     html = html.replace(babelRe, (_, src) => `<script src="js/${src.replace(/\.jsx$/, '.js')}"></script>`)
     cpSync(join(ROOT, 'assets'), join(out, 'assets'), { recursive: true })
     mkdirSync(join(out, 'vendor'), { recursive: true })
@@ -123,6 +127,7 @@ export function build({ single = false } = {}) {
     .replace('<link rel="stylesheet" href="vendor/leaflet.css" />', () => style(readFileSync(vendor['vendor/leaflet.css'], 'utf8')))
     .replace(/<script src="(vendor\/[\w-]+\.js)"><\/script>/g, (_, v) => inline(readFileSync(vendor[v], 'utf8')))
     .replace(/<script src="data\/gr34\.js"><\/script>/, () => inline(data))
+    .replace('<script src="js/gpx.js"></script>', () => inline(gpxLib))
     .replace(babelRe, (_, src) => inline(compiled.get(src)))
     .replace(/<meta name="ext-resource-dependency"[^>]*\/>\n?/g, '')
     .replace(/<template id="__bundler_thumbnail"[\s\S]*?<\/template>\n?/, '')

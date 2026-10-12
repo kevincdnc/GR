@@ -11,14 +11,22 @@ const DIST = join(ROOT, 'dist')
 const PORT = Number(process.env.PORT) || 5173
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json' }
 
-const safeBuild = () => { try { build() } catch (e) { console.error(e.message) } }
+// build() est synchrone : une modification pendant un build est notée et
+// déclenche un nouveau build juste après.
+let dirty = false
+const safeBuild = () => {
+  dirty = false
+  try { build() } catch (e) { console.error(e.message) }
+  if (dirty) setTimeout(safeBuild, 50)
+}
 safeBuild()
 
 let timer = null
-for (const p of ['src', 'gpx', 'assets', 'lib', 'index.html', 'tweaks-panel.jsx']) {
+for (const p of ['src', 'gpx', 'assets', 'lib', 'index.html', 'tweaks-panel.jsx', 'tailwind.config.cjs']) {
   watch(join(ROOT, p), { recursive: true }, () => {
+    dirty = true
     clearTimeout(timer)
-    timer = setTimeout(safeBuild, 120)
+    timer = setTimeout(safeBuild, 150)
   })
 }
 

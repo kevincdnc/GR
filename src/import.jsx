@@ -84,9 +84,51 @@ function ImportPanel({ onClose, onSave, onPreview, onColorChange, groups, dark, 
     requestAnimationFrame(tick);
   };
 
+  // Vrai fichier GPX : lu et analysé dans le navigateur (lib/gpx.mjs), avec la
+  // même barre de progression que le prototype.
+  const [importError, setImportError] = useImportState(null);
   const handleFile = (f) => {
     if (!f) return;
-    fakeUpload(f.name || 'parcours.gpx');
+    if (!window.GpxLib || typeof f.text !== 'function') { fakeUpload(f.name || 'parcours.gpx'); return; }
+    setImportError(null);
+    setFilename(f.name);
+    setStage('parsing');
+    setProgress(0);
+    const start = Date.now();
+    f.text().then((xml) => {
+      const st = window.GpxLib.buildStage(xml, f.name);
+      const lats = st.coords.map((c) => c[0]);
+      const lngs = st.coords.map((c) => c[1]);
+      const center = [(Math.min(...lats) + Math.max(...lats)) / 2, (Math.min(...lngs) + Math.max(...lngs)) / 2];
+      const span = Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lngs) - Math.min(...lngs));
+      const zoom = Math.max(8, Math.min(15, Math.round(Math.log2(360 / Math.max(span, 1e-4))) - 1));
+      const parsedReal = {
+        name: st.to ? st.from + ' → ' + st.to : st.from,
+        distance: st.distanceKm,
+        ascent: st.elevationGain,
+        time: fmtDuration(st.gpxMovingMin || estimateDurationMin(st.distanceKm, st.elevationGain, 'hiking')),
+        maxAlt: st.altMax,
+        points: st.coords.length,
+        center, zoom,
+        coords: st.coords,
+      };
+      const finish = () => {
+        setProgress(100);
+        setParsed(parsedReal);
+        setName(parsedReal.name);
+        setStage('preview');
+        if (onPreview) onPreview(parsedReal);
+      };
+      const tick = () => {
+        const p = Math.min(1, (Date.now() - start) / 700);
+        setProgress(Math.round((1 - Math.pow(1 - p, 3)) * 100));
+        if (p < 1) requestAnimationFrame(tick); else finish();
+      };
+      requestAnimationFrame(tick);
+    }).catch((e) => {
+      setStage('drop');
+      setImportError('Fichier illisible : ' + (e && e.message ? e.message : 'GPX invalide'));
+    });
   };
 
   const canSave = name.trim().length > 0 && groupId && parsed;
@@ -151,6 +193,9 @@ function ImportPanel({ onClose, onSave, onPreview, onColorChange, groups, dark, 
             onFile={handleFile}
             onPick={() => inputRef.current?.click()}
           />
+        )}
+        {stage === 'drop' && importError && (
+          <p className={`mt-3 text-[12px] rounded-md px-3 py-2 ${dark ? 'bg-rose-500/10 text-rose-400' : 'bg-rose-50 text-rose-600'}`}>{importError}</p>
         )}
 
         {stage === 'parsing' && (

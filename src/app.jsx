@@ -11,6 +11,63 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "sidebarOnRight": false
 } /*EDITMODE-END*/;
 
+// ---- Sauvegarde locale (le prototype gardait tout en mémoire) -------------
+// Groupes + visibilité sont gardés dans le navigateur (plan Pro). L'itinéraire
+// GR34 est toujours reconstruit depuis les GPX du dépôt : on ne sauvegarde pas
+// ses traces, seulement les noms / couleurs choisis pour ses étapes.
+const GR34_GROUPS_KEY = 'gr34_groups_v1';
+const gr34Signature = () => (window.GR34_STAGES || []).map((s) => s.num + ':' + s.distanceKm).join('|');
+
+function loadSavedState() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(GR34_GROUPS_KEY) || 'null');
+    return raw && Array.isArray(raw.groups) ? raw : null;
+  } catch (e) { return null; }
+}
+
+function saveState(groups, visibleIds) {
+  try {
+    const slim = groups.map((g) => ({
+      ...g,
+      __newlyCreated: undefined,
+      itineraries: g.itineraries.map((it) => it.fromRepo
+        ? { ...it, sections: (it.sections || []).map((sec) => ({ id: sec.id, num: sec.num, name: sec.name, color: sec.color })) }
+        : it),
+    }));
+    localStorage.setItem(GR34_GROUPS_KEY, JSON.stringify({ groups: slim, visible: [...visibleIds], sig: gr34Signature() }));
+  } catch (e) { /* stockage plein ou indisponible : on reste en mémoire */ }
+}
+
+// Réinjecte les données GPX fraîches dans l'état sauvegardé.
+function mergeSavedWithRepo(saved) {
+  const fresh = buildGr34Groups();
+  const freshIt = fresh[0] && fresh[0].itineraries[0];
+  const repoChanged = saved.sig !== gr34Signature();
+  let found = false;
+  let groups = saved.groups.map((g) => ({
+    ...g,
+    itineraries: g.itineraries.map((it) => {
+      if (it.id !== 'i_gr34' || !freshIt) return it;
+      found = true;
+      const old = new Map((it.sections || []).map((sec) => [sec.id, sec]));
+      return {
+        ...freshIt,
+        name: it.name, color: it.color, activity: it.activity, privacy: it.privacy, pois: it.pois,
+        sectionsExpanded: it.sectionsExpanded,
+        sections: freshIt.sections.map((sec) => {
+          const o = old.get(sec.id);
+          return o ? { ...sec, name: o.name || sec.name, color: o.color || sec.color } : sec;
+        }),
+      };
+    }),
+  }));
+  // GR34 supprimé de la liste : on le remet seulement si le dépôt a changé (nouvelle étape…)
+  if (!found && freshIt && repoChanged) groups = [...fresh, ...groups];
+  const visible = new Set(saved.visible || []);
+  if (repoChanged && freshIt) freshIt.sections.forEach((sec) => visible.add(sec.id));
+  return { groups, visible };
+}
+
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [groups, setGroups] = useAppState(SEED_GROUPS);
@@ -19,10 +76,17 @@ function App() {
   // Initial 'pro' is set further below — we hydrate once the state exists.
   const hydratePlan = (nextPlan) => {
     if (nextPlan === 'pro') {
-      // Deep clone so editing the data doesn't mutate the seed
-      setGroups(JSON.parse(JSON.stringify(PRO_SEED_GROUPS)));
-      // Toutes les étapes du GR34 visibles par défaut
-      setVisibleIds(new Set(PRO_SEED_GROUPS.flatMap((g) => g.itineraries.flatMap((it) => it.sections ? it.sections.map((sec) => sec.id) : [it.id]))));
+      const saved = loadSavedState();
+      if (saved) {
+        const merged = mergeSavedWithRepo(saved);
+        setGroups(merged.groups);
+        setVisibleIds(merged.visible);
+      } else {
+        // Deep clone so editing the data doesn't mutate the seed
+        setGroups(JSON.parse(JSON.stringify(PRO_SEED_GROUPS)));
+        // Toutes les étapes du GR34 visibles par défaut
+        setVisibleIds(new Set(PRO_SEED_GROUPS.flatMap((g) => g.itineraries.flatMap((it) => it.sections ? it.sections.map((sec) => sec.id) : [it.id]))));
+      }
       // Hide the geolocation prompt when on Pro
       setLocationPrompt('declined');
       setUserLocation(null);
@@ -133,6 +197,17 @@ function App() {
   const [locationPrompt, setLocationPrompt] = useAppState('declined'); // 'pending' | 'accepted' | 'declined'
   const [userLocation, setUserLocation] = useAppState(null);
   const [settingsOpen, setSettingsOpen] = useAppState(false);
+  // Vue principale : carte ou statistiques GR34 (#metrics dans l'URL)
+  const [view, setViewState] = useAppState(() => (location.hash.replace(/^#\/?/, '') === 'metrics' ? 'metrics' : 'map'));
+  const setView = (v) => {
+    setViewState(v);
+    try { history.replaceState(null, '', v === 'metrics' ? '#metrics' : location.pathname + location.search); } catch (e) {}
+  };
+  useAppEffect(() => {
+    const onHash = () => setViewState(location.hash.replace(/^#\/?/, '') === 'metrics' ? 'metrics' : 'map');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   const [settingsTab, setSettingsTab] = useAppState('account');
   const [plan, setPlan] = useAppState('pro'); // 'free' | 'pro'
   // Guided onboarding (2 steps). Shows whenever the Free plan is active. 0 = off.
@@ -164,6 +239,12 @@ function App() {
     hydratePlan(plan);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Sauvegarde à chaque changement (plan Pro seulement : le plan Free part vide)
+  const hydratedRef = React.useRef(false);
+  useAppEffect(() => {
+    if (!hydratedRef.current) { hydratedRef.current = true; return; }
+    if (plan === 'pro') saveState(groups, visibleIds);
+  }, [groups, visibleIds, plan]);
   const [mapInstance, setMapInstance] = useAppState(null);
   const [poiFilters, setPoiFilters] = useAppState([]);
 
@@ -706,13 +787,15 @@ function App() {
           dark={dark}
           accent={t.accent}
           density={t.density}
-          onCreate={() => { endTour(); startCreate(); }}
-          onImport={() => { endTour(); setImporting(true); }}
+          onCreate={() => { endTour(); setView('map'); startCreate(); }}
+          onImport={() => { endTour(); setView('map'); setImporting(true); }}
           onSuggest={() => { endTour(); showToast('Suggestion d’itinéraire — bientôt disponible.'); }}
           onCreateGroup={handleCreateGroup}
           onDrawZone={() => showToast('Outil zones — bientôt disponible.')}
           onAction={handleAction}
-          forceCreateMenu={onboardStep === 2} />
+          forceCreateMenu={onboardStep === 2}
+          view={view}
+          onViewChange={setView} />
 
         }
 
@@ -1011,6 +1094,20 @@ function App() {
           </div>
           );
         })()}
+
+        {/* Statistiques GR34 — par-dessus la carte (qui reste chargée) */}
+        {view === 'metrics' && !creating && !importing && (
+          <div className="absolute inset-0 z-[1050]">
+            <MetricsContent
+              groups={groups}
+              dark={dark}
+              accent={t.accent}
+              onShowStage={(sectionId) => {
+                setVisibleIds(new Set([sectionId]));
+                setView('map');
+              }} />
+          </div>
+        )}
 
         {/* Share panel — overlays the map (blurred) instead of replacing it */}
         {sharingItinerary && (
