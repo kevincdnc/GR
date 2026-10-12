@@ -95,10 +95,11 @@ const IGN_WMTS = (layer, fmt) =>
 const IGN_ATTR = '© <a href="https://www.ign.fr/">IGN</a> – Géoplateforme';
 const OSM_ATTR = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 const BASE_LAYERS = {
+  // OSM France : plan détaillé (chemins, sentiers), sans clé — CARTO exige désormais une clé API
   plan: {
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: OSM_ATTR + ' · © <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd', maxNativeZoom: 20,
+    url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+    attribution: OSM_ATTR + ' · Fond © <a href="https://www.openstreetmap.fr">OpenStreetMap France</a>',
+    subdomains: 'abc', maxNativeZoom: 20,
   },
   topo: {
     url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
@@ -107,6 +108,15 @@ const BASE_LAYERS = {
   },
   ign: { url: IGN_WMTS('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'png'), attribution: IGN_ATTR, maxNativeZoom: 19 },
   ortho: { url: IGN_WMTS('ORTHOIMAGERY.ORTHOPHOTOS', 'jpeg'), attribution: IGN_ATTR, maxNativeZoom: 19 },
+  relief: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Fond © Esri, HERE, Garmin, FAO, NOAA, USGS, ' + OSM_ATTR, maxNativeZoom: 19,
+  },
+  sombre: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Fond © Esri, HERE, Garmin, ' + OSM_ATTR, maxNativeZoom: 16,
+    overlay: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', maxNativeZoom: 16 },
+  },
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Imagerie © Esri, Maxar, Earthstar Geographics', maxNativeZoom: 19,
@@ -160,6 +170,24 @@ function applyHillshade(map, on) {
   });
   l.addTo(map); l.setZIndex(5);
   map.__hillshade = l;
+}
+
+// Sentiers de randonnée balisés (GR, GRP, PR, chemins de Compostelle…) :
+// surcouche transparente Waymarked Trails, au-dessus de n'importe quel fond.
+const TRAILS_KEY = 'gr34_trails_overlay';
+function savedTrailsOverlay() {
+  try { const v = localStorage.getItem(TRAILS_KEY); return v === null ? true : v === '1'; } catch (e) { return true; }
+}
+function applyTrailsOverlay(map, on) {
+  if (!map) return;
+  if (map.__trails) { try { map.removeLayer(map.__trails); } catch (e) {} map.__trails = null; }
+  if (!on) return;
+  const l = L.tileLayer('https://tile.waymarkedtrails.org/hiking/{z}/{x}/{y}.png', {
+    maxZoom: MAP_MAX_ZOOM, maxNativeZoom: 18, opacity: 0.85,
+    attribution: 'Sentiers © <a href="https://hiking.waymarkedtrails.org">Waymarked Trails</a> (CC-BY-SA)',
+  });
+  l.addTo(map); l.setZIndex(10);
+  map.__trails = l;
 }
 
 function MapView({
@@ -306,6 +334,7 @@ function MapView({
     const map = mapRef.current;
     if (!map) return;
     applyBaseLayer(map, savedMapStyle());
+    applyTrailsOverlay(map, savedTrailsOverlay());
     applyMapOpacity(map, savedMapOpacity());
   }, []);
 
@@ -2144,6 +2173,13 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
     applyMapOpacity(mapRef && mapRef.current, mapOpacity);
     try { localStorage.setItem(MAP_OPACITY_KEY, String(mapOpacity)); } catch (e) {}
   }, [mapOpacity]);
+  const [trailsOn, setTrailsOn] = useState(savedTrailsOverlay);
+  useEffect(() => {
+    const map = mapRef && mapRef.current;
+    if (!map || !!map.__trails === trailsOn) return;
+    applyTrailsOverlay(map, trailsOn);
+    try { localStorage.setItem(TRAILS_KEY, trailsOn ? '1' : '0'); } catch (e) {}
+  }, [trailsOn]);
   const [forecastDay, setForecastDay] = useState(0); // -2 .. +5 days
   const [enrichment, setEnrichment] = useState({ poi: false, hillshade: false });
   const [overlayTab, setOverlayTab] = useState('weather'); // weather | surface | snow
@@ -2234,6 +2270,8 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
             setMapStyle={setMapStyle}
             mapOpacity={mapOpacity}
             setMapOpacity={setMapOpacity}
+            trailsOn={trailsOn}
+            setTrailsOn={setTrailsOn}
             forecastDay={forecastDay}
             setForecastDay={setForecastDay}
             enrichment={enrichment}
@@ -2435,7 +2473,7 @@ function PreviewTopo({ dark }) {
   );
 }
 
-function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity, forecastDay, setForecastDay, enrichment, setEnrichment, overlayTab, setOverlayTab, overlay, setOverlay }) {
+function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity, trailsOn, setTrailsOn, forecastDay, setForecastDay, enrichment, setEnrichment, overlayTab, setOverlayTab, overlay, setOverlay }) {
   // Resolve a maps/*.png to its inlined blob URL in the standalone build.
   const M = (name) => (window.__resources && window.__resources['map_' + name]) || ('assets/maps/' + name + '.png');
   // Vignette = vraie tuile (zoom 12, autour de Quimper) pour les fonds sans image dédiée
@@ -2452,10 +2490,32 @@ function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity,
           <TerrainCard dark={dark} label="Plan" selected={mapStyle === 'plan'} onClick={() => setMapStyle('plan')} img={TILE_THUMB('plan')} />
           <TerrainCard dark={dark} label="Topo" selected={mapStyle === 'topo'} onClick={() => setMapStyle('topo')} img={M('topo')} />
           <TerrainCard dark={dark} label="IGN" selected={mapStyle === 'ign'} onClick={() => setMapStyle('ign')} img={TILE_THUMB('ign')} />
+          <TerrainCard dark={dark} label="Relief" selected={mapStyle === 'relief'} onClick={() => setMapStyle('relief')} img={TILE_THUMB('relief')} />
           <TerrainCard dark={dark} label="Photos IGN" selected={mapStyle === 'ortho'} onClick={() => setMapStyle('ortho')} img={TILE_THUMB('ortho')} />
           <TerrainCard dark={dark} label="Satellite" selected={mapStyle === 'satellite'} onClick={() => setMapStyle('satellite')} img={M('satellite')} />
+          <TerrainCard dark={dark} label="Sombre" selected={mapStyle === 'sombre'} onClick={() => setMapStyle('sombre')} img={TILE_THUMB('sombre')} />
           <TerrainCard dark={dark} label="Hiver" selected={mapStyle === 'winter'} onClick={() => setMapStyle('winter')} img={M('winter')} />
         </div>
+      </PopSection>
+
+      {/* Surcouche sentiers balisés */}
+      <PopSection dark={dark} label="Randonnée">
+        <button onClick={() => setTrailsOn(!trailsOn)} aria-pressed={trailsOn}
+          className={`w-full flex items-center gap-3 rounded-lg border p-2 text-left transition-colors ${trailsOn ? 'border-blue-500 ring-2 ring-blue-500/30' : (dark ? 'border-neutral-800 hover:border-neutral-700' : 'border-neutral-200 hover:border-neutral-300')}`}>
+          <span className="w-12 h-9 shrink-0 rounded-md overflow-hidden grid place-items-center" style={{ background: dark ? '#262626' : '#f5f5f5' }}>
+            <svg viewBox="0 0 48 36" className="w-full h-full">
+              <path d="M2 28 C 12 22, 16 30, 26 20 S 40 10, 46 6" stroke="#dc2626" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <path d="M4 8 C 14 14, 22 10, 30 18 S 40 30, 46 32" stroke="#f59e0b" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeDasharray="3 2" />
+            </svg>
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className={`block text-[12.5px] font-medium ${trailsOn ? 'text-blue-500' : (dark ? 'text-neutral-200' : 'text-neutral-800')}`}>Sentiers balisés</span>
+            <span className={`block text-[11px] leading-snug ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>GR, GRP, PR et itinéraires locaux, sur tous les fonds</span>
+          </span>
+          <span className="shrink-0 relative rounded-full transition-colors" style={{ width: 28, height: 16, background: trailsOn ? '#3b82f6' : (dark ? '#404040' : '#d4d4d4') }}>
+            <span className="absolute top-[2px] w-3 h-3 rounded-full bg-white transition-all" style={{ left: trailsOn ? 14 : 2 }}></span>
+          </span>
+        </button>
       </PopSection>
 
       {/* Opacité du fond de carte (même UI que l'ancien curseur historique / prévisions) */}
