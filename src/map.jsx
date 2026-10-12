@@ -119,6 +119,9 @@ const BASE_LAYERS = {
   },
 };
 const MAP_MAX_ZOOM = 20;
+// La carte s'étend sous la navigation flottante (8px + 340px) : on décale le
+// cadrage automatique pour que les traces restent dans la partie visible.
+const MAP_UNDERLAY = 348;
 const MAP_STYLE_KEY = 'gr34_map_style';
 function savedMapStyle() {
   try { const v = localStorage.getItem(MAP_STYLE_KEY); return BASE_LAYERS[v] ? v : 'plan'; } catch (e) { return 'plan'; }
@@ -262,7 +265,7 @@ function MapView({
     // Fit roughly the metropolitan France bounding box so the whole country
     // is visible on first paint, regardless of viewport size.
     try {
-      map.fitBounds([[41.3, -5.5], [51.2, 9.8]], { padding: [20, 20], animate: false });
+      map.fitBounds([[41.3, -5.5], [51.2, 9.8]], { paddingTopLeft: [MAP_UNDERLAY + 20, 20], paddingBottomRight: [20, 20], animate: false });
     } catch (e) {}
     if (onMapReady) onMapReady(map);
 
@@ -696,7 +699,7 @@ function MapView({
       });
       if (all.length > 0) {
         const bounds = L.latLngBounds(all);
-        map.fitBounds(bounds, { padding: [80, 80], maxZoom: 13, animate: true, duration: 0.5 });
+        map.fitBounds(bounds, { paddingTopLeft: [MAP_UNDERLAY + 60, 80], paddingBottomRight: [80, 80], maxZoom: 13, animate: true, duration: 0.5 });
       }
     }
   }, [visibleRoutes, dark, creating]);
@@ -1102,11 +1105,11 @@ function MapView({
   const zoomOut = () => mapRef.current?.zoomOut();
 
   return (
-    <div className={`relative w-full h-full overflow-hidden ${dark ? 'dark' : ''}`}>
+    <div className={`relative w-full h-full ${dark ? 'dark' : ''}`}>
       <div
         ref={mapEl}
-        className="absolute inset-0 w-full h-full"
-        style={{ '--accent': accent, background: dark ? '#020617' : '#f1ede4' }}>
+        className="absolute top-0 right-0 bottom-0"
+        style={{ '--accent': accent, left: -MAP_UNDERLAY, background: dark ? '#1b1d22' : '#f1ede4' }}>
       </div>
 
       {/* Custom POI placement cursor — when in POI step and a POI template is selected */}
@@ -1265,7 +1268,7 @@ function MapView({
           const col = (ROUTE_COLORS[r.color] && ROUTE_COLORS[r.color].hex) || '#3b82f6';
           return (
             <div className="absolute left-1/2 -translate-x-1/2 bottom-6 z-[500] w-[min(94%,920px)]">
-              <div className={`rounded-lg shadow-xl backdrop-blur ${dark ? 'bg-neutral-900/95 border border-neutral-700/60 text-neutral-100' : 'bg-white/95 border border-neutral-200/80 text-neutral-800'}`}>
+              <div className={`rounded-md glass ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}>
                 <div className="flex items-center justify-between gap-6 pl-3 pr-5 pt-3.5 pb-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {(() => {
@@ -1391,7 +1394,7 @@ function MapView({
       {creating &&
       <div className="absolute left-1/2 -translate-x-1/2 bottom-6 z-[500] w-[min(96%,1140px)]">
           <div
-          className={`rounded-lg shadow-xl backdrop-blur ${dark ? 'bg-neutral-900/95 border border-neutral-700/60 text-neutral-100' : 'bg-white/95 border border-neutral-200/80 text-neutral-800'}`}>
+          className={`rounded-md glass ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}>
 
             {/* Prompt while empty */}
             {(!draftCoords || draftCoords.length === 0) ? (
@@ -1533,7 +1536,7 @@ function MapView({
 
       {/* Quick-stats live legend */}
       {showLegend && totals.count > 0 && !creating && !singleRouteStats &&
-      <div className={`absolute bottom-4 right-4 z-[500] rounded-xl overflow-hidden shadow-xl backdrop-blur ${dark ? 'bg-neutral-900/85 border border-neutral-700/60 text-neutral-100' : 'bg-white/90 border border-neutral-200/80 text-neutral-900'}`} style={{ width: 'min(560px, 90vw)' }}>
+      <div className={`absolute bottom-4 right-4 z-[500] rounded-md overflow-hidden glass ${dark ? 'text-neutral-100' : 'text-neutral-900'}`} style={{ width: 'min(560px, 90vw)' }}>
           <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-8">
             <div>
               <div className={`text-[10px] font-medium uppercase tracking-wider ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>Affichés</div>
@@ -2150,7 +2153,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
     return () => { try { map.off('rotate', read); map.off('moveend', read); } catch (e) {} };
   }, []);
 
-  const cardCls = `rounded-lg overflow-hidden shadow-lg ${dark ? 'bg-neutral-900 border border-neutral-700/50' : 'bg-white border border-neutral-200/80'}`;
+  const cardCls = 'rounded-md overflow-hidden glass';
 
   return (
     <div ref={wrapRef} className="absolute left-4 top-4 flex flex-col gap-2 z-[600]">
@@ -2281,7 +2284,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
             }
           }}
           aria-label="Boussole"
-          className={`w-9 h-9 rounded-full overflow-hidden shadow-lg grid place-items-center transition-colors ${dark ? 'bg-neutral-900 border border-neutral-700/50 hover:bg-neutral-800' : 'bg-white border border-neutral-200/80 hover:bg-neutral-50'}`}
+          className={`w-9 h-9 rounded-full overflow-hidden grid place-items-center transition-colors glass ${dark ? 'hover:bg-white/10' : 'hover:bg-white'}`}
         >
           <img
             src={(window.__resources && window.__resources.boussole) || "assets/boussole.svg"}
@@ -2301,7 +2304,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
 function PopoverShell({ dark, children, width = 340 }) {
   return (
     <div
-      className={`absolute left-[44px] top-0 rounded-xl shadow-2xl animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800 text-neutral-100' : 'bg-white border border-neutral-200 text-neutral-900'}`}
+      className={`absolute left-[44px] top-0 rounded-md animate-menu glass-strong ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}
       style={{ width }}
     >
       {children}

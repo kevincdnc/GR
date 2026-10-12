@@ -469,7 +469,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
       />
 
       {stage === 'batch' && (
-        <div className={`px-4 py-3 border-t ${dark ? 'border-neutral-800 bg-neutral-950' : 'border-neutral-200 bg-white'}`}>
+        <div className={`px-4 py-3 border-t ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
           <button
             onClick={submitBatch}
             disabled={!canSaveBatch}
@@ -484,7 +484,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
 
       {/* Footer / CTA */}
       {stage === 'preview' && (
-        <div className={`px-4 py-3 border-t ${dark ? 'border-neutral-800 bg-neutral-950' : 'border-neutral-200 bg-white'}`}>
+        <div className={`px-4 py-3 border-t ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
           <button
             onClick={submit}
             disabled={!canSave}

@@ -173,6 +173,41 @@
   .dark .leaflet-control-attribution a { color: #94a3b8 !important; }
   /* Ombrage du relief réel (cf. applyHillshade dans map.jsx) */
   .hillshade-layer { mix-blend-mode: multiply; }
+  /* ---- Verre dépoli (GR planner) : navigation et éléments flottants ---- */
+  .glass {
+    background: rgba(255,255,255,0.72);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: 0 8px 30px rgba(15,23,42,0.16);
+  }
+  .dark .glass {
+    background: rgba(30,32,38,0.66);
+    border-color: rgba(255,255,255,0.09);
+    box-shadow: 0 10px 34px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  /* Variante plus couvrante pour les menus / popovers (lisibilité) */
+  .glass-strong {
+    background: rgba(255,255,255,0.86);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.7);
+    box-shadow: 0 16px 44px rgba(15,23,42,0.22);
+  }
+  .dark .glass-strong {
+    background: rgba(30,32,38,0.84);
+    border-color: rgba(255,255,255,0.1);
+    box-shadow: 0 16px 44px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  /* Vues plein écran (Stats, Paramètres) : voile de verre sur la carte */
+  .glass-backdrop {
+    background: rgba(248,250,252,0.78);
+    -webkit-backdrop-filter: blur(26px) saturate(140%);
+    backdrop-filter: blur(26px) saturate(140%);
+  }
+  .dark .glass-backdrop { background: rgba(18,19,24,0.74); }
+  /* Séparateurs plus doux sur le verre sombre */
+  .dark .glass .border-neutral-800, .dark .glass-backdrop .border-neutral-800 { border-color: rgba(255,255,255,0.08); }
   /* Hide default zoom controls (we provide our own) */
   .leaflet-control-zoom { display: none; }
   .draft-waypoint {

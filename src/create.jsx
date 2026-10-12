@@ -128,7 +128,7 @@ function CreatePanel({
       {/* Body — uniform white background; sections separated by thin borders */}
       <div className="flex-1 overflow-y-auto sb-scroll min-h-0">
         {/* Top section — Activity dropdown */}
-        <div className={`px-4 pt-2 pb-5 border-b ${dark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200/80'}`}>
+        <div className={`px-4 pt-2 pb-5 border-b ${dark ? 'border-neutral-800' : 'border-neutral-200/80'}`}>
           <div className="flex items-center gap-1.5 mb-1.5">
             <label className={`text-[12px] font-medium ${dark ? 'text-neutral-300' : 'text-neutral-700'}`}>Activité</label>
             <Tooltip
@@ -153,7 +153,7 @@ function CreatePanel({
         </div>
 
         {/* Mid section — secondary fields */}
-        <div className={`px-4 pt-4 pb-4 ${dark ? 'bg-neutral-950' : 'bg-white'}`}>
+        <div className="px-4 pt-4 pb-4">
           {/* Tracé — visual stat blocks (above the name) */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1.5">
@@ -352,7 +352,7 @@ function CreatePanel({
       </div>
 
       {/* Footer / CTA */}
-      <div className={`px-4 py-3 border-t ${dark ? 'border-neutral-800 bg-neutral-950' : 'border-neutral-200 bg-white'}`}>
+      <div className={`px-4 py-3 border-t ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
         <button
           onClick={submit}
           disabled={!canSave}
@@ -754,7 +754,7 @@ function PoiStep({ dark, accent, pois, onAddPoi, onRemovePoi, onUpdatePoi, placi
   const labelCls = `text-[12px] font-medium mb-1.5 ${dark ? 'text-neutral-300' : 'text-neutral-700'}`;
 
   return (
-    <div className={`px-4 pt-4 pb-6 ${dark ? 'bg-neutral-950' : 'bg-white'}`}>
+    <div className="px-4 pt-4 pb-6">
       {/* Existing POIs list */}
       {pois && pois.length > 0 && (
         <div className="mb-4">

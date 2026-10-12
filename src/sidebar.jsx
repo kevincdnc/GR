@@ -142,7 +142,7 @@ function Sidebar({
       {/* Carte / Statistiques — même largeur que le bouton principal */}
       {onViewChange && (
         <div className="px-4 pt-1 pb-1.5">
-          <div role="tablist" aria-label="Vue" className={`flex p-0.5 rounded-lg border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`}>
+          <div role="tablist" aria-label="Vue" className={`flex p-0.5 rounded-md border ${dark ? 'bg-black/25 border-white/10' : 'bg-white/50 border-neutral-200/70'}`}>
             {[{ value: 'map', label: 'Carte', icon: <I.Layers size={14} /> }, { value: 'metrics', label: 'Stats', icon: <I.TrendingUp size={14} /> }].map((o) => {
               const sel = view === o.value;
               return (

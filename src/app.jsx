@@ -574,7 +574,7 @@ function App() {
       routes: items.map((it) => ({ id: 'prev_' + it.id, name: it.name, color: it.color, distance: it.distance, ascent: it.ascent, coords: it.coords })),
     });
     if (mapInstance) {
-      try { mapInstance.flyToBounds(L.latLngBounds(items.flatMap((it) => it.coords.map((c) => [c[0], c[1]]))), { padding: [60, 60], duration: 0.9 }); } catch (e) {}
+      try { mapInstance.flyToBounds(L.latLngBounds(items.flatMap((it) => it.coords.map((c) => [c[0], c[1]]))), { paddingTopLeft: [408, 60], paddingBottomRight: [60, 60], duration: 0.9 }); } catch (e) {}
     }
   };
 
@@ -770,10 +770,11 @@ function App() {
   const sidebarSide = t.sidebarOnRight ? 'right' : 'left';
 
   return (
-    <div className={`fixed inset-0 flex ${dark ? 'dark' : ''}`} style={{ background: dark ? '#020617' : '#f8fafc' }}>
+    <div className={`fixed inset-0 ${dark ? 'dark' : ''}`} style={{ background: dark ? '#1b1d22' : '#eef1f5' }}>
       {/* Sidebar (or create panel) */}
+      {/* Navigation flottante en verre, 8px du bord, rayon 6px */}
       <aside
-        className={`relative shrink-0 w-[340px] flex flex-col z-[1000] transition-colors ${dark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'} ${sidebarSide === 'right' ? 'order-2 border-l' : 'border-r'}`}>
+        className="glass absolute left-2 top-2 bottom-2 w-[340px] flex flex-col z-[1000] rounded-md transition-colors">
         
         {settingsOpen ?
         <SettingsPanel
@@ -876,7 +877,7 @@ function App() {
 
         {/* Bottom utility bar */}
         {!creating && !importing && !settingsOpen &&
-        <div className={`px-3 py-2 border-t flex items-center justify-between ${dark ? 'border-neutral-800 bg-neutral-950' : 'border-neutral-200 bg-white'}`}>
+        <div className={`px-3 py-2 border-t flex items-center justify-between ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
             <div className="flex items-center gap-1.5">
               <Tooltip dark={dark} label="Mon compte" sub="Profil et préférences" side="top">
                 <button
@@ -922,7 +923,8 @@ function App() {
       </aside>
 
       {/* Main area: Settings content takes over when in settings mode, otherwise show map */}
-      <main className="relative flex-1 min-w-0">
+      {/* Zone de contenu à droite de la navigation ; la carte s'étend dessous (cf. MAP_UNDERLAY) */}
+      <main className="absolute top-0 right-0 bottom-0 left-[348px]">
         {settingsOpen ? (
           <SettingsContent tab={settingsTab} dark={dark} accent={t.accent} />
         ) : (
@@ -1010,7 +1012,7 @@ function App() {
 
         {/* Empty state when no routes visible */}
         {visibleIds.size === 0 && !creating &&
-        <div className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-2xl px-5 py-4 shadow-xl backdrop-blur ${dark ? 'bg-neutral-900/80 text-neutral-200 border border-neutral-700/60' : 'bg-white/90 text-neutral-700 border border-neutral-200/80'}`}>
+        <div className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-2xl px-5 py-4 glass ${dark ? 'text-neutral-200' : 'text-neutral-700'}`}>
             <div className="flex items-center gap-3">
               <I.Eye size={18} className={dark ? 'text-neutral-400' : 'text-neutral-500'} />
               <span className="text-[13px]">Cliquez sur un itinéraire pour l'afficher.</span>

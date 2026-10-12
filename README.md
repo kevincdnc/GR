@@ -2,7 +2,8 @@
 
 App perso pour suivre mon GR34 (sentier des douaniers). L'interface vient d'un prototype Claude Design
 (README d'origine dans [`docs/design-handoff.md`](docs/design-handoff.md)), renommé GR planner et simplifié.
-Les données démo du prototype sont remplacées par mes vraies étapes. Thème sombre par défaut ; typographie
+Les données démo du prototype sont remplacées par mes vraies étapes. Thème sombre par défaut, navigation
+et éléments flottants en verre dépoli au-dessus de la carte plein écran ; typographie
 Barlow (texte) et Barlow Semi Condensed (chiffres, titres), servies avec le site.
 
 En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.github.io/GR/#metrics

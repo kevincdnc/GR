@@ -156,7 +156,7 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
 
   if (!rows.length) {
     return (
-      <div className={`flex flex-col h-full items-center justify-center ${dark ? 'bg-neutral-950 text-neutral-400' : 'bg-neutral-50 text-neutral-500'}`}>
+      <div className={`flex flex-col h-full items-center justify-center glass-backdrop ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
         <I.FileGpx size={28} />
         <p className="mt-3 text-[13px]">Aucune étape GR34. Ajoute tes fichiers .gpx dans le dossier <span className="font-mono">gpx/</span> du dépôt.</p>
       </div>
@@ -164,7 +164,7 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
   }
 
   return (
-    <div className={`flex flex-col h-full ${dark ? 'bg-neutral-950' : 'bg-neutral-50'}`}>
+    <div className="flex flex-col h-full glass-backdrop">
       {/* Top bar */}
       <div className={`px-8 pt-7 pb-5 border-b flex items-end justify-between gap-4 flex-wrap ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
         <div>

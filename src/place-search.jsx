@@ -115,7 +115,7 @@ function PlaceSearch({ map, dark, accent }) {
   return (
     <div ref={wrapRef} className="relative w-80 max-w-[calc(100vw-380px)]">
       <div
-        className={`relative flex items-center rounded-lg shadow-lg backdrop-blur transition-colors ${dark ? 'bg-neutral-900/85 border border-neutral-700/60 focus-within:border-neutral-600' : 'bg-white/95 border border-neutral-200/80 focus-within:border-neutral-300'}`}
+        className={`relative flex items-center rounded-md glass transition-colors ${dark ? 'focus-within:border-neutral-600' : 'focus-within:border-neutral-300'}`}
       >
         {loading ? (
           <span className={`absolute left-3 w-[15px] h-[15px] rounded-full border-2 animate-spin ${dark ? 'border-neutral-700 border-t-neutral-300' : 'border-neutral-200 border-t-neutral-500'}`} style={{ animationDuration: '0.8s' }}></span>
@@ -128,7 +128,7 @@ function PlaceSearch({ map, dark, accent }) {
           onFocus={() => { setFocused(true); setOpen(true); }}
           onKeyDown={onKeyDown}
           placeholder="Rechercher un lieu, une ville…"
-          className={`bg-transparent outline-none text-[13px] pl-9 pr-9 py-2 w-full rounded-lg ${dark ? 'text-neutral-100 placeholder:text-neutral-500' : 'text-neutral-900 placeholder:text-neutral-400'}`}
+          className={`bg-transparent outline-none text-[13px] pl-9 pr-9 py-2 w-full rounded-lg ${dark ? 'text-neutral-100 placeholder:text-neutral-300' : 'text-neutral-900 placeholder:text-neutral-500'}`}
         />
         {q && (
           <button
@@ -143,7 +143,7 @@ function PlaceSearch({ map, dark, accent }) {
 
       {open && focused && q.trim().length >= 2 && (
         <div
-          className={`absolute left-0 right-0 top-full mt-1.5 rounded-lg shadow-2xl overflow-hidden animate-menu max-h-80 overflow-y-auto sb-scroll ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}
+          className={`absolute left-0 right-0 top-full mt-1.5 rounded-md overflow-hidden animate-menu max-h-80 overflow-y-auto sb-scroll glass-strong`}
         >
           {loading && results.length === 0 && (
             <div className={`px-3 py-3 text-[12px] ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>Recherche…</div>
