@@ -141,7 +141,7 @@ export function build({ single = false } = {}) {
     .replace(/<meta name="viewport"[^>]*>\s*/, '')
   // <title> en premier pour la preview
   const title = html.match(/<title>[^<]*<\/title>/)[0]
-  html = title + '\n' + html.replace(title, '')
+  html = '<title>GR34 Tracker</title>\n' + html.replace(title, '')
   writeFileSync(join(out, 'gr34.html'), html)
   console.log(`preview/gr34.html prêt (${(html.length / 1024) | 0} Ko)`)
 }

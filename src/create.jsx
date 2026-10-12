@@ -79,7 +79,7 @@ function CreatePanel({
             color: s.color,
             coords: sCoords,
             distance: totalDistanceKm(sCoords),
-            ascent: Math.round(totalDistanceKm(sCoords) * 35),
+            ascent: computeElevationStats(sCoords).ascent,
           };
         });
     }
@@ -93,7 +93,7 @@ function CreatePanel({
       privacy,
       coords,
       distance,
-      ascent: Math.round(distance * 35),
+      ascent: computeElevationStats(coords).ascent,
       routeType: draftRouteType,
       pois: (draftPois || []).map((p) => ({ ...p })),
     });
@@ -191,8 +191,8 @@ function CreatePanel({
               <>
                 <div className="grid grid-cols-3 gap-1.5">
                   <TraceStat dark={dark} icon={<I.Distance size={13} />} label="Distance" value={(draftDistance || 0).toFixed(1) + ' km'} />
-                  <TraceStat dark={dark} icon={<I.TrendingUp size={13} />} label="D+" value={fmtAscent(Math.round((draftDistance || 0) * 35))} />
-                  <TraceStat dark={dark} icon={<I.Clock size={13} />} label="Estimé" value={fmtDuration(estimateDurationMin(draftDistance || 0, (draftDistance || 0) * 35, activity))} />
+                  <TraceStat dark={dark} icon={<I.TrendingUp size={13} />} label="D+" value={fmtAscent(computeElevationStats(composeDraftCoords(draftCoords || [], draftRouteType)).ascent)} />
+                  <TraceStat dark={dark} icon={<I.Clock size={13} />} label="Estimé" value={fmtDuration(estimateDurationMin(draftDistance || 0, computeElevationStats(composeDraftCoords(draftCoords || [], draftRouteType)).ascent, activity))} />
                 </div>
                 {(draftSections || []).filter((s) => s.coords && s.coords.length >= 2).length > 1 && (
                   <div className={`flex items-center gap-2 mt-1.5 px-1 text-[11px] tabular-nums ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
@@ -573,7 +573,7 @@ function SectionListItem({ section, index, isLast, active, canDelete, onActivate
                     km += L.latLng(section.coords[i - 1]).distanceTo(L.latLng(section.coords[i])) / 1000;
                   }
                 }
-                const dPlus = Math.round(km * 35);
+                const dPlus = computeElevationStats(section.coords).ascent;
                 return `${km.toFixed(2)} km · ↑ ${dPlus} m`;
               })()
           }

@@ -1,51 +1,55 @@
-# GR34 Tracker
+# GR34 · Mountaya Map Studio
 
-Petite app perso pour visualiser les étapes de mon GR34 (sentier des douaniers).
+App perso pour suivre mon GR34 (sentier des douaniers). L'interface reprend à l'identique le prototype
+Claude Design « Mountaya — Map Studio » (README du design dans [`docs/design-handoff.md`](docs/design-handoff.md)).
+Les données démo du prototype sont remplacées par mes vraies étapes.
 
-- **Carte** : toutes les traces GPX sur fond IGN Plan, IGN photos aériennes, OpenTopoMap, OSM, CyclOSM ou satellite.
-  Zoom jusqu'au niveau 21 (pas de 0,25), échelle, coordonnées du curseur, géolocalisation, plein écran.
-  Clique sur une étape pour zoomer dessus et afficher son profil altimétrique (survol synchronisé carte ↔ profil).
-- **Metrics** : totaux, tableau triable (distance, D+, D−, km effort, durée, vitesse, allure effort, D+/km, alt. max)
-  et graphiques (distance vs km effort, cumuls, D+, durée).
+En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.github.io/GR/#metrics
+
+## Ce qui est réel / simulé
+
+| Fonction | État |
+|---|---|
+| Étapes GR34 (traces, distance, D+/D−, profil d'altitude) | **Réel**, calculé depuis `gpx/*.gpx` |
+| Statistiques (bouton *Stats*) : tableau triable, km effort, durées, graphiques | **Réel** |
+| Fonds de carte (*Cartes* → Plan, Topo, IGN, Photos IGN, Satellite, Hiver) + ombrage du relief | **Réel** |
+| Zoom (jusqu'à 20, pas de 0,25), géolocalisation | **Réel** |
+| Import d'un fichier GPX | **Réel** (analysé dans le navigateur) |
+| Création / édition d'itinéraires, sections, repères, groupes, glisser-déposer | Réel, sauvegardé dans le navigateur |
+| Recherche de lieu | Réel (Nominatim) |
+| Altitudes d'un tracé dessiné à la main | Simulé (pas de service d'altitude) |
+| Strava / Komoot / Garmin, surcouches météo / neige, POI, partage (lien, iframe) | Simulé, comme dans le design |
+| Panneau « Réglages design » (mode sombre, accent, densité) | Visible seulement dans l'éditeur Claude Design |
 
 ## Ajouter une étape
 
-Dépose le fichier `.gpx` dans le dossier [`gpx/`](gpx/). C'est tout : les métriques sont calculées au build
-(et à chaud en dev). Le numéro d'étape est lu dans le nom de la trace (`#6`) ou dans le nom de fichier (`GR34_6_…`).
+Déposer le `.gpx` dans [`gpx/`](gpx/). Au prochain build, l'étape s'ajoute à l'itinéraire « GR34 » (le numéro
+est lu dans le nom de la trace `#6` ou du fichier `GR34_6_…`). Les dates et durées réelles se saisissent dans
+*Stats* ; le bouton **Exporter etapes.json** donne le fichier à mettre dans `gpx/etapes.json` pour les garder.
 
-## Dates et durées réelles
+Calculs : distance haversine sur la trace complète ; altitudes rééchantillonnées tous les 10 m et lissées sur
+±20 m, D+/D− avec hystérésis de 1 m ; km effort = km + D+/100 ; durée estimée = formule du design (4,2 km/h +
+1 min par 10 m de D+), remplacée par les horaires du GPX ou la durée saisie quand elles existent.
 
-Les traces Strava « itinéraire » n'ont pas d'horodatage : la durée est alors **estimée** avec l'allure réglable
-dans l'onglet Metrics (4 km effort/h par défaut). Tu peux saisir ta date et ta durée réelle (`7h30`, `7:30`, `450`)
-directement dans le tableau — c'est gardé dans ton navigateur. Pour les rendre permanentes / visibles partout,
-clique sur **Exporter etapes.json** et remplace [`gpx/etapes.json`](gpx/etapes.json) :
-
-```json
-{
-  "1": { "date": "2026-08-09", "duree": "9h45" },
-  "2": { "date": "2026-08-10", "duree": "7h10", "notes": "Pluie l'après-midi" }
-}
-```
-
-Priorité de la durée : saisie > horodatages GPX (temps en mouvement) > estimation.
-
-## Calculs
-
-- **Distance** : somme haversine sur la trace complète.
-- **D+ / D−** : altitudes rééchantillonnées tous les 10 m, lissées sur ±20 m, puis hystérésis de 1 m
-  (le bruit GPS/MNT multiplie sinon le D+ par 3 à 10 sur une trace côtière).
-- **Km effort** = km + D+/100.
-
-## Lancer en local
+## Développement
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # site statique dans dist/
+npm run dev            # http://localhost:5173, reconstruit à chaque modification (recharger la page)
+npm run build          # site statique dans dist/
+npm run preview:file   # tout en un seul fichier : preview/gr34.html
 ```
 
-## Mise en ligne
+Le prototype chargeait ses `.jsx` avec Babel dans le navigateur. `scripts/build.mjs` fait la même
+transformation à la compilation (presets `react` + `env`, un `<script>` classique par fichier, même ordre que
+`index.html`), compile Tailwind 3.4 et sert React / Leaflet depuis `node_modules` : le comportement reste celui
+du design, sans dépendre de CDN.
 
-Le site est 100 % statique (`dist/`). Le workflow `.github/workflows/deploy.yml` le publie sur GitHub Pages
-à chaque push sur `main` (activer *Settings → Pages → Source : GitHub Actions*). Ça marche aussi tel quel
-sur Netlify / Vercel / Cloudflare Pages (commande `npm run build`, dossier `dist`).
+| Fichier | Rôle |
+|---|---|
+| `index.html`, `src/*.jsx`, `tweaks-panel.jsx`, `assets/` | Prototype Mountaya (modifié là où il est branché sur les vraies données) |
+| `src/metrics.jsx` | Vue Statistiques GR34 |
+| `lib/gpx.mjs` | Parseur GPX + métriques (build et import dans le navigateur) |
+| `scripts/build.mjs`, `scripts/dev.mjs` | Build et serveur de dev |
+
+Le site est publié sur GitHub Pages par `.github/workflows/deploy.yml` à chaque push.

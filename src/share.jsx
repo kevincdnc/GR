@@ -330,12 +330,17 @@ function ShareCardHeader({ icon, title, subtitle, dark, accent, badge }) {
 function SharePreview({ itinerary, dark, color, compact, controls, short, metrics = true, watermark = false, edge }) {
   const stats = itineraryStats ? itineraryStats(itinerary) : { distance: itinerary.distance || 0, ascent: itinerary.ascent || 0 };
   // Generate a coarse pseudo-elevation for the preview row
+  // Itinéraire à sections (ex. GR34) : on assemble les traces des sections
+  const sectionCoords = (itinerary.sections || []).flatMap((sec) => sec.coords || []);
   const coords = (itinerary.coords && itinerary.coords.length)
     ? itinerary.coords
-    : (typeof samplePathToLatLng === 'function' && itinerary.path ? samplePathToLatLng(itinerary.path, 40) : null);
-  const elev = (coords && coords.length >= 2 && typeof computeElevationStats === 'function')
+    : sectionCoords.length >= 2
+      ? sectionCoords
+      : (typeof samplePathToLatLng === 'function' && itinerary.path ? samplePathToLatLng(itinerary.path, 40) : null);
+  const rawElev = (coords && coords.length >= 2 && typeof computeElevationStats === 'function')
     ? computeElevationStats(coords)
     : { minAlt: 60, maxAlt: 78, ascent: 32, descent: 22, slopeMin: -2, slopeMax: 2, profile: [] };
+  const elev = stats.ascent ? { ...rawElev, ascent: Math.round(stats.ascent) } : rawElev;
 
   // Build a simple inline route path from coords or fallback
   const routeD = coordsToPreviewPath(coords);
