@@ -1081,12 +1081,12 @@ function Tooltip({ label, sub, dark, children, delay = 350, side = 'bottom' }) {
           ref={tipRef}
           role="tooltip"
           style={pos ? { position: 'fixed', top: pos.top, left: pos.left, zIndex: 99999 } : { position: 'fixed', visibility: 'hidden', top: 0, left: 0, zIndex: 99999 }}
-          className={`pointer-events-none whitespace-nowrap rounded-lg px-2.5 py-1.5 shadow-xl animate-tip-fixed ${dark ? 'bg-neutral-100 text-neutral-900' : 'bg-neutral-900 text-white'}`}>
+          className={`pointer-events-none whitespace-nowrap rounded-lg px-2.5 py-1.5 shadow-xl animate-tip-fixed bg-black text-white ring-1 ring-white/10`}>
           <span className="block text-[11.5px] font-medium leading-tight">{label}</span>
-          {sub && <span className={`block text-[10.5px] mt-0.5 leading-tight ${dark ? 'text-neutral-500' : 'text-neutral-400'}`}>{sub}</span>}
+          {sub && <span className="block text-[10.5px] mt-0.5 leading-tight text-neutral-400">{sub}</span>}
           {pos && (
             <span
-              className={`absolute w-2 h-2 rotate-45 ${dark ? 'bg-neutral-100' : 'bg-neutral-900'}`}
+              className="absolute w-2 h-2 rotate-45 bg-black"
               style={
                 pos.arrowSide === 'top'    ? { top: -4, left: pos.arrowOffset } :
                 pos.arrowSide === 'bottom' ? { bottom: -4, left: pos.arrowOffset } :
