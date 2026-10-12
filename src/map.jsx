@@ -190,6 +190,12 @@ function applyTrailsOverlay(map, on) {
   map.__trails = l;
 }
 
+// Marqueurs de départ / arrivée des tracés (réglage « Préférences carte »)
+const ENDPOINTS_KEY = 'gr34_show_endpoints';
+function savedShowEndpoints() {
+  try { return localStorage.getItem(ENDPOINTS_KEY) !== '0'; } catch (e) { return true; }
+}
+
 function MapView({
   groups, visibleIds, hoveredId, setHoveredId, accent, dark, showLegend, onToggleVisible,
   creating, draftCoords, previewCoords, draftRouteType, draftDistance, draftActivity,
@@ -673,6 +679,13 @@ function MapView({
     };
   }, [singleRouteStats, routeLayersRef.current.size]);
 
+  const [showEndpoints, setShowEndpoints] = useState(savedShowEndpoints);
+  useEffect(() => {
+    const on = (e) => setShowEndpoints(!!e.detail);
+    window.addEventListener('gr-show-endpoints', on);
+    return () => window.removeEventListener('gr-show-endpoints', on);
+  }, []);
+
   // Sync route polylines + fit bounds
   useEffect(() => {
     const map = mapRef.current;
@@ -773,8 +786,9 @@ function MapView({
     const dim = creating ? 0.5 : 1;
     routeLayersRef.current.forEach((layer, id) => {
       const isHovered = hoveredId && (hoveredId === id || hoveredId === layer.parentId);
-      try { layer.startMarker && layer.startMarker.setOpacity(dim); } catch (e) {}
-      try { layer.endMarker && layer.endMarker.setOpacity(dim); } catch (e) {}
+      const markerOpacity = showEndpoints ? dim : 0; // réglage « Départ et arrivée »
+      try { layer.startMarker && layer.startMarker.setOpacity(markerOpacity); } catch (e) {}
+      try { layer.endMarker && layer.endMarker.setOpacity(markerOpacity); } catch (e) {}
       if (creating) {
         // While creating, no hover highlight — keep everything at 50%.
         layer.line.setStyle({ weight: 4, opacity: dim });
@@ -791,7 +805,7 @@ function MapView({
         layer.casing.setStyle({ weight: 7, opacity: 0.18 });
       }
     });
-  }, [hoveredId, visibleRoutes, dark, creating]);
+  }, [hoveredId, visibleRoutes, dark, creating, showEndpoints]);
 
   // Draft polyline (creating mode) — per-section rendering with section colors.
   useEffect(() => {
@@ -2695,6 +2709,7 @@ function SettingsPopover({ dark, theme, setTheme, units, setUnits }) {
   const [tempUnit, setTempUnit] = useState('c');
   const [slopeUnit, setSlopeUnit] = useState('deg');
   const [lang, setLang] = useState('fr');
+  const [showEndpoints, setShowEndpoints] = useState(savedShowEndpoints);
   return (
     <PopoverShell dark={dark} width={320}>
       <PopHeader dark={dark} title="Préférences carte" />
@@ -2715,6 +2730,15 @@ function SettingsPopover({ dark, theme, setTheme, units, setUnits }) {
           <UnitCard dark={dark} title="Degrés" sub="°" selected={slopeUnit === 'deg'} onClick={() => setSlopeUnit('deg')} />
           <UnitCard dark={dark} title="Pourcentage" sub="%" selected={slopeUnit === 'pct'} onClick={() => setSlopeUnit('pct')} />
         </div>
+      </PopSection>
+      <PopSection dark={dark} label="Tracés">
+        <ToggleRow dark={dark} label="Afficher le départ et l'arrivée" checked={showEndpoints}
+          onToggle={() => {
+            const next = !showEndpoints;
+            setShowEndpoints(next);
+            try { localStorage.setItem(ENDPOINTS_KEY, next ? '1' : '0'); } catch (e) {}
+            window.dispatchEvent(new CustomEvent('gr-show-endpoints', { detail: next }));
+          }} />
       </PopSection>
       <PopSection dark={dark} label="Langue de la carte">
         <MapLangDropdown dark={dark} value={lang} onChange={setLang} />

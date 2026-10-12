@@ -1024,8 +1024,8 @@ function App() {
           }} />
         
 
-        {/* Empty state when no routes visible */}
-        {visibleIds.size === 0 && !creating &&
+        {/* Aucun tracé affiché (mais au moins un itinéraire existe) */}
+        {visibleIds.size === 0 && !creating && groups.some((g) => g.itineraries.length > 0) &&
         <div className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-md px-5 py-4 glass ${dark ? 'text-neutral-200' : 'text-neutral-700'}`}>
             <div className="flex items-center gap-3">
               <I.Eye size={18} className={dark ? 'text-neutral-400' : 'text-neutral-500'} />
