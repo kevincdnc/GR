@@ -2,7 +2,7 @@ name: Déploiement GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/gr34-hiking-tracker-wmiyov]
   workflow_dispatch:
 
 permissions:
