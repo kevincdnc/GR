@@ -235,7 +235,7 @@ function Sidebar({
               
 
               {group.expanded &&
-              <div className="ml-2 pl-2 mt-0.5 mb-1 relative">
+              <div className="pl-1.5 mt-0.5 mb-1 relative">
                   {group.itineraries.length === 0 ?
                 <div className={`text-[11px] py-2 px-2 ${dark ? 'text-neutral-500' : 'text-neutral-400'}`}>Aucun itinéraire</div> :
 
@@ -448,7 +448,7 @@ function ItineraryRow({
               aria-label="Changer la couleur du tracé"
               aria-expanded={colorOpen}
               className={`w-5 h-5 grid place-items-center rounded-full transition-colors ${dark ? 'hover:bg-neutral-700' : 'hover:bg-neutral-200'}`}>
-              <span className="block w-2.5 h-2.5 rounded-full" style={{ background: color, boxShadow: `0 0 0 2px ${dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`, opacity: visible ? 1 : 0.5 }}></span>
+              <span className="block w-2 h-2 rounded-full" style={{ background: color, boxShadow: `0 0 0 2px ${dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`, opacity: visible ? 1 : 0.5 }}></span>
             </button>
             {colorOpen && (
               <div onClick={(e) => e.stopPropagation()}
