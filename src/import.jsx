@@ -775,7 +775,7 @@ function AuthModal({ dark, service, onCancel, onConnect }) {
                 Connecter votre compte {service.label}
               </h3>
               <p className={`mt-1.5 text-[12.5px] leading-relaxed ${dark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                Trek Studio pourra accéder à vos activités {service.label} pour les importer en quelques clics.
+                GPXmap pourra accéder à vos activités {service.label} pour les importer en quelques clics.
                 Vous pourrez révoquer l'accès à tout moment.
               </p>
             </div>

@@ -1148,7 +1148,7 @@ function App() {
                   dark={dark} step={2} arrow={arrowSide}
                   icon={<I.Plus size={20} />}
                   title="Créez ou importez un itinéraire"
-                  body="Tracez un parcours point par point, importez un fichier GPX depuis Strava, Garmin ou Komoot, ou laissez Trek Studio vous suggérer un itinéraire."
+                  body="Tracez un parcours point par point, importez un fichier GPX depuis Strava, Garmin ou Komoot, ou laissez GPXmap vous suggérer un itinéraire."
                   onSkip={endTour}
                   onBack={() => setOnboardStep(1)}
                   onNext={endTour}

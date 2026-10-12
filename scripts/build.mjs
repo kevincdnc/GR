@@ -96,8 +96,9 @@ export function build({ single = false } = {}) {
     const name = `${fam}-latin-${w}-normal.woff2`
     return { name, path: nm(`@fontsource/${fam}/files/${name}`) }
   })).concat([
-    // Logotype « Trek Studio » (écriture manuscrite)
-    { name: 'permanent-marker-latin-400-normal.woff2', path: nm('@fontsource/permanent-marker/files/permanent-marker-latin-400-normal.woff2') },
+    // Logotype « GPXmap »
+    { name: 'unbounded-latin-400-normal.woff2', path: nm('@fontsource/unbounded/files/unbounded-latin-400-normal.woff2') },
+    { name: 'unbounded-latin-800-normal.woff2', path: nm('@fontsource/unbounded/files/unbounded-latin-800-normal.woff2') },
   ])
   const vendor = {
     'vendor/react.js': nm('react/umd/react.production.min.js'),

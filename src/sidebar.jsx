@@ -132,10 +132,9 @@ function Sidebar({
       {/* Header */}
       <div className={`px-4 pt-5 pb-3 flex items-center justify-between`}>
         <div className="flex items-center gap-2" style={{ gap: "8px" }}>
-          <img src={(window.__resources && window.__resources.logoGr) || "assets/logo-gr.svg"} alt="" className="w-8 h-8 shrink-0" draggable="false" />
           <div className="leading-tight">
-            <div className={`logo-type text-[21px] select-none ${dark ? 'text-white' : 'text-neutral-900'}`} aria-label="Trek Studio">
-              Trek Studio
+            <div className={`logo-type text-[20px] select-none ${dark ? 'text-white' : 'text-neutral-900'}`} aria-label="GPXmap">
+              <span className="font-extrabold">GPX</span><span className="font-normal">map</span>
             </div>
           </div>
         </div>
