@@ -7,7 +7,7 @@ import { MetricsView } from './components/MetricsView'
 type Tab = 'map' | 'metrics'
 
 function tabFromHash(): Tab {
-  return location.hash.replace('#/', '') === 'metrics' ? 'metrics' : 'map'
+  return location.hash.replace(/^#\/?/, '') === 'metrics' ? 'metrics' : 'map'
 }
 
 export function App() {
@@ -38,10 +38,10 @@ export function App() {
           </div>
         </div>
         <nav className="tabs" role="tablist">
-          <a href="#/map" role="tab" aria-selected={tab === 'map'} className={tab === 'map' ? 'is-active' : ''}>
+          <a href="#map" role="tab" aria-selected={tab === 'map'} className={tab === 'map' ? 'is-active' : ''}>
             Carte
           </a>
-          <a href="#/metrics" role="tab" aria-selected={tab === 'metrics'} className={tab === 'metrics' ? 'is-active' : ''}>
+          <a href="#metrics" role="tab" aria-selected={tab === 'metrics'} className={tab === 'metrics' ? 'is-active' : ''}>
             Metrics
           </a>
         </nav>

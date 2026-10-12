@@ -10,7 +10,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
-        manualChunks(id) {
+        // La preview (scripts/build-preview.mjs) veut un seul fichier : pas de découpage
+        manualChunks: process.env.GR34_PREVIEW ? undefined : (id) => {
           if (id.includes('gr34-stages')) return 'stages'
           if (id.includes('node_modules/leaflet') || id.includes('react-leaflet')) return 'leaflet'
           if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) return 'charts'

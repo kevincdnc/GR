@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "preview:file": "node scripts/build-preview.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
