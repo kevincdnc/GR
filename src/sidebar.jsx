@@ -367,6 +367,15 @@ function ItineraryRow({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   // Pastille de couleur + sélecteur de couleur du tracé
+  // Survol (depuis la navigation ou depuis le tracé sur la carte)
+  const isHovered = !!hoveredId && (hoveredId === it.id || (it.sections || []).some((sec) => sec.id === hoveredId));
+  const rowRef = useRef(null);
+  useEffect(() => {
+    // Tracé survolé sur la carte : on fait apparaître sa ligne dans la navigation
+    if (isHovered && rowRef.current && !rowRef.current.matches(':hover')) {
+      try { rowRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
+    }
+  }, [isHovered]);
   const [colorOpen, setColorOpen] = useState(false);
   const colorRef = useRef(null);
   useEffect(() => {
@@ -440,9 +449,10 @@ function ItineraryRow({
             e.dataTransfer.effectAllowed = 'move';
           }}
           onDragEnd={() => {setDrag(null);setDragOver(null);}}
+          ref={rowRef}
           onMouseEnter={() => onHover(it.id)}
           onMouseLeave={() => onHover(null)}
-          className={`group relative flex items-center gap-2 ${rowPad} pl-3.5 pr-2 rounded-lg ${isComposite ? 'cursor-pointer' : ''} transition-colors ${dark ? 'hover:bg-neutral-800/70' : 'hover:bg-neutral-100'} ${visible ? dark ? 'bg-neutral-800/40' : 'bg-neutral-50/60' : ''}`}
+          className={`group relative flex items-center gap-2 ${rowPad} pl-3.5 pr-2 rounded-lg ${isComposite ? 'cursor-pointer' : ''} transition-colors ${dark ? 'hover:bg-neutral-800/70' : 'hover:bg-neutral-100'} ${isHovered ? (dark ? 'bg-neutral-800/70' : 'bg-neutral-100') : visible ? (dark ? 'bg-neutral-800/40' : 'bg-neutral-50/60') : ''}`}
           onClick={handleRowClick}>
           
           {/* Drag handle */}
@@ -606,7 +616,7 @@ function SectionRow({ section, parentColor, visible, onToggle, onHover, hoveredI
     <div
       onMouseEnter={() => onHover(section.id)}
       onMouseLeave={() => onHover(null)}
-      className={`group flex items-center gap-2 pl-2 pr-0 py-1.5 rounded-md transition-colors ${dark ? 'hover:bg-neutral-800/60' : 'hover:bg-neutral-50'}`}>
+      className={`group flex items-center gap-2 pl-2 pr-0 py-1.5 rounded-md transition-colors ${dark ? 'hover:bg-neutral-800/60' : 'hover:bg-neutral-50'} ${hoveredId === section.id ? (dark ? 'bg-neutral-800/60' : 'bg-neutral-50') : ''}`}>
       
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"

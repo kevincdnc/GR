@@ -704,7 +704,7 @@ function MapView({
       const casing = L.polyline(coords, {
         color: dark ? '#000' : '#fff',
         weight: 7, opacity: dark ? 0.65 : 1,
-        lineCap: 'round', lineJoin: 'round', interactive: false
+        lineCap: 'round', lineJoin: 'round', interactive: !creating
       }).addTo(map);
       const line = L.polyline(coords, {
         color, weight: 4, opacity: 1,
@@ -744,6 +744,14 @@ function MapView({
         ? L.marker(end, { icon: endIcon, interactive: false, zIndexOffset: 401, opacity: creating ? 0.5 : 1 }).addTo(map)
         : null;
 
+      // Survol d'un tracé sur la carte : le met en avant (carte + navigation)
+      if (!creating && setHoveredId) {
+        [line, casing].forEach((l) => {
+          l.on('mouseover', () => setHoveredId(r.id));
+          l.on('mouseout', () => setHoveredId(null));
+        });
+      }
+
       routeLayersRef.current.set(r.id, { casing, line, startMarker, endMarker, baseColor: color, parentId: r.parentId });
     });
     // fit — skip when creating so the user keeps their view
@@ -777,6 +785,7 @@ function MapView({
       } else if (isHovered) {
         layer.line.setStyle({ weight: 6, opacity: 1 });
         layer.casing.setStyle({ weight: 10, opacity: dark ? 0.7 : 1 });
+        try { layer.casing.bringToFront(); layer.line.bringToFront(); } catch (e) {}
       } else {
         layer.line.setStyle({ weight: 4, opacity: 0.3 });
         layer.casing.setStyle({ weight: 7, opacity: 0.18 });

@@ -962,6 +962,7 @@ function App() {
           groups={groups}
           visibleIds={visibleIds}
           hoveredId={hoveredId}
+          setHoveredId={setHoveredId}
           importPreview={importing ? importPreview : null}
           accent={t.accent}
           dark={dark}
