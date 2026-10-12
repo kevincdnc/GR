@@ -555,6 +555,7 @@ function App() {
       : items.map((it, i) => ({
           id: 'i_imp_' + stamp + '_' + i,
           name: it.name.trim(), activity, privacy,
+          num: it.num || undefined,
           color: it.color,
           distance: it.distance, ascent: it.ascent,
           time: it.time, difficulty: '—',
@@ -1164,6 +1165,7 @@ function App() {
           <div className="absolute inset-0 z-[1050]">
             <MetricsContent
               groups={groups}
+              visibleIds={visibleIds}
               dark={dark}
               accent={t.accent}
               onShowStage={(sectionId) => {

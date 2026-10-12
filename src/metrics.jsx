@@ -1,4 +1,4 @@
-// Statistiques GR34 — tableau triable des étapes + graphiques (km, km effort,
+// Statistiques des activités affichées dans la navigation — tableau triable + graphiques (km, km effort,
 // D+, durée). Même langage visuel que les Paramètres (settings.jsx).
 //
 // Données : sections de l'itinéraire GR34 (groups) + window.GR34_STAGES
@@ -37,47 +37,71 @@ function fmtDateShort(iso) {
   return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-// Construit les lignes du tableau à partir des étapes GR34 (itinéraires du dépôt)
-function useGr34Rows(groups, meta) {
+// Construit les lignes du tableau à partir des itinéraires affichés dans la
+// navigation (tous groupes confondus, dans leur ordre). Les étapes du dépôt
+// gardent leurs infos de build (durée GPX, alt. max) et leur clé de saisie
+// par numéro (compatible gpx/etapes.json) ; les autres sont clés par id.
+function useMetricsRows(groups, visibleIds, meta) {
   return useMetMemo(() => {
-    // Étapes du dépôt : un itinéraire par fichier GPX
-    const stagesIts = groups.flatMap((g) => g.itineraries).filter((x) => x.fromRepo && x.num).sort((a, b) => a.num - b.num);
     const byNum = new Map((window.GR34_STAGES || []).map((st) => [st.num, st]));
-    return stagesIts.map((sec) => {
-      const st = byNum.get(sec.num) || {};
-      const m = meta[String(sec.num)] || {};
-      const distance = sec.distance || 0;
-      const ascent = sec.ascent || 0;
+    const items = [];
+    const selectedGroups = [];
+    groups.forEach((g) => {
+      let count = 0;
+      g.itineraries.forEach((it) => {
+        const parts = it.sections && it.sections.length
+          ? it.sections.map((sec) => ({ ...sec, color: sec.color || it.color, activity: it.activity, fromRepo: it.fromRepo }))
+          : [it];
+        parts.forEach((x) => { if (visibleIds.has(x.id)) { items.push({ x, group: g }); count++; } });
+      });
+      if (count) selectedGroups.push({ id: g.id, name: g.name, icon: g.icon, count });
+    });
+    const rows = items.map(({ x, group }, i) => {
+      const repo = !!(x.fromRepo && x.num);
+      const st = (repo && byNum.get(x.num)) || {};
+      const metaKey = repo ? String(x.num) : x.id;
+      const m = meta[metaKey] || {};
+      const needStats = !repo && x.coords && x.coords.length > 1;
+      const stats = needStats ? computeElevationStats(x.coords) : null;
+      const realEle = needStats && x.coords.every((c) => c.length >= 3 && typeof c[2] === 'number');
+      const distance = x.distance || 0;
+      const ascent = x.ascent || 0;
       const kmEffort = distance + ascent / 100;
       const manual = m.duree ? parseDurationInput(m.duree) : null;
       let durationMin, durationSource;
       if (manual != null) { durationMin = manual; durationSource = 'saisie'; }
       else if (st.gpxMovingMin) { durationMin = st.gpxMovingMin; durationSource = 'gpx'; }
-      else { durationMin = estimateDurationMin(distance, ascent, 'hiking'); durationSource = 'estimée'; }
+      else { durationMin = estimateDurationMin(distance, ascent, x.activity || 'hiking'); durationSource = 'estimée'; }
       const h = durationMin / 60;
+      const pos = i + 1;
       return {
-        id: sec.id,
-        num: sec.num,
-        name: sec.name.replace(/^Étape \d+ — /, ''),
-        color: sec.color,
+        id: x.id,
+        pos,
+        num: x.num || 0,
+        label: String(x.num || pos),
+        metaKey,
+        groupName: group.name,
+        name: x.name.replace(/^Étape \d+ — /, ''),
+        color: ROUTE_COLORS[x.color] ? x.color : 'blue',
         date: m.date || (st.gpxDate ? st.gpxDate.slice(0, 10) : ''),
         duree: m.duree || '',
         distance,
         ascent,
-        descent: sec.descent != null ? sec.descent : (st.elevationLoss || 0),
+        descent: x.descent != null ? x.descent : (st.elevationLoss || (realEle ? stats.descent : 0)),
         kmEffort,
         durationMin,
         durationSource,
         speed: h > 0 ? distance / h : 0,
         effortSpeed: h > 0 ? kmEffort / h : 0,
         gainPerKm: distance > 0 ? ascent / distance : 0,
-        altMax: st.altMax || 0,
+        altMax: st.altMax || (realEle ? Math.round(stats.maxAlt) : 0),
       };
     });
-  }, [groups, meta]);
+    return { rows, selectedGroups };
+  }, [groups, visibleIds, meta]);
 }
 
-function MetricsContent({ groups, dark, accent, onShowStage }) {
+function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
   const [localMeta, setLocalMeta] = useMetState(readGr34LocalMeta);
   useMetEffect(() => {
     try { localStorage.setItem(GR34_META_KEY, JSON.stringify(localMeta)); } catch (e) {}
@@ -90,8 +114,8 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
   }, [localMeta]);
   const updateMeta = (num, patch) => setLocalMeta((prev) => ({ ...prev, [num]: { ...(prev[num] || {}), ...patch } }));
 
-  const rows = useGr34Rows(groups, meta);
-  const [sort, setSort] = useMetState({ key: 'num', dir: 1 });
+  const { rows, selectedGroups } = useMetricsRows(groups, visibleIds || new Set(), meta);
+  const [sort, setSort] = useMetState({ key: 'pos', dir: 1 });
 
   const totals = useMetMemo(() => {
     const sum = (k) => rows.reduce((a, r) => a + r[k], 0);
@@ -111,18 +135,19 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
     arr.sort((a, b) => {
       const va = a[sort.key], vb = b[sort.key];
       const c = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va || '').localeCompare(String(vb || ''), 'fr');
-      return c * sort.dir || a.num - b.num;
+      return c * sort.dir || a.pos - b.pos;
     });
     return arr;
   }, [rows, sort]);
 
   const onSort = (key) => setSort((s) => s.key === key
     ? { key, dir: -s.dir }
-    : { key, dir: ['num', 'name', 'date'].includes(key) ? 1 : -1 });
+    : { key, dir: ['pos', 'name', 'date'].includes(key) ? 1 : -1 });
 
   const exportJson = () => {
     const clean = {};
     Object.entries(meta).forEach(([k, v]) => {
+      if (!/^\d+$/.test(k)) return; // etapes.json : étapes du dépôt seulement
       const e = {};
       Object.entries(v).forEach(([kk, vv]) => { if (vv) e[kk] = vv; });
       if (Object.keys(e).length) clean[k] = e;
@@ -140,8 +165,8 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
   const cardCls = `rounded-md border ${dark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-neutral-200/80'}`;
 
   const cols = [
-    { key: 'num', label: '#', num: true },
-    { key: 'name', label: 'Étape' },
+    { key: 'pos', label: '#', num: true },
+    { key: 'name', label: 'Activité' },
     { key: 'date', label: 'Date' },
     { key: 'distance', label: 'Distance', num: true },
     { key: 'ascent', label: 'D+', num: true },
@@ -156,9 +181,10 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
 
   if (!rows.length) {
     return (
-      <div className={`flex flex-col h-full items-center justify-center glass-backdrop ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-        <I.FileGpx size={28} />
-        <p className="mt-3 text-[13px]">Aucune étape GR34. Ajoute tes fichiers .gpx dans le dossier <span className="font-mono">gpx/</span> du dépôt.</p>
+      <div className={`flex flex-col h-full items-center justify-center text-center px-8 glass-backdrop ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+        <I.EyeOff size={28} />
+        <p className={`mt-3 text-[14px] font-medium ${strong}`}>Aucune activité sélectionnée</p>
+        <p className="mt-1 text-[13px]">Affiche des itinéraires ou des groupes dans la navigation (icône œil) pour voir leurs statistiques.</p>
       </div>
     );
   }
@@ -168,8 +194,19 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
       {/* Top bar */}
       <div className={`px-8 pt-7 pb-5 border-b flex items-end justify-between gap-4 flex-wrap ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
         <div>
-          <div className={`text-[11px] font-semibold uppercase tracking-wider ${muted}`}>GR34 · Sentier des douaniers</div>
+          <div className={`text-[11px] font-semibold uppercase tracking-wider ${muted}`}>
+            {rows.length} activité{rows.length > 1 ? 's' : ''} · {selectedGroups.length} groupe{selectedGroups.length > 1 ? 's' : ''} sélectionné{selectedGroups.length > 1 ? 's' : ''}
+          </div>
           <h1 className={`mt-0.5 text-[22px] font-semibold tracking-tight ${strong}`}>Statistiques</h1>
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {selectedGroups.map((g) => (
+              <span key={g.id} className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11.5px] ${dark ? 'border-neutral-800 bg-neutral-900/60 text-neutral-300' : 'border-neutral-200 bg-white text-neutral-700'}`}>
+                {g.icon && !/^[A-Za-z]/.test(g.icon) && <span>{g.icon}</span>}
+                <span className="font-medium">{g.name}</span>
+                <span className={`tabular-nums ${muted}`}>{g.count}</span>
+              </span>
+            ))}
+          </div>
         </div>
         <button
           onClick={exportJson}
@@ -184,10 +221,10 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
         <div className="max-w-6xl mx-auto px-8 py-7 flex flex-col gap-6">
           {/* KPIs */}
           <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-            <MetKpi dark={dark} icon={<I.Flag size={14} />} label="Étapes" value={String(rows.length)} />
-            <MetKpi dark={dark} icon={<I.Distance size={14} />} label="Distance" value={fmtNum(totals.km)} unit="km" sub={`${fmtNum(totals.km / rows.length)} km / étape`} />
+            <MetKpi dark={dark} icon={<I.Flag size={14} />} label="Activités" value={String(rows.length)} />
+            <MetKpi dark={dark} icon={<I.Distance size={14} />} label="Distance" value={fmtNum(totals.km)} unit="km" sub={`${fmtNum(totals.km / rows.length)} km / activité`} />
             <MetKpi dark={dark} icon={<I.Ruler size={14} />} label="Km effort" value={fmtNum(totals.eff)} unit="km-e" sub={`+${fmtNum(totals.eff - totals.km)} vs distance`} />
-            <MetKpi dark={dark} icon={<I.TrendingUp size={14} />} label="Dénivelé +" value={fmtAscent(totals.gain).replace(' m', '')} unit="m" sub={`${Math.round(totals.gain / rows.length)} m / étape`} />
+            <MetKpi dark={dark} icon={<I.TrendingUp size={14} />} label="Dénivelé +" value={fmtAscent(totals.gain).replace(' m', '')} unit="m" sub={`${Math.round(totals.gain / rows.length)} m / activité`} />
             <MetKpi dark={dark} icon={<I.Clock size={14} />} label="Durée" value={fmtDuration(totals.dur)}
               sub={totals.estimated ? `dont ${totals.estimated} estimée${totals.estimated > 1 ? 's' : ''}` : 'durées réelles'} />
           </div>
@@ -195,8 +232,8 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
           {/* Table */}
           <section className={cardCls}>
             <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-              <h3 className={`text-[12px] font-semibold uppercase tracking-wider ${muted}`}>Étapes</h3>
-              <span className={`text-[11px] ${muted}`}>Clique sur une colonne pour trier · sur une étape pour la voir sur la carte</span>
+              <h3 className={`text-[12px] font-semibold uppercase tracking-wider ${muted}`}>Activités</h3>
+              <span className={`text-[11px] ${muted}`}>Clique sur une colonne pour trier · sur une activité pour la voir sur la carte</span>
             </div>
             <div className="overflow-x-auto sb-scroll">
               <table className="w-full text-[12px] whitespace-nowrap">
@@ -225,7 +262,7 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
                       className={`border-b last:border-b-0 transition-colors ${dark ? 'border-neutral-800/70 hover:bg-neutral-800/40' : 'border-neutral-100 hover:bg-neutral-50'}`}>
                       <td className="px-3 py-2 text-right">
                         <span className={`inline-flex items-center gap-2 font-mono ${strong}`}>
-                          <span className="w-2 h-2 rounded-full" style={{ background: ROUTE_COLORS[r.color].hex }}></span>{r.num}
+                          <span className="w-2 h-2 rounded-full" style={{ background: ROUTE_COLORS[r.color].hex }}></span>{r.label}
                         </span>
                       </td>
                       <td className="px-3 py-2">
@@ -233,15 +270,15 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
                           className={`font-medium hover:underline underline-offset-2 ${strong}`}>{r.name}</button>
                       </td>
                       <td className="px-3 py-1.5">
-                        <input type="date" value={r.date} title={fmtDateShort(r.date)} aria-label={`Date de l'étape ${r.num}`}
-                          onChange={(e) => updateMeta(r.num, { date: e.target.value })}
+                        <input type="date" value={r.date} title={fmtDateShort(r.date)} aria-label={`Date de ${r.name}`}
+                          onChange={(e) => updateMeta(r.metaKey, { date: e.target.value })}
                           className={`rounded-md border px-1.5 py-1 text-[12px] font-mono bg-transparent ${dark ? 'border-transparent hover:border-neutral-700 text-neutral-300 [color-scheme:dark]' : 'border-transparent hover:border-neutral-200 text-neutral-700'}`} />
                       </td>
                       <MetNum dark={dark}>{fmtNum(r.distance)} km</MetNum>
                       <MetNum dark={dark}>{fmtAscent(r.ascent)}</MetNum>
                       <MetNum dark={dark}>{fmtAscent(r.descent)}</MetNum>
                       <MetNum dark={dark}>{fmtNum(r.kmEffort)}</MetNum>
-                      <td className="px-3 py-1.5 text-right"><MetDurationCell row={r} dark={dark} onCommit={(v) => updateMeta(r.num, { duree: v })} /></td>
+                      <td className="px-3 py-1.5 text-right"><MetDurationCell row={r} dark={dark} onCommit={(v) => updateMeta(r.metaKey, { duree: v })} /></td>
                       <MetNum dark={dark}>{fmtNum(r.speed)} km/h</MetNum>
                       <MetNum dark={dark}>{fmtNum(r.effortSpeed)} km-e/h</MetNum>
                       <MetNum dark={dark}>{Math.round(r.gainPerKm)} m</MetNum>
@@ -276,7 +313,7 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
 
           {/* Charts */}
           <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))' }}>
-            <MetChartCard dark={dark} title="Distance et km effort par étape"
+            <MetChartCard dark={dark} title="Distance et km effort par activité"
               legend={[{ label: 'Distance', color: '#3b82f6' }, { label: 'Km effort', color: '#f97316' }]}>
               <MetBarChart dark={dark} rows={rows} unit="km"
                 series={[
@@ -288,11 +325,11 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
               legend={[{ label: 'Distance cumulée', color: '#3b82f6' }, { label: 'Km effort cumulés', color: '#f97316' }]}>
               <MetCumulChart dark={dark} rows={rows} />
             </MetChartCard>
-            <MetChartCard dark={dark} title="Dénivelé positif par étape">
+            <MetChartCard dark={dark} title="Dénivelé positif par activité">
               <MetBarChart dark={dark} rows={rows} unit="m" byStageColor labels
                 series={[{ key: 'ascent', label: 'D+', fmt: (v) => fmtAscent(v) }]} />
             </MetChartCard>
-            <MetChartCard dark={dark} title="Durée par étape">
+            <MetChartCard dark={dark} title="Durée par activité">
               <MetBarChart dark={dark} rows={rows} unit="h" byStageColor labels
                 series={[{ key: 'durationMin', label: 'Durée', scale: 1 / 60, fmt: (v, r) => fmtDuration(v * 60) + (r.durationSource === 'estimée' ? ' (estimée)' : '') }]} />
             </MetChartCard>
@@ -336,7 +373,7 @@ function MetDurationCell({ row, dark, onCommit }) {
       <input
         value={draft != null ? draft : display}
         placeholder={fmtDuration(row.durationMin)}
-        aria-label={`Durée réelle de l'étape ${row.num}`}
+        aria-label={`Durée réelle de ${row.name}`}
         onFocus={() => setDraft(display)}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
@@ -423,7 +460,7 @@ function MetBarChart({ dark, rows, series, unit, byStageColor, labels }) {
   const y = (v) => MET_PAD.t + ih - (v / scale.max) * ih;
   return (
     <div className="relative" onMouseLeave={() => setHover(null)}>
-      <svg viewBox={`0 0 ${MET_W} ${MET_H}`} className="w-full h-auto block" role="img" aria-label={series.map((s) => s.label).join(', ') + ' par étape'}>
+      <svg viewBox={`0 0 ${MET_W} ${MET_H}`} className="w-full h-auto block" role="img" aria-label={series.map((s) => s.label).join(', ') + ' par activité'}>
         <MetAxes dark={dark} scale={scale} unit={unit} />
         {rows.map((r, i) => {
           const x0 = MET_PAD.l + band * i + (band - groupW) / 2;
@@ -447,7 +484,7 @@ function MetBarChart({ dark, rows, series, unit, byStageColor, labels }) {
                   </g>
                 );
               })}
-              <text x={MET_PAD.l + band * i + band / 2} y={MET_H - 8} textAnchor="middle" fontSize="11" fill={dark ? '#a3a3a3' : '#525252'} className="font-mono">#{r.num}</text>
+              <text x={MET_PAD.l + band * i + band / 2} y={MET_H - 8} textAnchor="middle" fontSize="11" fill={dark ? '#a3a3a3' : '#525252'} className="font-mono">#{r.label}</text>
               <rect x={MET_PAD.l + band * i} y={MET_PAD.t} width={band} height={ih + MET_PAD.b} fill="transparent" onMouseEnter={() => setHover(i)} />
             </g>
           );
@@ -455,7 +492,7 @@ function MetBarChart({ dark, rows, series, unit, byStageColor, labels }) {
       </svg>
       {hover != null && (
         <MetTooltip dark={dark} x={(MET_PAD.l + band * hover + band / 2) / MET_W} y={8}>
-          <div className="font-semibold mb-0.5">#{rows[hover].num} {rows[hover].name}</div>
+          <div className="font-semibold mb-0.5">#{rows[hover].label} {rows[hover].name}</div>
           {series.map((s) => (
             <div key={s.key} className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: byStageColor ? ROUTE_COLORS[rows[hover].color].hex : s.color }}></span>
@@ -501,14 +538,14 @@ function MetCumulChart({ dark, rows }) {
         ))}
         {pts.map((p, i) => (
           <g key={p.r.id}>
-            <text x={x(i)} y={MET_H - 8} textAnchor="middle" fontSize="11" fill={dark ? '#a3a3a3' : '#525252'} className="font-mono">#{p.r.num}</text>
+            <text x={x(i)} y={MET_H - 8} textAnchor="middle" fontSize="11" fill={dark ? '#a3a3a3' : '#525252'} className="font-mono">#{p.r.label}</text>
             <rect x={x(i) - (iw / Math.max(1, pts.length - 1)) / 2} y={MET_PAD.t} width={iw / Math.max(1, pts.length - 1)} height={ih + MET_PAD.b} fill="transparent" onMouseEnter={() => setHover(i)} />
           </g>
         ))}
       </svg>
       {hover != null && (
         <MetTooltip dark={dark} x={x(hover) / MET_W} y={8}>
-          <div className="font-semibold mb-0.5">Après l'étape #{pts[hover].r.num}</div>
+          <div className="font-semibold mb-0.5">Après #{pts[hover].r.label}</div>
           <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full" style={{ background: '#3b82f6' }}></span><span className="opacity-70">Distance</span><span className="ml-auto pl-3 font-mono">{fmtNum(pts[hover].km)} km</span></div>
           <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full" style={{ background: '#f97316' }}></span><span className="opacity-70">Km effort</span><span className="ml-auto pl-3 font-mono">{fmtNum(pts[hover].eff)} km-e</span></div>
           <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full opacity-0"></span><span className="opacity-70">D+</span><span className="ml-auto pl-3 font-mono">{fmtAscent(pts[hover].gain)}</span></div>
