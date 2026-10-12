@@ -1,14 +1,265 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#c8102e" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='9' y='6' fill='%23ffffff' stroke='%23999' stroke-width='.5'/><rect width='32' height='9' y='17' fill='%23d62828'/></svg>" />
-    <title>GR34 Tracker</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mountaya — Map Studio</title>
+
+<meta name="ext-resource-dependency" content="assets/logo-mountaya.svg" data-resource-id="logoMountaya" />
+<meta name="ext-resource-dependency" content="assets/boussole.svg" data-resource-id="boussole" />
+<meta name="ext-resource-dependency" content="assets/strava.svg" data-resource-id="stravaLogo" />
+<meta name="ext-resource-dependency" content="assets/strava-gray.svg" data-resource-id="stravaLogoGray" />
+<meta name="ext-resource-dependency" content="assets/komoot.svg" data-resource-id="komootLogo" />
+<meta name="ext-resource-dependency" content="assets/komoot-gray.svg" data-resource-id="komootLogoGray" />
+<meta name="ext-resource-dependency" content="assets/garmin.svg" data-resource-id="garminLogo" />
+<meta name="ext-resource-dependency" content="assets/garmin-gray.svg" data-resource-id="garminLogoGray" />
+<meta name="ext-resource-dependency" content="assets/pro-coin.png" data-resource-id="proCoin" />
+<meta name="ext-resource-dependency" content="assets/empty-state.svg" data-resource-id="emptyState" />
+<meta name="ext-resource-dependency" content="assets/maps/temperature.png" data-resource-id="map_temperature" />
+<meta name="ext-resource-dependency" content="assets/maps/visibility.png" data-resource-id="map_visibility" />
+<meta name="ext-resource-dependency" content="assets/maps/humidity.png" data-resource-id="map_humidity" />
+<meta name="ext-resource-dependency" content="assets/maps/wind.png" data-resource-id="map_wind" />
+<meta name="ext-resource-dependency" content="assets/maps/aspectslope.png" data-resource-id="map_aspectslope" />
+<meta name="ext-resource-dependency" content="assets/maps/landcover.png" data-resource-id="map_landcover" />
+<meta name="ext-resource-dependency" content="assets/maps/hillshade.png" data-resource-id="map_hillshade" />
+<meta name="ext-resource-dependency" content="assets/maps/snowfall.png" data-resource-id="map_snowfall" />
+<meta name="ext-resource-dependency" content="assets/maps/snowdepth.png" data-resource-id="map_snowdepth" />
+<meta name="ext-resource-dependency" content="assets/maps/avalanche.png" data-resource-id="map_avalanche" />
+<meta name="ext-resource-dependency" content="assets/maps/topo.png" data-resource-id="map_topo" />
+<meta name="ext-resource-dependency" content="assets/maps/winter.png" data-resource-id="map_winter" />
+<meta name="ext-resource-dependency" content="assets/maps/satellite.png" data-resource-id="map_satellite" />
+
+<template id="__bundler_thumbnail" data-bg-color="#eff6ff">
+  <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="th-body" x1="100" y1="-20" x2="100" y2="180" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#EBFAFF"/>
+        <stop offset="1" stop-color="#0049E5"/>
+      </linearGradient>
+      <linearGradient id="th-tip" x1="155" y1="120" x2="115" y2="230" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#003EFF"/>
+        <stop offset="1" stop-color="#7BB7FF"/>
+      </linearGradient>
+    </defs>
+    <g transform="translate(28,16) scale(0.46)">
+      <path d="M157 0C243.7 0 314 70.3 314 157c0 34.1-10 61.2-27.8 87.2L157.5 113 28.3 244.7C10.3 218.5 0 191.2 0 157 0 70.3 70.3 0 157 0Z" fill="url(#th-body)"/>
+      <path d="M159.1 114.6 286.2 244.2C258.8 284.3 212.9 321.6 157 377.5c-3-3-5.9-5.9-8.9-8.8C139.4 356.9 130 336.1 130 303.5c0-48.5 57-67 57-119 0-39.7-17.7-59.4-27.9-69.9Z" fill="url(#th-tip)"/>
+    </g>
+  </svg>
+</template>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  html, body, #root { height: 100%; margin: 0; }
+  body {
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #0f172a;
+    overflow: hidden;
+  }
+  .font-mono { font-family: 'Geist Mono', ui-monospace, SFMono-Regular, monospace; }
+
+  /* Smooth nice scrollbars in the sidebar */
+  .sb-scroll::-webkit-scrollbar { width: 10px; }
+  .sb-scroll::-webkit-scrollbar-track { background: transparent; }
+  .sb-scroll::-webkit-scrollbar-thumb {
+    background: rgba(100,116,139,.25);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  .sb-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(100,116,139,.45);
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  .sb-scroll { scrollbar-width: thin; scrollbar-color: rgba(100,116,139,.3) transparent; }
+
+  /* Menu dropdown */
+  @keyframes menuIn {
+    from { opacity: 0; transform: translateY(-4px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .animate-menu { animation: menuIn .14s ease-out; }
+
+  /* Tooltip */
+  @keyframes tipIn {
+    from { opacity: 0; transform: translate(-50%, -2px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+  .animate-tip { animation: tipIn .12s ease-out; }
+  /* Fixed-position tooltips can't use `translate(-50%)` from the animation
+     because their top/left are already explicit. Use a plain fade. */
+  @keyframes tipFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .animate-tip-fixed { animation: tipFadeIn .12s ease-out; }
+  /* Subtle pulsing halo around draft POI markers, to keep them noticeable on map */
+  @keyframes poiPulse {
+    0%   { transform: scale(1);    opacity: 0.22; }
+    50%  { transform: scale(1.15); opacity: 0.06; }
+    100% { transform: scale(1);    opacity: 0.22; }
+  }
+
+  /* Primary CTA — on hover, darken the background via a pseudo-element overlay
+     so the effect doesn't conflict with Tailwind's `shadow` / `hover:shadow`
+     utilities (which were overriding our inset box-shadow). Text and icons sit
+     above the overlay so their color stays untouched. */
+  .btn-cta-primary {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    transition: transform .12s ease;
+  }
+  /* Darken the background only — via a dim overlay so text/icons stay white. */
+  .btn-cta-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    transition: background .22s ease;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .btn-cta-primary:hover::after { background: rgba(0, 0, 0, 0.10); }
+  .btn-cta-primary:active { transform: scale(0.985); }
+  .btn-cta-primary:active::after { background: rgba(0, 0, 0, 0.18); }
+  /* Subtle left-to-right sheen */
+  .btn-cta-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg,
+      transparent 0%,
+      transparent 38%,
+      rgba(255,255,255,0.14) 50%,
+      transparent 62%,
+      transparent 100%);
+    transform: translateX(-110%);
+    transition: transform .9s cubic-bezier(.22,.61,.36,1);
+    z-index: 0;
+  }
+  .btn-cta-primary:hover::before { transform: translateX(110%); }
+  .btn-cta-primary > * { position: relative; z-index: 1; color: inherit; }
+
+  /* Leaflet — light/dark tweaks */
+  .leaflet-container { background: transparent; outline: none; font-family: inherit; }
+  @keyframes mountayaPulse {
+    0%   { transform: scale(1);   opacity: .8; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+  .leaflet-control-attribution {
+    font-size: 9.5px !important;
+    background: rgba(255,255,255,0.7) !important;
+    backdrop-filter: blur(4px);
+    border-radius: 4px;
+    padding: 1px 5px !important;
+  }
+  .dark .leaflet-control-attribution {
+    background: rgba(2,6,23,0.7) !important;
+    color: #94a3b8 !important;
+  }
+  .dark .leaflet-control-attribution a { color: #94a3b8 !important; }
+  /* Hide default zoom controls (we provide our own) */
+  .leaflet-control-zoom { display: none; }
+  .draft-waypoint {
+    background: #fff;
+    border: 2.5px solid var(--accent, #3b82f6);
+    border-radius: 50%;
+    width: 12px;
+    height: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .draft-waypoint-first {
+    background: var(--accent, #3b82f6);
+    border: 2.5px solid #fff;
+  }
+
+  /* Toast pop-in */
+  @keyframes toastIn {
+    from { opacity: 0; transform: translate(-50%, 12px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  .animate-in { animation: toastIn .25s ease-out; }
+
+  /* Focus rings (Tailwind ring with offset) */
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid rgba(14,165,233,.6);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  /* Forecast slider thumb */
+  .cartes-range { height: 20px; }
+  .cartes-range::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; border: 3px solid #3b82f6;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: pointer; margin-top: 0;
+  }
+  .cartes-range::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; border: 3px solid #3b82f6;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3); cursor: pointer;
+  }
+  .cartes-range::-webkit-slider-runnable-track { background: transparent; }
+  .cartes-range::-moz-range-track { background: transparent; }
+
+  /* Onboarding coachmark */
+  @keyframes onboardNudge {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(5px); }
+  }
+  @keyframes onboardRing {
+    0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(59,130,246,0); }
+    100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+  }
+  .onboard-ring { animation: onboardRing 1.6s ease-out infinite; border-radius: 8px; }
+</style>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+          mono: ['Geist Mono', 'ui-monospace'],
+        },
+      },
+    },
+  };
+</script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="src/icons.jsx"></script>
+<script type="text/babel" src="src/data.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="src/map.jsx"></script>
+<script type="text/babel" src="src/place-search.jsx"></script>
+<script type="text/babel" src="src/poi-filter.jsx"></script>
+<script type="text/babel" src="src/sidebar.jsx"></script>
+<script type="text/babel" src="src/create.jsx"></script>
+<script type="text/babel" src="src/import.jsx"></script>
+<script type="text/babel" src="src/settings.jsx"></script>
+<script type="text/babel" src="src/share.jsx"></script>
+<script type="text/babel" src="src/app.jsx"></script>
+</body>
 </html>

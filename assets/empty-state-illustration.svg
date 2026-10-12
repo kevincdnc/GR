@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="240" height="180" aria-hidden="true">
+  <defs>
+    <linearGradient id="es-grad-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fafafa"></stop>
+      <stop offset="1" stop-color="#f5f5f5"></stop>
+    </linearGradient>
+    <linearGradient id="es-grad-route" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b82f6"></stop>
+      <stop offset="1" stop-color="#3b82f6" stop-opacity="0.65"></stop>
+    </linearGradient>
+  </defs>
+
+  
+  <rect x="10" y="14" width="220" height="152" rx="12" fill="url(#es-grad-bg)" stroke="#e5e5e5" stroke-width="1"></rect>
+
+  
+  <g stroke="rgba(0,0,0,0.06)" stroke-width="1" fill="none">
+    <path d="M20 110 C 60 90, 100 80, 140 90 S 210 110, 230 100"></path>
+    <path d="M20 130 C 70 110, 120 100, 160 110 S 220 130, 230 120"></path>
+    <path d="M20 90  C 50 75, 100 60, 150 70  S 210 90,  230 80"></path>
+    <path d="M20 70  C 50 55, 110 45, 160 50  S 210 70,  230 60"></path>
+  </g>
+
+  
+  <g stroke="rgba(0,0,0,0.08)" stroke-width="1.4" fill="none" stroke-linecap="round">
+    <path d="M30 150 C 70 130, 110 120, 160 130 S 215 145, 225 140"></path>
+    <path d="M120 30 L 130 90 L 90 130"></path>
+  </g>
+
+  
+  <g fill="#e5e5e5">
+    <path d="M30 120 L 70 70 L 100 110 L 130 80 L 170 120 Z" opacity="0.7"></path>
+    <path d="M140 120 L 175 75 L 205 100 L 220 90 L 220 120 Z" opacity="0.55"></path>
+  </g>
+
+  
+  <path d="M55 130 C 80 110, 95 110, 110 95 S 140 70, 165 60" fill="none" stroke="url(#es-grad-route)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 4"></path>
+
+  
+  <g style="filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.35));">
+    <circle cx="55" cy="130" r="7" fill="#fff" stroke="#3b82f6" stroke-width="2.5"></circle>
+    <circle cx="55" cy="130" r="2.5" fill="#3b82f6"></circle>
+  </g>
+
+  
+  <g style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));">
+    <path d="M165 45 C 158 45, 154 52, 158 60 L 165 70 L 172 60 C 176 52, 172 45, 165 45 Z" fill="#3b82f6"></path>
+    <circle cx="165" cy="53" r="2.6" fill="#fff"></circle>
+  </g>
+
+  
+  <g stroke="#3b82f6" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.8">
+    <path d="M195 35 L 195 41 M 192 38 L 198 38"></path>
+    <path d="M40 60 L 40 65 M 37.5 62.5 L 42.5 62.5"></path>
+  </g>
+</svg>
