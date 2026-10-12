@@ -136,7 +136,7 @@ function AccountTab({ dark, accent }) {
           <div className={`w-10 h-10 rounded-full grid place-items-center text-[13px] font-semibold ${dark ? 'bg-neutral-800 text-neutral-200' : 'bg-neutral-200 text-neutral-700'}`}>VR</div>
           <div className="flex-1 min-w-0">
             <div className={`text-[13px] font-medium ${dark ? 'text-white' : 'text-neutral-900'}`}>Vincent R.</div>
-            <div className={`text-[11.5px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>vincent@mountaya.com</div>
+            <div className={`text-[11.5px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>vous@exemple.fr</div>
           </div>
           <button className={`text-[11.5px] font-medium px-2 py-1 rounded transition-colors ${dark ? 'text-neutral-300 hover:bg-neutral-800' : 'text-neutral-700 hover:bg-neutral-100'}`}>Modifier</button>
         </div>
@@ -292,7 +292,7 @@ function OrgTab({ dark, accent }) {
 
       <SectionTitle dark={dark}>Membres</SectionTitle>
       <PanelCard dark={dark}>
-        <MemberRow dark={dark} name="loic@mountaya.com" role="Owner" />
+        <MemberRow dark={dark} name="ami@exemple.fr" role="Owner" />
         <MemberRow dark={dark} name="kevin.cdnc@gmail.com" role="Admin" />
       </PanelCard>
 
@@ -389,7 +389,7 @@ function PlanCard({ dark, accent, name, price, desc, highlight, coin }) {
 function ApiTab({ dark, accent }) {
   return (
     <>
-      <SectionTitle dark={dark} sub="Utilisez ces clés pour interroger l'API Mountaya depuis votre backend.">Clés API</SectionTitle>
+      <SectionTitle dark={dark} sub="Utilisez ces clés pour interroger l'API GR planner depuis votre backend.">Clés API</SectionTitle>
       <PanelCard dark={dark}>
         <KeyRow dark={dark} label="Publishable key" value="pk_live_abf3…2c9d" />
         <KeyRow dark={dark} label="Secret key" value="sk_live_•••••••••••" />

@@ -803,7 +803,7 @@ function App() {
         {!creating && !importing && !settingsOpen &&
         <div className={`px-3 py-2 border-t flex items-center justify-between ${dark ? 'border-neutral-800 bg-neutral-950' : 'border-neutral-200 bg-white'}`}>
             <div className="flex items-center gap-1.5">
-              <Tooltip dark={dark} label="Vincent R." sub="vincent@mountaya.com · Admin" side="top">
+              <Tooltip dark={dark} label="Mon compte" sub="Profil et préférences" side="top">
                 <button
                   onClick={() => { setSettingsTab('account'); setSettingsOpen(true); }}
                   className={`w-7 h-7 rounded-full grid place-items-center text-[11px] font-semibold transition-shadow hover:shadow ${dark ? 'bg-neutral-800 text-neutral-200 hover:bg-neutral-700' : 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'}`}>
@@ -834,37 +834,6 @@ function App() {
               </Tooltip>
             </div>
             <div className="flex items-center gap-0.5">
-              <Tooltip dark={dark} label="Statut" sub="Tous les systèmes opérationnels" side="top">
-                <a
-                  href="https://status.mountaya.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Statut des services"
-                  className={`p-1.5 rounded-md transition-colors flex items-center ${dark ? 'hover:bg-neutral-800' : 'hover:bg-neutral-100'}`}>
-                  <span
-                    className="block w-2 h-2 rounded-full"
-                    style={{ background: '#22c55e', boxShadow: '0 0 0 3px ' + (dark ? 'rgba(34,197,94,0.18)' : 'rgba(34,197,94,0.22)') }}
-                  ></span>
-                </a>
-              </Tooltip>
-              <Tooltip dark={dark} label="Documentation" sub="Guides et référence API" side="top">
-                <a
-                  href="https://docs.mountaya.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`p-1.5 rounded-md transition-colors flex ${dark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'}`}>
-                  <I.Book size={16} />
-                </a>
-              </Tooltip>
-              <Tooltip dark={dark} label="Slack community" sub="Rejoindre la communauté Mountaya" side="top">
-                <a
-                  href="https://mountaya.slack.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`p-1.5 rounded-md transition-colors flex ${dark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'}`}>
-                  <I.Slack size={16} />
-                </a>
-              </Tooltip>
               <Tooltip dark={dark} label="Paramètres" sub="Compte, organisation, API" side="top">
                 <button
                   onClick={() => { setSettingsTab('account'); setSettingsOpen(true); }}
@@ -959,7 +928,7 @@ function App() {
           onFinish={() => {
             // Trigger the same submit as the bottom CTA via a small focus dance:
             // we dispatch a custom event the CreatePanel listens to, or just call save.
-            window.dispatchEvent(new CustomEvent('mountaya:finishDraft'));
+            window.dispatchEvent(new CustomEvent('gr:finishDraft'));
           }}
           onToggleVisible={(id) => {
             setVisibleIds((s) => {
@@ -1084,7 +1053,7 @@ function App() {
                   dark={dark} step={2} arrow={arrowSide}
                   icon={<I.Plus size={20} />}
                   title="Créez ou importez un itinéraire"
-                  body="Tracez un parcours point par point, importez un fichier GPX depuis Strava, Garmin ou Komoot, ou laissez Mountaya vous suggérer un itinéraire."
+                  body="Tracez un parcours point par point, importez un fichier GPX depuis Strava, Garmin ou Komoot, ou laissez GR planner vous suggérer un itinéraire."
                   onSkip={endTour}
                   onBack={() => setOnboardStep(1)}
                   onNext={endTour}

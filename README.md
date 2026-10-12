@@ -1,7 +1,7 @@
-# GR34 · Mountaya Map Studio
+# GR planner
 
-App perso pour suivre mon GR34 (sentier des douaniers). L'interface reprend à l'identique le prototype
-Claude Design « Mountaya — Map Studio » (README du design dans [`docs/design-handoff.md`](docs/design-handoff.md)).
+App perso pour suivre mon GR34 (sentier des douaniers). L'interface vient d'un prototype Claude Design
+(README d'origine dans [`docs/design-handoff.md`](docs/design-handoff.md)), renommé GR planner et simplifié.
 Les données démo du prototype sont remplacées par mes vraies étapes.
 
 En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.github.io/GR/#metrics
@@ -12,13 +12,13 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 |---|---|
 | Étapes GR34 (traces, distance, D+/D−, profil d'altitude) | **Réel**, calculé depuis `gpx/*.gpx` |
 | Statistiques (bouton *Stats*) : tableau triable, km effort, durées, graphiques | **Réel** |
-| Fonds de carte (*Cartes* → Plan, Topo, IGN, Photos IGN, Satellite, Hiver) + ombrage du relief | **Réel** |
+| Fonds de carte (*Cartes* → Plan, Topo, IGN, Photos IGN, Satellite, Hiver) | **Réel** |
 | Zoom (jusqu'à 20, pas de 0,25), géolocalisation | **Réel** |
 | Import d'un fichier GPX | **Réel** (analysé dans le navigateur) |
 | Création / édition d'itinéraires, sections, repères, groupes, glisser-déposer | Réel, sauvegardé dans le navigateur |
 | Recherche de lieu | Réel (Nominatim) |
 | Altitudes d'un tracé dessiné à la main | Simulé (pas de service d'altitude) |
-| Strava / Komoot / Garmin, surcouches météo / neige, POI, partage (lien, iframe) | Simulé, comme dans le design |
+| Strava / Komoot / Garmin, POI, partage (lien, iframe) | Simulé, comme dans le design |
 | Panneau « Réglages design » (mode sombre, accent, densité) | Visible seulement dans l'éditeur Claude Design |
 
 ## Ajouter une étape
@@ -47,7 +47,7 @@ du design, sans dépendre de CDN.
 
 | Fichier | Rôle |
 |---|---|
-| `index.html`, `src/*.jsx`, `tweaks-panel.jsx`, `assets/` | Prototype Mountaya (modifié là où il est branché sur les vraies données) |
+| `index.html`, `src/*.jsx`, `tweaks-panel.jsx`, `assets/` | Interface issue du prototype (modifiée là où elle est branchée sur les vraies données) |
 | `src/metrics.jsx` | Vue Statistiques GR34 |
 | `lib/gpx.mjs` | Parseur GPX + métriques (build et import dans le navigateur) |
 | `scripts/build.mjs`, `scripts/dev.mjs` | Build et serveur de dev |

@@ -1,6 +1,6 @@
 // Build statique de l'app (dossier dist/).
 //
-// Le prototype Mountaya charge ses fichiers .jsx via Babel dans le navigateur :
+// Le prototype de design charge ses fichiers .jsx via Babel dans le navigateur :
 // chaque fichier est un <script> classique, transpilé avec les presets
 // ["react", "env"], et tous partagent la portée globale. On reproduit exactement
 // ça à la compilation (mêmes options Babel, mêmes fichiers, même ordre), ce qui
@@ -130,6 +130,7 @@ export function build({ single = false } = {}) {
     .replace('<script src="js/gpx.js"></script>', () => inline(gpxLib))
     .replace(babelRe, (_, src) => inline(compiled.get(src)))
     .replace(/<meta name="ext-resource-dependency"[^>]*\/>\n?/g, '')
+    .replace(/<link rel="icon"[^>]*\/>\n?/, '')
     .replace(/<template id="__bundler_thumbnail"[\s\S]*?<\/template>\n?/, '')
     .replace('<div id="root"></div>', () => `<div id="root"></div>\n${inline(`window.__resources = ${JSON.stringify(resources)};`)}`)
     // La preview fournit son propre squelette <html>/<head>/<body>
@@ -141,7 +142,7 @@ export function build({ single = false } = {}) {
     .replace(/<meta name="viewport"[^>]*>\s*/, '')
   // <title> en premier pour la preview
   const title = html.match(/<title>[^<]*<\/title>/)[0]
-  html = '<title>GR34 Tracker</title>\n' + html.replace(title, '')
+  html = title + '\n' + html.replace(title, '')
   writeFileSync(join(out, 'gr34.html'), html)
   console.log(`preview/gr34.html prêt (${(html.length / 1024) | 0} Ko)`)
 }

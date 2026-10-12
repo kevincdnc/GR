@@ -102,8 +102,8 @@ function CreatePanel({
   // Allow the in-map "Valider" button to trigger save
   useCreateEffect(() => {
     const finish = () => submit();
-    window.addEventListener('mountaya:finishDraft', finish);
-    return () => window.removeEventListener('mountaya:finishDraft', finish);
+    window.addEventListener('gr:finishDraft', finish);
+    return () => window.removeEventListener('gr:finishDraft', finish);
   });
 
   const labelCls = `text-[12px] font-medium mb-1.5 ${dark ? 'text-neutral-300' : 'text-neutral-700'}`;

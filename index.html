@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mountaya — Map Studio</title>
+<title>GR planner</title>
+<link rel="icon" href="assets/logo-gr.svg" type="image/svg+xml" />
 
-<meta name="ext-resource-dependency" content="assets/logo-mountaya.svg" data-resource-id="logoMountaya" />
+<meta name="ext-resource-dependency" content="assets/logo-gr.svg" data-resource-id="logoGr" />
 <meta name="ext-resource-dependency" content="assets/boussole.svg" data-resource-id="boussole" />
 <meta name="ext-resource-dependency" content="assets/strava.svg" data-resource-id="stravaLogo" />
 <meta name="ext-resource-dependency" content="assets/strava-gray.svg" data-resource-id="stravaLogoGray" />
@@ -15,36 +16,15 @@
 <meta name="ext-resource-dependency" content="assets/garmin-gray.svg" data-resource-id="garminLogoGray" />
 <meta name="ext-resource-dependency" content="assets/pro-coin.png" data-resource-id="proCoin" />
 <meta name="ext-resource-dependency" content="assets/empty-state.svg" data-resource-id="emptyState" />
-<meta name="ext-resource-dependency" content="assets/maps/temperature.png" data-resource-id="map_temperature" />
-<meta name="ext-resource-dependency" content="assets/maps/visibility.png" data-resource-id="map_visibility" />
-<meta name="ext-resource-dependency" content="assets/maps/humidity.png" data-resource-id="map_humidity" />
-<meta name="ext-resource-dependency" content="assets/maps/wind.png" data-resource-id="map_wind" />
-<meta name="ext-resource-dependency" content="assets/maps/aspectslope.png" data-resource-id="map_aspectslope" />
-<meta name="ext-resource-dependency" content="assets/maps/landcover.png" data-resource-id="map_landcover" />
-<meta name="ext-resource-dependency" content="assets/maps/hillshade.png" data-resource-id="map_hillshade" />
-<meta name="ext-resource-dependency" content="assets/maps/snowfall.png" data-resource-id="map_snowfall" />
-<meta name="ext-resource-dependency" content="assets/maps/snowdepth.png" data-resource-id="map_snowdepth" />
-<meta name="ext-resource-dependency" content="assets/maps/avalanche.png" data-resource-id="map_avalanche" />
 <meta name="ext-resource-dependency" content="assets/maps/topo.png" data-resource-id="map_topo" />
 <meta name="ext-resource-dependency" content="assets/maps/winter.png" data-resource-id="map_winter" />
 <meta name="ext-resource-dependency" content="assets/maps/satellite.png" data-resource-id="map_satellite" />
 
-<template id="__bundler_thumbnail" data-bg-color="#eff6ff">
-  <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="th-body" x1="100" y1="-20" x2="100" y2="180" gradientUnits="userSpaceOnUse">
-        <stop offset="0" stop-color="#EBFAFF"/>
-        <stop offset="1" stop-color="#0049E5"/>
-      </linearGradient>
-      <linearGradient id="th-tip" x1="155" y1="120" x2="115" y2="230" gradientUnits="userSpaceOnUse">
-        <stop offset="0" stop-color="#003EFF"/>
-        <stop offset="1" stop-color="#7BB7FF"/>
-      </linearGradient>
-    </defs>
-    <g transform="translate(28,16) scale(0.46)">
-      <path d="M157 0C243.7 0 314 70.3 314 157c0 34.1-10 61.2-27.8 87.2L157.5 113 28.3 244.7C10.3 218.5 0 191.2 0 157 0 70.3 70.3 0 157 0Z" fill="url(#th-body)"/>
-      <path d="M159.1 114.6 286.2 244.2C258.8 284.3 212.9 321.6 157 377.5c-3-3-5.9-5.9-8.9-8.8C139.4 356.9 130 336.1 130 303.5c0-48.5 57-67 57-119 0-39.7-17.7-59.4-27.9-69.9Z" fill="url(#th-tip)"/>
-    </g>
+<template id="__bundler_thumbnail" data-bg-color="#f8fafc">
+  <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+    <rect x="7.6" y="4.5" width="2.4" height="27.5" rx="1.2" fill="#334155"/>
+    <path d="M10 6.4C14.6 4.9 18.8 7.9 23.6 6.7C26.6 6 28.8 6.2 30.6 6.9V13.5C28.8 12.8 26.6 12.6 23.6 13.3C18.8 14.5 14.6 11.5 10 13Z" fill="#fff" stroke="#cbd5e1" stroke-width="0.8"/>
+    <path d="M10 13C14.6 11.5 18.8 14.5 23.6 13.3C26.6 12.6 28.8 12.8 30.6 13.5V20.1C28.8 19.4 26.6 19.2 23.6 19.9C18.8 21.1 14.6 18.1 10 19.6Z" fill="#dc2626"/>
   </svg>
 </template>
 
@@ -158,7 +138,7 @@
 
   /* Leaflet — light/dark tweaks */
   .leaflet-container { background: transparent; outline: none; font-family: inherit; }
-  @keyframes mountayaPulse {
+  @keyframes grPulse {
     0%   { transform: scale(1);   opacity: .8; }
     100% { transform: scale(2.4); opacity: 0; }
   }

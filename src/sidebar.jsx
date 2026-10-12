@@ -132,10 +132,9 @@ function Sidebar({
       {/* Header */}
       <div className={`px-4 pt-5 pb-3 flex items-center justify-between`}>
         <div className="flex items-center gap-2" style={{ gap: "8px" }}>
-          <img src={(window.__resources && window.__resources.logoMountaya) || "assets/logo-mountaya.svg"} alt="Mountaya" className="w-9 h-9 shrink-0" draggable="false" />
+          <img src={(window.__resources && window.__resources.logoGr) || "assets/logo-gr.svg"} alt="" className="w-9 h-9 shrink-0" draggable="false" />
           <div className="leading-tight">
-            <div className={`font-semibold text-[15px] tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>Mountaya</div>
-            <div className={`text-[11px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`} style={{ padding: "0px" }}>Map Studio</div>
+            <div className={`font-semibold text-[15px] tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>GR planner</div>
           </div>
         </div>
         {/* Carte / Statistiques (GR34) */}

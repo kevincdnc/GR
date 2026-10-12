@@ -300,7 +300,7 @@ function MapView({
       className: 'user-loc',
       html:
         `<div style="position:relative;width:18px;height:18px;">` +
-        `<div style="position:absolute;inset:0;border-radius:9999px;background:rgba(59,130,246,0.25);animation:mountayaPulse 1.6s ease-out infinite;"></div>` +
+        `<div style="position:absolute;inset:0;border-radius:9999px;background:rgba(59,130,246,0.25);animation:grPulse 1.6s ease-out infinite;"></div>` +
         `<div style="position:absolute;inset:3px;border-radius:9999px;background:#3b82f6;box-shadow:0 0 0 2px #fff,0 1px 3px rgba(0,0,0,0.35);"></div>` +
         `</div>`,
       iconSize: [18, 18],
@@ -1500,7 +1500,7 @@ function MapView({
                 Activer votre localisation&nbsp;?
               </h3>
               <p className={`mt-2 text-[12.5px] leading-relaxed ${dark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                Pour vous afficher sur la carte et vous suggérer des itinéraires près de chez vous, Mountaya peut accéder à votre position.
+                Pour vous afficher sur la carte et vous suggérer des itinéraires près de chez vous, GR planner peut accéder à votre position.
               </p>
               <div className="flex gap-2.5 mt-5">
                 <button
@@ -2013,7 +2013,7 @@ function ExpandStat({ dark, icon, label, value }) {
 function GeoIllustration({ dark }) {
   return (
     <div className={`relative w-full h-full overflow-hidden ${dark ? 'bg-neutral-900' : 'bg-blue-50'}`}>
-      {/* Centered Mountaya logo pin + symmetric live location waves */}
+      {/* Centered GR planner flag + symmetric live location waves */}
       <svg viewBox="0 0 340 200" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
         <defs>
           <linearGradient id="geo-pin-body" x1="0.5" y1="0" x2="0.5" y2="1">
@@ -2058,19 +2058,11 @@ function GeoIllustration({ dark }) {
         {/* Ground shadow ellipse beneath the pin */}
         <ellipse cx="170" cy="172" rx="28" ry="5" fill="#3b82f6" opacity="0.22" />
 
-        {/* Mountaya logo — centered, smaller, lowered */}
-        <g transform="translate(136, 60)">
-          <path
-            transform="scale(0.22)"
-            d="M157 0C243.709 0 314 70.2913 314 157C314 191.062 303.968 218.192 286.21 244.157L157.5 113L28.2529 244.703C10.2556 218.53 0 191.177 0 157C0 70.2913 70.2913 0 157 0Z"
-            fill="url(#geo-pin-body)"
-          />
-          <path
-            transform="scale(0.22)"
-            d="M159.104 114.635L286.214 244.151C258.768 284.286 212.862 321.638 157 377.5C154.021 374.521 151.068 371.595 148.145 368.716C139.365 356.87 130 336.08 130 303.5C130 255 187 236.5 187 184.5C187 144.83 169.32 125.098 159.104 114.635Z"
-            fill="url(#geo-pin-tip)"
-          />
-          <ellipse cx="20" cy="23" rx="11" ry="17" transform="rotate(34 20 23)" fill="url(#geo-pin-shine)" opacity="0.85" />
+        {/* Drapeau GR planner — centré */}
+        <g transform="translate(130, 52) scale(2.3)">
+          <rect x="7.6" y="4.5" width="2.4" height="27.5" rx="1.2" fill="#334155" />
+          <path d="M10 6.4C14.6 4.9 18.8 7.9 23.6 6.7C26.6 6 28.8 6.2 30.6 6.9V13.5C28.8 12.8 26.6 12.6 23.6 13.3C18.8 14.5 14.6 11.5 10 13Z" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.8" strokeLinejoin="round" />
+          <path d="M10 13C14.6 11.5 18.8 14.5 23.6 13.3C26.6 12.6 28.8 12.8 30.6 13.5V20.1C28.8 19.4 26.6 19.2 23.6 19.9C18.8 21.1 14.6 18.1 10 19.6Z" fill="#dc2626" />
         </g>
       </svg>
     </div>
@@ -2088,17 +2080,17 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
   const [open, setOpen] = useState(null); // 'cartes' | 'settings' | null
   // First-visit onboarding hint pointing at the locate button.
   const [showLocateHint, setShowLocateHint] = useState(() => {
-    try { return !localStorage.getItem('mountaya_onboard_geo'); } catch (e) { return true; }
+    try { return !localStorage.getItem('gr_onboard_geo'); } catch (e) { return true; }
   });
   const dismissLocateHint = () => {
     setShowLocateHint(false);
-    try { localStorage.setItem('mountaya_onboard_geo', '1'); } catch (e) {}
+    try { localStorage.setItem('gr_onboard_geo', '1'); } catch (e) {}
   };
   // Replaced by the global 2-step guided tour (see App). Keep disabled here.
   const locateHintVisible = false;
   const [mapStyle, setMapStyle] = useState(savedMapStyle); // cf. BASE_LAYERS
   const [forecastDay, setForecastDay] = useState(0); // -2 .. +5 days
-  const [enrichment, setEnrichment] = useState({ poi: false, hillshade: true });
+  const [enrichment, setEnrichment] = useState({ poi: false, hillshade: false });
   const [overlayTab, setOverlayTab] = useState('weather'); // weather | surface | snow
   const [overlay, setOverlay] = useState(null); // active overlay key or null
   const [theme, setTheme] = useState('auto');
@@ -2164,7 +2156,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
       {/* Cartes + Settings combined stack */}
       <div className="relative">
         <div className={`flex flex-col ${cardCls}`}>
-          <Tooltip dark={dark} label="Cartes" sub="Style et couches de la carte" side="left">
+          <Tooltip dark={dark} label="Cartes" sub="Choisir le fond de carte" side="left">
             <MapBtn
               dark={dark}
               active={open === 'cartes'}
@@ -2392,37 +2384,13 @@ function CartesPopover({ dark, mapStyle, setMapStyle, forecastDay, setForecastDa
   // Vignette = vraie tuile (zoom 12, autour de Quimper) pour les fonds sans image dédiée
   const TILE_THUMB = (key) => BASE_LAYERS[key].url
     .replace('{s}', 'a').replace('{r}', '@2x').replace('{z}', '12').replace('{x}', '2001').replace('{y}', '1423');
-  const OVERLAYS = {
-    weather: [
-      { key: 'temp', label: 'T° ressentie', img: M('temperature') },
-      { key: 'visibility', label: 'Visibilité', img: M('visibility') },
-      { key: 'humidity', label: 'Humidité', img: M('humidity') },
-      { key: 'wind', label: 'Vent', img: M('wind') },
-    ],
-    surface: [
-      { key: 'aspect', label: 'Pente & exposition', img: M('aspectslope') },
-      { key: 'landcover', label: 'Couverture du sol', img: M('landcover') },
-      { key: 'hillshade2', label: 'Ombrage', img: M('hillshade') },
-    ],
-    snow: [
-      { key: 'snowfall', label: 'Chutes de neige', img: M('snowfall') },
-      { key: 'snowdepth', label: 'Hauteur de neige', img: M('snowdepth') },
-      { key: 'avalanche', label: 'Risque avalanche', img: M('avalanche') },
-    ],
-  };
-  const tabs = [
-    { key: 'weather', label: 'Météo' },
-    { key: 'surface', label: 'Surface' },
-    { key: 'snow', label: 'Neige' },
-  ];
-  const dayLabel = (d) => d === 0 ? "Aujourd'hui" : (d < 0 ? `${d} j` : `+${d} j`);
 
   return (
     <PopoverShell dark={dark} width={360}>
       <PopHeader dark={dark} title="Cartes" />
 
       {/* Terrains */}
-      <PopSection dark={dark} label="Terrains">
+      <PopSection dark={dark} label="Fond de carte">
         <div className="grid grid-cols-3 gap-2">
           <TerrainCard dark={dark} label="Plan" selected={mapStyle === 'plan'} onClick={() => setMapStyle('plan')} img={TILE_THUMB('plan')} />
           <TerrainCard dark={dark} label="Topo" selected={mapStyle === 'topo'} onClick={() => setMapStyle('topo')} img={M('topo')} />
@@ -2433,39 +2401,6 @@ function CartesPopover({ dark, mapStyle, setMapStyle, forecastDay, setForecastDa
         </div>
       </PopSection>
 
-      {/* History & forecast */}
-      <PopSection dark={dark} label="Historique & prévisions">
-        <ForecastSlider dark={dark} value={forecastDay} onChange={setForecastDay} />
-      </PopSection>
-
-      {/* Overlays */}
-      <PopSection dark={dark} label="Surcouches">
-        <SegmentedRow
-          dark={dark}
-          value={overlayTab}
-          onChange={setOverlayTab}
-          options={tabs.map((t) => ({ value: t.key, label: t.label }))}
-        />
-        <div className="grid grid-cols-3 gap-2 mt-2.5">
-          {OVERLAYS[overlayTab].map((o) => (
-            <OverlayCard
-              key={o.key}
-              dark={dark}
-              label={o.label}
-              img={o.img}
-              selected={overlay === o.key}
-              onClick={() => setOverlay(overlay === o.key ? null : o.key)}
-            />
-          ))}
-        </div>
-      </PopSection>
-
-      {/* Terrain enrichment — at the very bottom */}
-      <PopSection dark={dark} label="Enrichissement">
-        <ToggleRow dark={dark} label="Ombrage du relief"
-          checked={enrichment.hillshade}
-          onToggle={() => setEnrichment((s) => ({ ...s, hillshade: !s.hillshade }))} />
-      </PopSection>
     </PopoverShell>
   );
 }
