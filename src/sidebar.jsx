@@ -132,7 +132,7 @@ function Sidebar({
       {/* Header */}
       <div className={`px-4 pt-7 pb-5 flex items-center justify-between`}>
         <div className="flex items-center gap-2" style={{ gap: "8px" }}>
-          <div className="leading-tight">
+          <div className="leading-tight pl-1">
             <RoutdoorLogo dark={dark} height={24} />
           </div>
         </div>
