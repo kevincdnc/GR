@@ -123,6 +123,14 @@ const MAP_MAX_ZOOM = 20;
 // cadrage automatique pour que les traces restent dans la partie visible.
 const MAP_UNDERLAY = 356;
 const MAP_STYLE_KEY = 'gr34_map_style';
+const MAP_OPACITY_KEY = 'gr34_map_opacity';
+function savedMapOpacity() {
+  try { const v = Number(localStorage.getItem(MAP_OPACITY_KEY)); return Number.isFinite(v) && v >= 0 && v <= 100 && localStorage.getItem(MAP_OPACITY_KEY) !== null ? v : 100; } catch (e) { return 100; }
+}
+// Opacité du fond de carte (les tracés restent opaques) — fond noir dessous
+function applyMapOpacity(map, pct) {
+  try { map.getPane('tilePane').style.opacity = String(pct / 100); } catch (e) {}
+}
 function savedMapStyle() {
   try { const v = localStorage.getItem(MAP_STYLE_KEY); return BASE_LAYERS[v] ? v : 'plan'; } catch (e) { return 'plan'; }
 }
@@ -298,6 +306,7 @@ function MapView({
     const map = mapRef.current;
     if (!map) return;
     applyBaseLayer(map, savedMapStyle());
+    applyMapOpacity(map, savedMapOpacity());
   }, []);
 
   // User geolocation marker (pulsing live dot) ----------------------------
@@ -1132,7 +1141,7 @@ function MapView({
       <div
         ref={mapEl}
         className="absolute top-0 right-0 bottom-0"
-        style={{ '--accent': accent, left: -MAP_UNDERLAY, background: dark ? '#171717' : '#f1ede4' }}>
+        style={{ '--accent': accent, left: -MAP_UNDERLAY, background: '#171717' }}>
       </div>
 
       {/* Custom POI placement cursor — when in POI step and a POI template is selected */}
@@ -2122,6 +2131,11 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
   // Replaced by the global 2-step guided tour (see App). Keep disabled here.
   const locateHintVisible = false;
   const [mapStyle, setMapStyle] = useState(savedMapStyle); // cf. BASE_LAYERS
+  const [mapOpacity, setMapOpacity] = useState(savedMapOpacity); // 0..100 (pas de 10)
+  useEffect(() => {
+    applyMapOpacity(mapRef && mapRef.current, mapOpacity);
+    try { localStorage.setItem(MAP_OPACITY_KEY, String(mapOpacity)); } catch (e) {}
+  }, [mapOpacity]);
   const [forecastDay, setForecastDay] = useState(0); // -2 .. +5 days
   const [enrichment, setEnrichment] = useState({ poi: false, hillshade: false });
   const [overlayTab, setOverlayTab] = useState('weather'); // weather | surface | snow
@@ -2210,6 +2224,8 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
             dark={dark}
             mapStyle={mapStyle}
             setMapStyle={setMapStyle}
+            mapOpacity={mapOpacity}
+            setMapOpacity={setMapOpacity}
             forecastDay={forecastDay}
             setForecastDay={setForecastDay}
             enrichment={enrichment}
@@ -2306,7 +2322,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
             }
           }}
           aria-label="Boussole"
-          className={`w-9 h-9 rounded-md overflow-hidden grid place-items-center transition-colors glass ${dark ? 'hover:bg-white/10' : 'hover:bg-white'}`}
+          className="w-9 h-9 rounded-full overflow-hidden grid place-items-center shadow-lg transition-transform hover:scale-105"
         >
           <img
             src={(window.__resources && window.__resources.boussole) || "assets/boussole.svg"}
@@ -2411,7 +2427,7 @@ function PreviewTopo({ dark }) {
   );
 }
 
-function CartesPopover({ dark, mapStyle, setMapStyle, forecastDay, setForecastDay, enrichment, setEnrichment, overlayTab, setOverlayTab, overlay, setOverlay }) {
+function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity, forecastDay, setForecastDay, enrichment, setEnrichment, overlayTab, setOverlayTab, overlay, setOverlay }) {
   // Resolve a maps/*.png to its inlined blob URL in the standalone build.
   const M = (name) => (window.__resources && window.__resources['map_' + name]) || ('assets/maps/' + name + '.png');
   // Vignette = vraie tuile (zoom 12, autour de Quimper) pour les fonds sans image dédiée
@@ -2434,6 +2450,10 @@ function CartesPopover({ dark, mapStyle, setMapStyle, forecastDay, setForecastDa
         </div>
       </PopSection>
 
+      {/* Opacité du fond de carte (même UI que l'ancien curseur historique / prévisions) */}
+      <PopSection dark={dark} label="Opacité de la carte">
+        <OpacitySlider dark={dark} value={mapOpacity} onChange={setMapOpacity} />
+      </PopSection>
     </PopoverShell>
   );
 }
@@ -2554,6 +2574,46 @@ function ForecastSlider({ dark, value, onChange }) {
       </div>
       <div className={`flex justify-between mt-1.5 text-[10px] tabular-nums ${dark ? 'text-neutral-500' : 'text-neutral-400'}`}>
         <span>-4 j</span><span>Maintenant</span><span>+4 j</span>
+      </div>
+    </div>
+  );
+}
+
+function OpacitySlider({ dark, value, onChange }) {
+  const MIN = 0, MAX = 100, STEP = 10;
+  const steps = (MAX - MIN) / STEP; // 10 intervalles -> 11 crans
+  const pct = ((value - MIN) / (MAX - MIN)) * 100;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-2.5">
+        <span className={`text-[15px] font-semibold tabular-nums ${dark ? 'text-white' : 'text-neutral-900'}`}>{value} %</span>
+        <span className={`text-[11px] ${value === 100 ? 'text-blue-500 font-medium' : (dark ? 'text-neutral-500' : 'text-neutral-400')}`}>
+          {value === 100 ? 'Carte pleine' : value === 0 ? 'Tracés seuls' : 'Tracés mis en avant'}
+        </span>
+      </div>
+      <div className="relative h-5 flex items-center">
+        <div className={`absolute left-0 right-0 h-1.5 rounded-full ${dark ? 'bg-neutral-800' : 'bg-neutral-200'}`}></div>
+        <div className="absolute left-0 h-1.5 rounded-full" style={{ background: '#3b82f6', width: `${pct}%` }}></div>
+        <div className="absolute left-0 right-0 flex justify-between px-[1px] pointer-events-none">
+          {Array.from({ length: steps + 1 }).map((_, i) => {
+            const v = MIN + i * STEP;
+            const isEnd = v === MAX;
+            return (
+              <span key={i} className="rounded-full"
+                style={{ width: isEnd ? 4 : 3, height: isEnd ? 4 : 3, background: v <= value ? '#3b82f6' : (dark ? '#525252' : '#d4d4d4') }}></span>
+            );
+          })}
+        </div>
+        <input
+          type="range" min={MIN} max={MAX} step={STEP} value={value}
+          onChange={(e) => onChange(parseInt(e.target.value, 10))}
+          aria-label="Opacité de la carte"
+          className="cartes-range absolute left-0 right-0 w-full appearance-none bg-transparent cursor-pointer"
+          style={{ accentColor: '#3b82f6' }}
+        />
+      </div>
+      <div className={`flex justify-between mt-1.5 text-[10px] tabular-nums ${dark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+        <span>0 %</span><span>50 %</span><span>100 %</span>
       </div>
     </div>
   );

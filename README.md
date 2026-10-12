@@ -14,7 +14,7 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 |---|---|
 | Étapes GR34 (traces, distance, D+/D−, profil d'altitude) | **Réel**, calculé depuis `gpx/*.gpx` |
 | Statistiques (bouton *Stats*) : tableau triable, km effort, durées, graphiques | **Réel** |
-| Fonds de carte (*Cartes* → Plan, Topo, IGN, Photos IGN, Satellite, Hiver) | **Réel** |
+| Fonds de carte (*Cartes* → Plan, Topo, IGN, Photos IGN, Satellite, Hiver) et opacité du fond (0–100 %) | **Réel** |
 | Zoom (jusqu'à 20, pas de 0,25), géolocalisation | **Réel** |
 | Import de fichiers GPX (un ou plusieurs à la fois, un tracé par fichier) | **Réel** (analysés dans le navigateur) |
 | Création / édition d'itinéraires, sections, repères, groupes, glisser-déposer | Réel, sauvegardé dans le navigateur |
