@@ -130,7 +130,7 @@ function Sidebar({
   return (
     <div className="flex-1 flex flex-col min-h-0">
       {/* Header */}
-      <div className={`px-4 pt-5 pb-3 flex items-center justify-between`}>
+      <div className={`px-4 pt-7 pb-5 flex items-center justify-between`}>
         <div className="flex items-center gap-2" style={{ gap: "8px" }}>
           <div className="leading-tight">
             <div className={`logo-type text-[20px] select-none ${dark ? 'text-white' : 'text-neutral-900'}`} aria-label="GPXmap">
@@ -157,11 +157,8 @@ function Sidebar({
         </div>
       )}
 
-      {/* Subtle divider */}
-      <div className={`mx-4 mt-2 mb-1 h-px ${dark ? 'bg-neutral-800' : 'bg-neutral-200'}`} />
-
       {/* Section label */}
-      <div className="px-4 pt-2 pb-1 flex items-center justify-between">
+      <div className="px-4 pt-4 pb-1 flex items-center justify-between">
         <span className={`text-[10px] font-semibold uppercase tracking-wider ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>Mes itinéraires</span>
         <div className="flex items-center gap-0.5">
           <Tooltip dark={dark} label="Nouveau groupe" sub="Ranger vos itinéraires dans un dossier">
