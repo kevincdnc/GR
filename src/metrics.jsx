@@ -166,7 +166,7 @@ function MetricsContent({ groups, dark, accent, onShowStage }) {
   return (
     <div className="flex flex-col h-full glass-backdrop">
       {/* Top bar */}
-      <div className={`px-8 pt-16 pb-5 border-b flex items-end justify-between gap-4 flex-wrap ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
+      <div className={`px-8 pt-7 pb-5 border-b flex items-end justify-between gap-4 flex-wrap ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
         <div>
           <div className={`text-[11px] font-semibold uppercase tracking-wider ${muted}`}>GR34 · Sentier des douaniers</div>
           <h1 className={`mt-0.5 text-[22px] font-semibold tracking-tight ${strong}`}>Statistiques</h1>

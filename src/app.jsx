@@ -941,23 +941,9 @@ function App() {
           <SettingsContent tab={settingsTab} dark={dark} accent={t.accent} />
         ) : (
           <>
-            {/* En haut à droite : recherche de lieu + sélecteur Carte / Stats.
-                Au-dessus de la vue Stats (z-[1060]) pour pouvoir revenir à la carte. */}
-            <div className="absolute top-4 right-4 z-[1060] flex items-center gap-2">
+            {/* Recherche de lieu — en haut à droite (masquée en vue Stats) */}
+            <div className="absolute top-4 right-4 z-[500] flex items-center gap-2">
               {view === 'map' && <PlaceSearch map={mapInstance} dark={dark} accent={t.accent} />}
-              {!creating && !importing && (
-                <div role="tablist" aria-label="Vue" className="glass rounded-md p-[3px] flex">
-                  {[{ value: 'map', label: 'Carte', icon: <I.Layers size={14} /> }, { value: 'metrics', label: 'Stats', icon: <I.TrendingUp size={14} /> }].map((o) => {
-                    const sel = view === o.value;
-                    return (
-                      <button key={o.value} role="tab" aria-selected={sel} onClick={() => setView(o.value)}
-                        className={`flex items-center gap-1.5 rounded-[4px] text-[12.5px] font-medium px-3 py-[5px] transition-colors ${sel ? (dark ? 'bg-white/15 text-white' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-300 hover:text-white hover:bg-white/5' : 'text-neutral-600 hover:text-neutral-900')}`}>
-                        {o.icon}{o.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
             {/* Floating, draggable custom-marker card (over the map) */}

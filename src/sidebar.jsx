@@ -134,13 +134,29 @@ function Sidebar({
         <div className="flex items-center gap-2" style={{ gap: "8px" }}>
           <img src={(window.__resources && window.__resources.logoGr) || "assets/logo-gr.svg"} alt="" className="w-8 h-8 shrink-0" draggable="false" />
           <div className="leading-tight">
-            <div className="logo-type text-[22px] select-none" aria-label="Trek Studio">
-              <span className={dark ? 'text-white' : 'text-neutral-900'}>Trek</span>
-              <span className="ml-[0.18em] text-red-600">Studio</span>
+            <div className={`logo-type text-[21px] select-none ${dark ? 'text-white' : 'text-neutral-900'}`} aria-label="Trek Studio">
+              Trek Studio
             </div>
           </div>
         </div>
       </div>
+
+      {/* Carte / Statistiques — sous le logo, toute la largeur */}
+      {onViewChange && (
+        <div className="px-4 pt-1 pb-1.5">
+          <div role="tablist" aria-label="Vue" className={`flex p-[3px] rounded-md border ${dark ? 'bg-black/25 border-white/10' : 'bg-white/50 border-neutral-200/70'}`}>
+            {[{ value: 'map', label: 'Carte', icon: <I.Layers size={14} /> }, { value: 'metrics', label: 'Stats', icon: <I.TrendingUp size={14} /> }].map((o) => {
+              const sel = view === o.value;
+              return (
+                <button key={o.value} role="tab" aria-selected={sel} onClick={() => onViewChange(o.value)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 rounded-[4px] text-[12.5px] font-medium py-[5px] transition-colors ${sel ? (dark ? 'bg-white/15 text-white' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-300 hover:text-white hover:bg-white/5' : 'text-neutral-600 hover:text-neutral-900')}`}>
+                  {o.icon}{o.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Subtle divider */}
       <div className={`mx-4 mt-2 mb-1 h-px ${dark ? 'bg-neutral-800' : 'bg-neutral-200'}`} />
@@ -917,7 +933,7 @@ function EmptyStateIllustration({ dark, accent, onOpenMenu }) {
   return (
     <div className="px-3 pt-10 pb-6 text-center">
       <div className="mx-auto" style={{ maxWidth: 208 }}>
-        <div style={{ opacity: 0.8 }}>
+        <div className="mx-auto" style={{ opacity: 0.8, maxWidth: 166 /* 80 % de 208 */ }}>
           <img src={(window.__resources && window.__resources.emptyState) || "assets/empty-state.svg"} alt="" width="100%" style={{ display: 'block' }} aria-hidden="true" />
         </div>
 

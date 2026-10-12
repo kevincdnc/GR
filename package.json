@@ -11,8 +11,8 @@
   "devDependencies": {
     "@babel/standalone": "7.29.0",
     "@fontsource/barlow": "^5.1.1",
-    "@fontsource/barlow-condensed": "^5.1.1",
     "@fontsource/barlow-semi-condensed": "^5.1.1",
+    "@fontsource/permanent-marker": "^5.1.1",
     "leaflet": "^1.9.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

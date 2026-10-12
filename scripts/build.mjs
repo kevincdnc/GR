@@ -95,11 +95,10 @@ export function build({ single = false } = {}) {
   const fontFiles = ['barlow', 'barlow-semi-condensed'].flatMap((fam) => [400, 500, 600, 700].map((w) => {
     const name = `${fam}-latin-${w}-normal.woff2`
     return { name, path: nm(`@fontsource/${fam}/files/${name}`) }
-  })).concat([700, 800].map((w) => {
-    // Logotype « Trek Studio »
-    const name = `barlow-condensed-latin-${w}-italic.woff2`
-    return { name, path: nm(`@fontsource/barlow-condensed/files/${name}`) }
-  }))
+  })).concat([
+    // Logotype « Trek Studio » (écriture manuscrite)
+    { name: 'permanent-marker-latin-400-normal.woff2', path: nm('@fontsource/permanent-marker/files/permanent-marker-latin-400-normal.woff2') },
+  ])
   const vendor = {
     'vendor/react.js': nm('react/umd/react.production.min.js'),
     'vendor/react-dom.js': nm('react-dom/umd/react-dom.production.min.js'),
