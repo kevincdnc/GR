@@ -186,7 +186,7 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage, onShare
 
   if (!rows.length) {
     return (
-      <div className={`flex flex-col h-full items-center justify-center text-center px-8 glass-backdrop ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+      <div className={`flex flex-col h-full items-center justify-center text-center px-8 ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>
         <I.EyeOff size={28} />
         <p className={`mt-3 text-[14px] font-medium ${strong}`}>Aucune activité sélectionnée</p>
         <p className="mt-1 text-[13px]">Affiche des itinéraires ou des groupes dans la navigation (icône œil) pour voir leurs statistiques.</p>
@@ -195,7 +195,7 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage, onShare
   }
 
   return (
-    <div className="flex flex-col h-full glass-backdrop">
+    <div className="flex flex-col h-full">
       {/* Top bar */}
       <div className={`px-4 pt-[72px] pb-4 md:px-8 md:pt-7 md:pb-5 border-b flex items-end justify-between gap-4 flex-wrap ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
         <div>

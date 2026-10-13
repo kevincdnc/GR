@@ -80,6 +80,17 @@ function mergeSavedWithRepo(saved) {
   return { groups, visible };
 }
 
+// Pages plein écran (Stats, Paramètres) : le fond passe aussi sous la
+// navigation flottante (comme la carte) ; le contenu reste à sa droite.
+function PageBleed({ isMobile, className = '', children }) {
+  return (
+    <div className={`absolute top-0 right-0 bottom-0 glass-backdrop ${className}`}
+      style={isMobile ? { left: 0 } : { left: -MAP_UNDERLAY_DESKTOP, paddingLeft: MAP_UNDERLAY_DESKTOP }}>
+      {children}
+    </div>
+  );
+}
+
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [groups, setGroups] = useAppState(SEED_GROUPS);
@@ -1190,7 +1201,7 @@ function App() {
       {/* Zone de contenu à droite de la navigation ; la carte s'étend dessous (cf. MAP_UNDERLAY) */}
       <main className={`absolute top-0 right-0 bottom-0 ${isMobile ? 'left-0' : 'left-[356px]'}`}>
         {settingsOpen ? (
-          <SettingsContent tab={settingsTab} dark={dark} accent={t.accent} />
+          <PageBleed isMobile={isMobile} className="z-[950]"><SettingsContent tab={settingsTab} dark={dark} accent={t.accent} /></PageBleed>
         ) : (
           <>
             {/* Recherche de lieu — en haut à droite (masquée en vue Stats) */}
@@ -1425,7 +1436,7 @@ function App() {
 
         {/* Statistiques GR34 — par-dessus la carte (qui reste chargée) */}
         {view === 'metrics' && !creating && !importing && (
-          <div className="absolute inset-0 z-[1050]">
+          <PageBleed isMobile={isMobile} className="z-[950]">
             <MetricsContent
               groups={groups}
               visibleIds={visibleIds}
@@ -1441,7 +1452,7 @@ function App() {
                 setVisibleIds(new Set([sectionId]));
                 setView('map');
               }} />
-          </div>
+          </PageBleed>
         )}
 
         {sharedRoute && !importing && (

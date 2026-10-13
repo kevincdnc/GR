@@ -73,7 +73,7 @@ function SettingsPanel({ onClose, dark, accent, tab, onTabChange }) {
 function SettingsContent({ tab, dark, accent }) {
   const current = SETTINGS_TABS.find((t) => t.id === tab) || SETTINGS_TABS[0];
   return (
-    <div className="flex flex-col h-full glass-backdrop">
+    <div className="flex flex-col h-full">
       {/* Top bar — tab title */}
       <div className={`px-8 pt-7 pb-5 border-b ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
         <div className={`text-[11px] font-semibold uppercase tracking-wider ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>Paramètres</div>
