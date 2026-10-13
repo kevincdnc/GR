@@ -141,6 +141,21 @@ function savedMapOpacity() {
 function applyMapOpacity(map, pct) {
   try { map.getPane('tilePane').style.opacity = String(pct / 100); } catch (e) {}
 }
+// Couleur de fond sous les tuiles (visible quand l'opacité de la carte baisse)
+const MAP_BG_KEY = 'gr34_map_bg';
+const MAP_BG_DEFAULT = '#171717';
+function normalizeHex(v) {
+  const m = String(v || '').trim().replace(/^#/, '').match(/^([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (!m) return null;
+  const h = m[1].length === 3 ? m[1].split('').map((c) => c + c).join('') : m[1];
+  return '#' + h.toLowerCase();
+}
+function savedMapBg() {
+  try { return normalizeHex(localStorage.getItem(MAP_BG_KEY)) || MAP_BG_DEFAULT; } catch (e) { return MAP_BG_DEFAULT; }
+}
+function applyMapBg(map, color) {
+  try { map.getContainer().style.background = color; } catch (e) {}
+}
 function savedMapStyle() {
   try { const v = localStorage.getItem(MAP_STYLE_KEY); return BASE_LAYERS[v] ? v : 'plan'; } catch (e) { return 'plan'; }
 }
@@ -1218,7 +1233,7 @@ function MapView({
       <div
         ref={mapEl}
         className="absolute top-0 right-0 bottom-0"
-        style={{ '--accent': accent, left: -MAP_UNDERLAY, background: '#171717' }}>
+        style={{ '--accent': accent, left: -MAP_UNDERLAY, background: savedMapBg() }}>
       </div>
 
       {/* Custom POI placement cursor — when in POI step and a POI template is selected */}
@@ -2216,6 +2231,11 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
   const locateHintVisible = false;
   const [mapStyle, setMapStyle] = useState(savedMapStyle); // cf. BASE_LAYERS
   const [mapOpacity, setMapOpacity] = useState(savedMapOpacity); // 0..100 (pas de 10)
+  const [mapBg, setMapBg] = useState(savedMapBg);
+  useEffect(() => {
+    applyMapBg(mapRef && mapRef.current, mapBg);
+    try { localStorage.setItem(MAP_BG_KEY, mapBg); } catch (e) {}
+  }, [mapBg]);
   useEffect(() => {
     applyMapOpacity(mapRef && mapRef.current, mapOpacity);
     try { localStorage.setItem(MAP_OPACITY_KEY, String(mapOpacity)); } catch (e) {}
@@ -2319,6 +2339,8 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
             setMapOpacity={setMapOpacity}
             trailsOn={trailsOn}
             setTrailsOn={setTrailsOn}
+            mapBg={mapBg}
+            setMapBg={setMapBg}
             forecastDay={forecastDay}
             setForecastDay={setForecastDay}
             enrichment={enrichment}
@@ -2520,7 +2542,7 @@ function PreviewTopo({ dark }) {
   );
 }
 
-function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity, trailsOn, setTrailsOn, forecastDay, setForecastDay, enrichment, setEnrichment, overlayTab, setOverlayTab, overlay, setOverlay }) {
+function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity, trailsOn, setTrailsOn, mapBg, setMapBg, forecastDay, setForecastDay, enrichment, setEnrichment, overlayTab, setOverlayTab, overlay, setOverlay }) {
   // Resolve a maps/*.png to its inlined blob URL in the standalone build.
   const M = (name) => (window.__resources && window.__resources['map_' + name]) || ('assets/maps/' + name + '.png');
   // Vignette = vraie tuile (zoom 12, autour de Quimper) pour les fonds sans image dédiée
@@ -2568,6 +2590,11 @@ function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity,
       {/* Opacité du fond de carte (même UI que l'ancien curseur historique / prévisions) */}
       <PopSection dark={dark} label="Opacité de la carte">
         <OpacitySlider dark={dark} value={mapOpacity} onChange={setMapOpacity} />
+      </PopSection>
+
+      {/* Couleur de l'arrière-plan sous la carte */}
+      <PopSection dark={dark} label="Couleur de l'arrière-plan">
+        <MapBgColorField dark={dark} value={mapBg} onChange={setMapBg} />
       </PopSection>
     </PopoverShell>
   );
@@ -2690,6 +2717,32 @@ function ForecastSlider({ dark, value, onChange }) {
       <div className={`flex justify-between mt-1.5 text-[10px] tabular-nums ${dark ? 'text-neutral-500' : 'text-neutral-400'}`}>
         <span>-4 j</span><span>Maintenant</span><span>+4 j</span>
       </div>
+    </div>
+  );
+}
+
+// Champ hexadécimal + sélecteur de couleur natif (pastille cliquable)
+function MapBgColorField({ dark, value, onChange }) {
+  const [draft, setDraft] = useState(null);
+  const text = draft != null ? draft : value.toUpperCase();
+  const valid = normalizeHex(text);
+  const commit = () => { if (valid) onChange(valid); setDraft(null); };
+  return (
+    <div className="flex items-center gap-2">
+      <label title="Choisir une couleur"
+        className={`relative w-9 h-9 shrink-0 rounded-md border cursor-pointer overflow-hidden ${dark ? 'border-neutral-700' : 'border-neutral-300'}`}
+        style={{ background: valid || value }}>
+        <input type="color" value={value} onChange={(e) => { setDraft(null); onChange(e.target.value); }}
+          aria-label="Sélecteur de couleur" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+      </label>
+      <input value={text} onChange={(e) => setDraft(e.target.value)} onBlur={commit}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { setDraft(null); e.currentTarget.blur(); } }}
+        aria-label="Couleur hexadécimale" spellCheck="false" maxLength={7}
+        className={`flex-1 min-w-0 h-9 rounded-md border px-2.5 font-mono text-[13px] uppercase outline-none transition-colors ${!valid ? 'border-rose-400' : (dark ? 'border-neutral-800 bg-neutral-900/60 text-neutral-100 focus:border-neutral-600' : 'border-neutral-200 bg-white text-neutral-900 focus:border-neutral-400')}`} />
+      <button onClick={() => { setDraft(null); onChange(MAP_BG_DEFAULT); }} disabled={value === MAP_BG_DEFAULT}
+        className={`h-9 px-2.5 rounded-md text-[12px] font-medium transition-colors ${value === MAP_BG_DEFAULT ? (dark ? 'text-neutral-600' : 'text-neutral-400') : (dark ? 'text-neutral-300 hover:bg-neutral-800' : 'text-neutral-700 hover:bg-neutral-100')}`}>
+        Défaut
+      </button>
     </div>
   );
 }
