@@ -49,7 +49,7 @@ function CreatePanel({
 
   // In Free mode groups is empty → groupId is '' but handleSaveNew creates a
   // default group fallback. Don't block save on missing groupId.
-  const canSave = name.trim().length > 0 && draftCoords && draftCoords.length >= 2;
+  const canSave = !!(draftCoords && draftCoords.length >= 2);
   const pointCount = draftCoords ? draftCoords.length : 0;
 
   const submit = () => {
@@ -76,7 +76,7 @@ function CreatePanel({
     }
     onSave({
       id: 'i_new_' + Date.now(),
-      name: name.trim(),
+      name: name.trim() || defaultName || 'Nouvel itinéraire',
       activity,
       color: (draftSections && draftSections[0] && draftSections[0].color) || 'sky',
       sections,
@@ -111,9 +111,22 @@ function CreatePanel({
           >
             <I.ChevronLeft size={18} />
           </button>
-          <div className="min-w-0">
-            <div className={`font-semibold text-[15px] tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>{editingMode ? 'Modifier l’itinéraire' : 'Nouvel itinéraire'}</div>
-            <div className={`text-[11px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{editingMode ? 'Ajustez le tracé puis enregistrez' : 'Tracez votre parcours sur la carte'}</div>
+          <div className="min-w-0 flex-1">
+            {/* Nom de l'itinéraire, modifiable directement dans le titre */}
+            <label className={`group/title flex items-center gap-1.5 -ml-1.5 pl-1.5 pr-1 rounded-md cursor-text transition-colors ${dark ? 'hover:bg-white/5 focus-within:bg-white/5' : 'hover:bg-neutral-100 focus-within:bg-neutral-100'}`}
+              title="Renommer l'itinéraire">
+              <input
+                ref={nameRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                placeholder="Nom de l'itinéraire"
+                aria-label="Nom de l'itinéraire"
+                className={`min-w-0 flex-1 bg-transparent outline-none font-semibold text-[15px] tracking-tight py-0.5 border-b border-dashed ${dark ? 'text-white placeholder-neutral-600 border-white/20 focus:border-blue-500' : 'text-neutral-900 placeholder-neutral-400 border-neutral-300 focus:border-blue-500'}`}
+              />
+              <I.Edit size={13} className={`shrink-0 transition-opacity opacity-60 group-hover/title:opacity-100 ${dark ? 'text-neutral-400' : 'text-neutral-500'}`} />
+            </label>
+            <div className={`text-[11px] mt-0.5 ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{editingMode ? 'Ajustez le tracé puis enregistrez' : 'Tracez votre parcours sur la carte'}</div>
           </div>
         </div>
         <button
@@ -194,16 +207,19 @@ function CreatePanel({
             )}
           </div>
 
-          {/* Name */}
+          {/* Type de tracé — compact, juste sous le tracé */}
           <div className="mb-4">
-            <label className={labelCls}>Nom <span className="text-rose-500">*</span></label>
-            <input
-              ref={nameRef}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex. Boucle des Crêtes"
-              className={inputCls}
-            />
+            <div className={`flex p-0.5 rounded-lg border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`}>
+              {[{ v: 'oneWay', label: 'Aller simple', icon: <RouteTypeOneWay /> }, { v: 'outAndBack', label: 'Aller-retour', icon: <RouteTypeOutBack /> }].map((o) => {
+                const sel = draftRouteType === o.v;
+                return (
+                  <button key={o.v} onClick={() => onChangeRouteType(o.v)} aria-pressed={sel}
+                    className={`flex-1 h-8 flex items-center justify-center gap-2 rounded-md text-[12px] font-medium transition-all ${sel ? (dark ? 'bg-neutral-700/70 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-400 hover:text-neutral-200' : 'text-neutral-500 hover:text-neutral-800')}`}>
+                    {o.icon}{o.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
         {/* Group */}
@@ -224,67 +240,34 @@ function CreatePanel({
           </div>
         </div>
 
-        {/* Sections */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5">
-              <label className={`text-[12px] font-medium ${dark ? 'text-neutral-300' : 'text-neutral-700'}`}>Sections</label>
-              <Tooltip
-                dark={dark}
-                label="Sections"
-                sub="Votre itinéraire peut contenir une ou plusieurs sections."
-                side="right"
-              >
-                <I.Info size={12} className={dark ? 'text-neutral-500' : 'text-neutral-400'} />
-              </Tooltip>
+        {/* Sections & repères — discrets : listes seulement quand elles servent */}
+        {(draftSections || []).length > 1 && (
+          <div className="mb-3">
+            <div className={`text-[10.5px] font-semibold uppercase tracking-wider mb-1.5 ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>Sections</div>
+            <div className={`rounded-lg border ${dark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-white border-neutral-200'}`}>
+              {(draftSections || []).map((sec, idx) => (
+                <SectionListItem
+                  key={sec.id}
+                  section={sec}
+                  index={idx}
+                  isLast={idx === draftSections.length - 1}
+                  active={sec.id === activeSectionId}
+                  canDelete={draftSections.length > 1 && (idx === draftSections.length - 1 || sec.id === activeSectionId)}
+                  onActivate={() => onSetActiveSection && onSetActiveSection(sec.id)}
+                  onRename={(name) => onUpdateSection && onUpdateSection(sec.id, { name })}
+                  onRecolor={(color) => onUpdateSection && onUpdateSection(sec.id, { color })}
+                  onDelete={() => onRemoveSection && onRemoveSection(sec.id)}
+                  dark={dark}
+                  accent={accent}
+                />
+              ))}
             </div>
-            <span className={`text-[10.5px] tabular-nums ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{(draftSections || []).length}</span>
           </div>
-          <div className={`rounded-lg border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
-            {(draftSections || []).map((sec, idx) => (
-              <SectionListItem
-                key={sec.id}
-                section={sec}
-                index={idx}
-                isLast={idx === draftSections.length - 1}
-                active={sec.id === activeSectionId}
-                canDelete={draftSections.length > 1 && (idx === draftSections.length - 1 || sec.id === activeSectionId)}
-                onActivate={() => onSetActiveSection && onSetActiveSection(sec.id)}
-                onRename={(name) => onUpdateSection && onUpdateSection(sec.id, { name })}
-                onRecolor={(color) => onUpdateSection && onUpdateSection(sec.id, { color })}
-                onDelete={() => onRemoveSection && onRemoveSection(sec.id)}
-                dark={dark}
-                accent={accent}
-              />
-            ))}
-          </div>
-          <button
-            onClick={() => onAddSection && onAddSection()}
-            className={`mt-1.5 w-full flex items-center justify-center gap-1.5 text-[12px] font-medium rounded-md px-3 py-1.5 border border-dashed transition-colors ${dark ? 'border-neutral-700 text-neutral-300 hover:border-neutral-600 hover:bg-neutral-900' : 'border-neutral-300 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'}`}
-          >
-            <I.Plus size={13} /> Nouvelle section
-          </button>
-        </div>
-
-        {/* Repères personnalisés — same accordion-like UX as Sections, with a list
-            of placed POIs and a button to start placing a new one. */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5">
-              <label className={`text-[12px] font-medium ${dark ? 'text-neutral-300' : 'text-neutral-700'}`}>Repères personnalisés</label>
-              <Tooltip
-                dark={dark}
-                label="Repères personnalisés"
-                sub="Placez des marqueurs sur votre tracé pour signaler vos points clés."
-                side="right"
-              >
-                <I.Info size={12} className={dark ? 'text-neutral-500' : 'text-neutral-400'} />
-              </Tooltip>
-            </div>
-            <span className={`text-[10.5px] tabular-nums ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{(draftPois || []).length}</span>
-          </div>
-          {(draftPois && draftPois.length > 0) && (
-            <div className={`rounded-lg border mb-1.5 ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-neutral-200'}`}>
+        )}
+        {(draftPois && draftPois.length > 0) && (
+          <div className="mb-3">
+            <div className={`text-[10.5px] font-semibold uppercase tracking-wider mb-1.5 ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>Repères</div>
+            <div className={`rounded-lg border ${dark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-white border-neutral-200'}`}>
               {draftPois.map((p, i) => (
                 <PoiListItem
                   key={p.id}
@@ -298,55 +281,21 @@ function CreatePanel({
                 />
               ))}
             </div>
-          )}
-          {/* Placement opens a floating card (see below). The inline list +
-              "Nouveau repère" dropdown stay here. */}
-          <button
-            onClick={() => onStartPlacingPoi && onStartPlacingPoi({ name: '', color: 'blue', icon: 'Pin' })}
-            className={`w-full flex items-center justify-center gap-1.5 text-[12px] font-medium rounded-md px-3 py-1.5 border border-dashed transition-colors ${dark ? 'border-neutral-700 text-neutral-300 hover:border-neutral-600 hover:bg-neutral-900' : 'border-neutral-300 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'}`}
-          >
-            <I.Plus size={13} /> Nouveau repère
-          </button>
-        </div>
-
-        {/* Route type */}
-        <div className="mb-4">
-          <label className={labelCls}>Type de tracé</label>
-          <div className="grid grid-cols-2 gap-1.5">
-            <RouteTypeBtn
-              dark={dark} accent={accent}
-              selected={draftRouteType === 'oneWay'}
-              onClick={() => onChangeRouteType('oneWay')}
-              icon={<RouteTypeOneWay color={draftRouteType === 'oneWay' ? accent : (dark ? '#737373' : '#a3a3a3')} />}
-              label="Aller simple"
-            />
-            <RouteTypeBtn
-              dark={dark} accent={accent}
-              selected={draftRouteType === 'outAndBack'}
-              onClick={() => onChangeRouteType('outAndBack')}
-              icon={<RouteTypeOutBack color={draftRouteType === 'outAndBack' ? accent : (dark ? '#737373' : '#a3a3a3')} />}
-              label="Aller-retour"
-            />
           </div>
-        </div>
-
-{/* Privacy */}
-        <div className="mb-4">
-          <div className={labelCls}>Confidentialité</div>
-          <div className={`flex rounded-lg p-0.5 border ${dark ? 'bg-neutral-900 border-neutral-800' : 'bg-neutral-100 border-neutral-200'}`}>
-            <button
-              onClick={() => setPrivacy('private')}
-              className={`flex-1 flex items-center justify-center gap-1.5 rounded-md py-1.5 text-[12px] font-medium transition-all ${privacy === 'private' ? (dark ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-400' : 'text-neutral-600')}`}
-            >
-              <I.Lock size={13} /> Privé
+        )}
+        <div className="flex items-center gap-1 -ml-2">
+          <Tooltip dark={dark} label="Nouvelle section" sub="Découpez l'itinéraire en plusieurs parties colorées" side="top">
+            <button onClick={() => onAddSection && onAddSection()}
+              className={`flex items-center gap-1.5 text-[12px] rounded-md px-2 py-1.5 transition-colors ${dark ? 'text-neutral-400 hover:text-neutral-100 hover:bg-white/5' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'}`}>
+              <I.Plus size={12} /> Section
             </button>
-            <button
-              onClick={() => setPrivacy('public')}
-              className={`flex-1 flex items-center justify-center gap-1.5 rounded-md py-1.5 text-[12px] font-medium transition-all ${privacy === 'public' ? (dark ? 'bg-neutral-800 text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-400' : 'text-neutral-600')}`}
-            >
-              <I.Globe size={13} /> Public
+          </Tooltip>
+          <Tooltip dark={dark} label="Nouveau repère" sub="Signalez un point clé sur le tracé" side="top">
+            <button onClick={() => onStartPlacingPoi && onStartPlacingPoi({ name: '', color: 'blue', icon: 'Pin' })}
+              className={`flex items-center gap-1.5 text-[12px] rounded-md px-2 py-1.5 transition-colors ${dark ? 'text-neutral-400 hover:text-neutral-100 hover:bg-white/5' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'}`}>
+              <I.Pin size={12} /> Repère
             </button>
-          </div>
+          </Tooltip>
         </div>
       </div>
       </div>
@@ -552,32 +501,18 @@ function RouteTypeBtn({ selected, onClick, icon, label, dark, accent }) {
 }
 
 // SVG glyphs for the 3 route types — clean, recognizable
-function RouteTypeOneWay({ color }) {
+function RouteTypeOneWay() {
   return (
-    <svg width="32" height="22" viewBox="0 0 32 22" fill="none">
-      {/* Start pin (left) */}
-      <circle cx="6" cy="11" r="3.5" fill={color} />
-      <circle cx="6" cy="11" r="1.4" fill="#fff" />
-      {/* Line A→B */}
-      <path d="M9.5 11 L23 11" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
-      {/* End pin / arrow (right) */}
-      <path d="M22 7 L26 11 L22 15" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 7h13M11 3l4 4-4 4" />
     </svg>
   );
 }
-
-function RouteTypeOutBack({ color }) {
+function RouteTypeOutBack() {
   return (
-    <svg width="32" height="22" viewBox="0 0 32 22" fill="none">
-      {/* Start pin (left) */}
-      <circle cx="6" cy="11" r="3.5" fill={color} />
-      <circle cx="6" cy="11" r="1.4" fill="#fff" />
-      {/* Outbound (top) — solid arrow right */}
-      <path d="M9.5 7 L23 7" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M22 4 L26 7 L22 10" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      {/* Return (bottom) — dashed arrow left */}
-      <path d="M26 15 L10 15" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeDasharray="1 3" />
-      <path d="M13 12 L9.5 15 L13 18" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 4.5h13M12 1.5l3 3-3 3" />
+      <path d="M16 9.5H3M6 6.5l-3 3 3 3" />
     </svg>
   );
 }
