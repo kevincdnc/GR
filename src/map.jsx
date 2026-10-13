@@ -2391,60 +2391,49 @@ function ExpandStat({ dark, icon, label, value }) {
   );
 }
 
+// Repère de localisation en 3D qui tourne sur lui-même (CSS 3D : couches
+// empilées en profondeur pour l'épaisseur), avec ondes au sol.
 function GeoIllustration({ dark }) {
+  const PIN = 'M24 2C13.5 2 5 10.3 5 20.6 5 34 24 54 24 54s19-20 19-33.4C43 10.3 34.5 2 24 2Zm0 11.2a7.4 7.4 0 1 1 0 14.8 7.4 7.4 0 0 1 0-14.8Z';
+  const layers = [];
+  for (let z = -5; z <= 5; z++) layers.push(z);
   return (
-    <div className={`relative w-full h-full overflow-hidden ${dark ? 'bg-neutral-900' : 'bg-blue-50'}`}>
-      {/* Repère centré + ondes de localisation */}
-      <svg viewBox="0 0 340 200" preserveAspectRatio="xMidYMid meet" className="w-full h-full">
-        <defs>
-          <linearGradient id="geo-pin-body" x1="0.5" y1="0" x2="0.5" y2="1">
-            <stop offset="0" stopColor="#EBFAFF" />
-            <stop offset="1" stopColor="#0049E5" />
-          </linearGradient>
-          <linearGradient id="geo-pin-tip" x1="0.85" y1="0.4" x2="0.4" y2="1.1">
-            <stop offset="0" stopColor="#003EFF" />
-            <stop offset="1" stopColor="#7BB7FF" />
-          </linearGradient>
-          <radialGradient id="geo-pin-shine" cx="35%" cy="35%" r="40%">
-            <stop offset="0" stopColor="#ffffff" stopOpacity="0.85" />
-            <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-
-        {/* Live radar arcs — left side */}
-        <g fill="none" stroke="#003EFF" strokeLinecap="round" strokeWidth="3">
-          <path d="M120 70 Q 100 100 120 130" opacity="0.85">
-            <animate attributeName="opacity" values="0.2;0.95;0.2" dur="1.6s" repeatCount="indefinite" begin="0s" />
-          </path>
-          <path d="M100 55 Q 70 100 100 145" opacity="0.55">
-            <animate attributeName="opacity" values="0.1;0.7;0.1" dur="1.6s" repeatCount="indefinite" begin="0.25s" />
-          </path>
-          <path d="M80 40 Q 40 100 80 160" opacity="0.30">
-            <animate attributeName="opacity" values="0.05;0.45;0.05" dur="1.6s" repeatCount="indefinite" begin="0.5s" />
-          </path>
-        </g>
-        {/* Live radar arcs — right side (mirror) */}
-        <g fill="none" stroke="#003EFF" strokeLinecap="round" strokeWidth="3">
-          <path d="M220 70 Q 240 100 220 130" opacity="0.85">
-            <animate attributeName="opacity" values="0.2;0.95;0.2" dur="1.6s" repeatCount="indefinite" begin="0s" />
-          </path>
-          <path d="M240 55 Q 270 100 240 145" opacity="0.55">
-            <animate attributeName="opacity" values="0.1;0.7;0.1" dur="1.6s" repeatCount="indefinite" begin="0.25s" />
-          </path>
-          <path d="M260 40 Q 300 100 260 160" opacity="0.30">
-            <animate attributeName="opacity" values="0.05;0.45;0.05" dur="1.6s" repeatCount="indefinite" begin="0.5s" />
-          </path>
-        </g>
-
-        {/* Ground shadow ellipse beneath the pin */}
-        <ellipse cx="170" cy="172" rx="28" ry="5" fill="#3b82f6" opacity="0.22" />
-
-        {/* Repère de position — centré */}
-        <g transform="translate(150, 58)">
-          <path d="M20 0C9 0 0 9 0 20C0 34 20 56 20 56C20 56 40 34 40 20C40 9 31 0 20 0Z" fill="#3b82f6" />
-          <circle cx="20" cy="20" r="7.5" fill="#ffffff" />
-        </g>
-      </svg>
+    <div className="relative w-full h-full overflow-hidden grid place-items-center"
+      style={{ background: dark ? 'radial-gradient(120% 90% at 50% 70%, #10213f 0%, #121212 70%)' : 'radial-gradient(120% 90% at 50% 70%, #dbeafe 0%, #f8fafc 70%)' }}>
+      {/* Sol : ondes qui s'élargissent sous le repère */}
+      <div className="absolute left-1/2 top-[74%] -translate-x-1/2 -translate-y-1/2" style={{ perspective: 400 }}>
+        <div style={{ transform: 'rotateX(72deg)', transformStyle: 'preserve-3d', width: 200, height: 200, position: 'relative' }}>
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="geo3d-ring absolute inset-0 rounded-full"
+              style={{ border: '3px solid #3b82f6', animationDelay: `${i * 0.8}s` }}></span>
+          ))}
+          <span className="geo3d-shadow absolute rounded-full" style={{ left: 70, top: 70, width: 60, height: 60, background: 'radial-gradient(circle, rgba(0,0,0,0.55), transparent 70%)' }}></span>
+        </div>
+      </div>
+      {/* Repère 3D */}
+      <div className="geo3d-float relative" style={{ perspective: 500, width: 72, height: 84, marginTop: -8 }}>
+        <div className="geo3d-spin absolute inset-0" style={{ transformStyle: 'preserve-3d' }}>
+          {layers.map((z) => {
+            const face = Math.abs(z) === 5;
+            return (
+              <svg key={z} viewBox="0 0 48 56" width="72" height="84" className="absolute inset-0"
+                style={{ transform: `translateZ(${z * 1.3}px)`, backfaceVisibility: 'visible' }}>
+                {face && (
+                  <defs>
+                    <linearGradient id={`geo3d-g${z}`} x1="0.2" y1="0" x2="0.8" y2="1">
+                      <stop offset="0" stopColor="#93c5fd" />
+                      <stop offset="0.45" stopColor="#3b82f6" />
+                      <stop offset="1" stopColor="#1d4ed8" />
+                    </linearGradient>
+                  </defs>
+                )}
+                <path d={PIN} fillRule="evenodd" fill={face ? `url(#geo3d-g${z})` : '#1e40af'} />
+                {face && <path d="M15 12c3-4 8-6 12-5" stroke="rgba(255,255,255,0.7)" strokeWidth="2.4" strokeLinecap="round" fill="none" />}
+              </svg>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
