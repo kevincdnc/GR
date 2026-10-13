@@ -1519,9 +1519,9 @@ function MapView({
           const stats = singleRouteStats.stats;
           const col = (ROUTE_COLORS[r.color] && ROUTE_COLORS[r.color].hex) || '#3b82f6';
           return (
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-6 max-md:bottom-10 z-[500] w-[min(94%,920px)]">
-              <div className={`rounded-md glass ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}>
-                <div className="flex items-center justify-between gap-6 pl-3 pr-5 pt-3.5 pb-3 max-md:flex-col max-md:items-stretch max-md:gap-3 max-md:pr-3">
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-4 max-md:bottom-10 z-[500] w-[min(94%,920px)]">
+              <div className={`rounded-md glass glass-nav ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}>
+                <div className="flex items-center justify-between gap-6 px-4 py-3 max-md:flex-col max-md:items-stretch max-md:gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {(() => {
                     const parent = singleRouteStats.parentItinerary;
@@ -1603,7 +1603,7 @@ function MapView({
                     </div>
                   </div>
                 </div>
-                <div className={`px-5 pb-3 pt-3 ${dark ? 'border-t border-neutral-700/50' : 'border-t border-neutral-200/70'}`}>
+                <div className={`px-4 py-3 border-t ${dark ? 'border-neutral-800' : 'border-neutral-200'}`}>
                   <DraftElevationChart
                     dark={dark}
                     accent={col}
@@ -1644,10 +1644,10 @@ function MapView({
 
       {/* Drawing helper overlay (creating mode) — bottom-centered, full draft stats */}
       {creating &&
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 z-[500] w-[min(96%,1140px)]"
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-4 z-[500] w-[min(96%,1140px)]"
         style={isMobile ? { bottom: 'calc(env(safe-area-inset-bottom, 0px) + 28px)' } : undefined}>
           <div
-          className={`rounded-md glass ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}>
+          className={`rounded-md glass glass-nav ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}>
 
             {/* Prompt while empty */}
             {(!draftCoords || draftCoords.length === 0) ? (
@@ -1697,7 +1697,7 @@ function MapView({
                 ) : (
                 <>
                 {/* Stats row */}
-                <div className="flex items-center justify-between gap-6 px-5 pt-3.5 pb-3">
+                <div className="flex items-center justify-between gap-6 px-4 py-3">
                   <div className="flex items-center gap-7">
                     <DraftStatIcon dark={dark} icon={<I.Distance size={11} />} label="Distance"
                       value={(shownStats?.distance || 0).toFixed(2) + ' km'} highlight={!!hoveredSection} />
@@ -1742,7 +1742,7 @@ function MapView({
 
                 {/* Elevation chart (desktop) */}
                 {!isMobile && draftCoords.length >= 2 && (
-                  <div className={`px-5 pb-3 pt-3 ${dark ? 'border-t border-neutral-700/50' : 'border-t border-neutral-200/70'}`}>
+                  <div className={`px-4 py-3 border-t ${dark ? 'border-neutral-800' : 'border-neutral-200'}`}>
                     <DraftElevationChart
                       dark={dark}
                       accent={accent}
@@ -1837,11 +1837,11 @@ function MapView({
 
       {/* Quick-stats live legend */}
       {showLegend && totals.count > 0 && !creating && !singleRouteStats &&
-      <div className={`absolute z-[500] rounded-md overflow-hidden glass ${isMobile ? 'left-3 right-3' : 'bottom-4 right-4'} ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}
+      <div className={`absolute z-[500] rounded-md overflow-hidden glass glass-nav ${isMobile ? 'left-3 right-3' : 'bottom-4 right-4'} ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}
         style={isMobile ? { bottom: 'calc(env(safe-area-inset-bottom, 0px) + 40px)' } : { width: 'min(560px, 90vw)' }}>
           <button type="button" onClick={() => setLegendOpen((o) => !o)} aria-expanded={legendOpen}
             title={legendOpen ? 'Masquer le détail' : 'Afficher le détail des itinéraires'}
-            className={`w-full text-left px-5 pt-4 pb-3 flex items-center justify-between gap-8 transition-colors ${dark ? 'hover:bg-white/[0.03]' : 'hover:bg-black/[0.02]'}`}>
+            className={`w-full text-left px-4 py-3 flex items-center justify-between gap-8 transition-colors ${dark ? 'hover:bg-white/[0.03]' : 'hover:bg-black/[0.02]'}`}>
             <div>
               <div className={`text-[10px] font-medium uppercase tracking-wider ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>Affichés</div>
               <div className="text-sm font-semibold mt-1">{totals.count} itinéraire{totals.count > 1 ? 's' : ''}</div>
@@ -1861,7 +1861,7 @@ function MapView({
             </div>
           </button>
           {legendOpen &&
-          <div className={`px-3 py-3 max-h-72 overflow-y-auto sb-scroll ${dark ? 'border-t border-neutral-700/60' : 'border-t border-neutral-200/80'}`}>
+          <div className={`px-2 py-2 max-h-72 overflow-y-auto sb-scroll border-t ${dark ? 'border-neutral-800' : 'border-neutral-200'}`}>
             <div className="flex flex-col gap-0.5">
               {visibleRoutes.map((r) => (
                 <LegendRow
