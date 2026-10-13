@@ -455,15 +455,7 @@ function Sidebar({
             title="Importer un tracé"
             desc="GPX, FIT, TCX, KML, GeoJSON…"
             onClick={pick(onImport)} />
-          
-            <MenuDivider dark={dark} />
-            <MenuItem
-            dark={dark} accent={accent}
-            icon={<I.Sparkle size={16} />}
-            title="Me suggérer un itinéraire"
-            desc="Selon distance, dénivelé et zone"
-            onClick={pick(onSuggest)}
-            badge="Beta" />
+
           
           </div>
         }
