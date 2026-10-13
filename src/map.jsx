@@ -252,13 +252,29 @@ function savedShowEndpoints() {
 // regroupe les événements et arrondit par paliers : très lent au trackpad
 // (pincement = petits deltas). Ici chaque événement zoome aussitôt, autour
 // du pointeur, proportionnellement au geste.
+// On passe par le même mécanisme que le pincement tactile de Leaflet
+// (_move + pinch) : les tuiles affichées sont simplement mises à l'échelle
+// pendant le geste au lieu d'être effacées à chaque palier (écran noir),
+// et les nouvelles tuiles se chargent par-dessus à la fin du geste.
 function enableSmoothWheelZoom(map) {
   const el = map.getContainer();
-  let target = null, point = null, raf = 0, idle = 0;
+  let target = null, point = null, raf = 0, idle = 0, active = false;
   const apply = () => {
     raf = 0;
     if (target == null) return;
-    map.setZoomAround(point, target, { animate: false });
+    const zoom = map._limitZoom(target);
+    const half = map.getSize().divideBy(2);
+    const latlng = map.containerPointToLatLng(point);
+    const center = map.unproject(map.project(latlng, zoom).subtract(point.subtract(half)), zoom);
+    map._move(center, zoom, { pinch: true });
+  };
+  const end = () => {
+    idle = 0;
+    if (raf) { cancelAnimationFrame(raf); apply(); }
+    target = null;
+    if (!active) return;
+    active = false;
+    map._moveEnd(true);
   };
   el.addEventListener('wheel', (e) => {
     e.preventDefault();
@@ -267,12 +283,17 @@ function enableSmoothWheelZoom(map) {
     // ctrlKey = pincement trackpad (deltas fins) ; sinon molette ou défilement à deux doigts
     const step = e.ctrlKey ? 0.022 : 0.006;
     const d = Math.max(-1, Math.min(1, -dy * step));
+    if (!active) {
+      map._stop();
+      active = true;
+      map.fire('movestart').fire('zoomstart');
+    }
     const base = target == null ? map.getZoom() : target;
     target = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), base + d));
     point = map.mouseEventToContainerPoint(e);
     if (!raf) raf = requestAnimationFrame(apply);
     clearTimeout(idle);
-    idle = setTimeout(() => { target = null; }, 180);
+    idle = setTimeout(end, 160);
   }, { passive: false });
 }
 
