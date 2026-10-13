@@ -267,7 +267,7 @@ function enableSmoothWheelZoom(map) {
 }
 
 function MapView({
-  groups, visibleIds, hoveredId, setHoveredId, accent, dark, showLegend, onToggleVisible,
+  groups, visibleIds, hoveredId, setHoveredId, multiSel, accent, dark, showLegend, onToggleVisible,
   creating, draftCoords, previewCoords, draftRouteType, draftDistance, draftActivity,
   draftSections, activeSectionId,
   draftPois, placingPoi,
@@ -880,7 +880,12 @@ function MapView({
   useEffect(() => {
     const dim = creating ? 0.5 : 1;
     routeLayersRef.current.forEach((layer, id) => {
-      const isHovered = hoveredId && (hoveredId === id || hoveredId === layer.parentId);
+      // Mise en avant : le tracé survolé, sinon la sélection multiple
+      const sel = multiSel && multiSel.size && [...routeLayersRef.current].some(([rid, l]) => multiSel.has(rid) || multiSel.has(l.parentId)) ? multiSel : null;
+      const focusOn = hoveredId || sel;
+      const isHovered = hoveredId
+        ? (hoveredId === id || hoveredId === layer.parentId)
+        : !!sel && (sel.has(id) || sel.has(layer.parentId));
       const markerOpacity = showEndpoints ? dim : 0; // réglage « Départ et arrivée »
       try { layer.startMarker && layer.startMarker.setOpacity(markerOpacity); } catch (e) {}
       try { layer.endMarker && layer.endMarker.setOpacity(markerOpacity); } catch (e) {}
@@ -888,7 +893,7 @@ function MapView({
         // While creating, no hover highlight — keep everything at 50%.
         layer.line.setStyle({ weight: 4, opacity: dim });
         layer.casing.setStyle({ weight: 7, opacity: (dark ? 0.65 : 1) * dim });
-      } else if (!hoveredId) {
+      } else if (!focusOn) {
         layer.line.setStyle({ weight: 4, opacity: 1 });
         layer.casing.setStyle({ weight: 7, opacity: dark ? 0.65 : 1 });
       } else if (isHovered) {
@@ -900,7 +905,7 @@ function MapView({
         layer.casing.setStyle({ weight: 7, opacity: 0.18 });
       }
     });
-  }, [hoveredId, visibleRoutes, dark, creating, showEndpoints]);
+  }, [hoveredId, multiSel, visibleRoutes, dark, creating, showEndpoints]);
 
   // Draft polyline (creating mode) — per-section rendering with section colors.
   useEffect(() => {

@@ -36,6 +36,8 @@ const I = {
   Minus: (p) => <SvgBase {...p}><path d="M5 12h14" /></SvgBase>,
   Link: (p) => <SvgBase {...p}><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" /><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" /></SvgBase>,
   Search: (p) => <SvgBase {...p}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></SvgBase>,
+  Copy: (p) => <SvgBase {...p}><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></SvgBase>,
+  Merge: (p) => <SvgBase {...p}><circle cx="6" cy="6" r="2.2" /><circle cx="6" cy="18" r="2.2" /><circle cx="18" cy="12" r="2.2" /><path d="M6 8.2v7.6" /><path d="M8.2 6c5 0 7.6 2.2 7.8 3.8" /></SvgBase>,
   Menu: (p) => <SvgBase {...p}><path d="M4 7h16M4 12h16M4 17h16" /></SvgBase>,
   X: (p) => <SvgBase {...p}><path d="M18 6 6 18M6 6l12 12" /></SvgBase>,
   Eye: (p) => <SvgBase {...p}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></SvgBase>,

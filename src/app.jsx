@@ -269,6 +269,8 @@ function App() {
   // Mobile : la navigation devient un tiroir ouvert par un bouton hamburger
   const isMobile = useIsMobile();
   const [navOpen, setNavOpen] = useAppState(false);
+  // Sélection multiple dans la navigation (Maj / Cmd+clic) : ids d'itinéraires
+  const [multiSel, setMultiSel] = useAppState(() => new Set());
 
   const dark = !!t.dark;
 
@@ -616,6 +618,89 @@ function App() {
   };
 
   // Itinerary / section action dispatcher (share / export / move / rename / delete / edit)
+  // Itinéraires sélectionnés, dans l'ordre de la navigation
+  const orderedSelection = (ids) => groups.flatMap((g) => g.itineraries.map((it) => ({ g, it }))).filter((x) => ids.has(x.it.id));
+  const stageOf = (p) => (p.fromRepo && p.num && (window.GR34_STAGES || []).find((st) => st.num === p.num)) || {};
+  const stripStage = (n) => String(n || '').replace(/^Étape \d+ — /, '');
+
+  // Fusion : un nouveau tracé qui enchaîne les tracés sélectionnés (dans
+  // l'ordre de la liste). Les originaux sont conservés mais masqués.
+  const mergeItineraries = (ids) => {
+    const sel = orderedSelection(ids);
+    if (sel.length < 2) return;
+    const parts = sel.flatMap((x) => sharePartsOf(x.it)).filter((p) => p.coords && p.coords.length > 1);
+    if (parts.length < 2) { showToast('Ces tracés n’ont pas de géométrie à fusionner.'); return; }
+    const sum = (f) => parts.reduce((a, p) => a + (f(p) || 0), 0);
+    const all = (f) => parts.every((p) => f(p));
+    const moving = (p) => p.movingMin || stageOf(p).gpxMovingMin;
+    const total = (p) => p.totalMin || stageOf(p).gpxTotalMin;
+    const dates = parts.map((p) => p.gpxDate || stageOf(p).gpxDate).filter(Boolean).sort();
+    const names = sel.map((x) => stripStage(x.it.name).replace(/ \(copie\)$/, ''));
+    const first = sel[0].it;
+    const merged = {
+      id: 'i_merge_' + Date.now(),
+      name: names.length <= 3 ? names.join(' + ') : `Fusion de ${names.length} tracés`,
+      activity: first.activity || 'hiking', privacy: first.privacy, color: first.color,
+      distance: sum((p) => p.distance), ascent: sum((p) => p.ascent),
+      descent: sum((p) => (p.descent != null ? p.descent : stageOf(p).elevationLoss)),
+      movingMin: all(moving) ? sum(moving) : null,
+      totalMin: all(total) ? sum(total) : null,
+      gpxDate: dates[0] || null,
+      time: '—', difficulty: '—',
+      coords: parts.flatMap((p) => p.coords),
+    };
+    const targetGroupId = sel[0].g.id;
+    setGroups((gs) => gs.map((g) => {
+      if (g.id !== targetGroupId) return g;
+      const at = g.itineraries.findIndex((it) => it.id === first.id);
+      const list = [...g.itineraries];
+      list.splice(at, 0, merged);
+      return { ...g, expanded: true, itineraries: list };
+    }));
+    const hide = new Set(sel.flatMap((x) => [x.it.id, ...(x.it.sections || []).map((sec) => sec.id)]));
+    setVisibleIds((v) => new Set([...[...v].filter((id) => !hide.has(id)), merged.id]));
+    setMultiSel(new Set([merged.id]));
+    showToast(`${sel.length} tracés fusionnés en « ${merged.name} » (originaux masqués)`);
+  };
+
+  // Duplication : une copie indépendante juste après chaque original
+  const duplicateItineraries = (ids) => {
+    const sel = orderedSelection(ids);
+    if (!sel.length) return;
+    const stamp = Date.now();
+    const copies = new Map();
+    sel.forEach((x, i) => {
+      const it = x.it, st = stageOf(it);
+      const sfx = '_' + stamp + '_' + i;
+      copies.set(it.id, {
+        ...it,
+        id: 'i_copy' + sfx,
+        name: stripStage(it.name) + ' (copie)',
+        fromRepo: false,
+        descent: it.descent != null ? it.descent : st.elevationLoss,
+        movingMin: it.movingMin || st.gpxMovingMin || null,
+        totalMin: it.totalMin || st.gpxTotalMin || null,
+        gpxDate: it.gpxDate || st.gpxDate || null,
+        sections: it.sections ? it.sections.map((sec, k) => ({ ...sec, id: 's_copy' + sfx + '_' + k })) : undefined,
+      });
+    });
+    setGroups((gs) => gs.map((g) => ({
+      ...g,
+      itineraries: g.itineraries.flatMap((it) => (copies.has(it.id) ? [it, copies.get(it.id)] : [it])),
+    })));
+    setVisibleIds((v) => {
+      const n = new Set(v);
+      copies.forEach((c, origId) => {
+        const orig = sel.find((x) => x.it.id === origId).it;
+        const shown = v.has(orig.id) || (orig.sections || []).some((sec) => v.has(sec.id));
+        if (shown) { if (c.sections) c.sections.forEach((sec) => n.add(sec.id)); else n.add(c.id); }
+      });
+      return n;
+    });
+    setMultiSel(new Set([...copies.values()].map((c) => c.id)));
+    showToast(sel.length > 1 ? `${sel.length} tracés dupliqués` : `« ${stripStage(sel[0].it.name)} » dupliqué`);
+  };
+
   const handleAction = (action, payload) => {
     const { itinerary, section, groupId } = payload || {};
     const target = section ? section.name : (itinerary ? itinerary.name : ''); // (bug du design : plantait pour un groupe)
@@ -653,6 +738,8 @@ function App() {
       });
       return;
     }
+    if (action === 'mergeItins') { mergeItineraries(payload.ids); return; }
+    if (action === 'duplicateItins') { duplicateItineraries(payload.ids); return; }
     if (action === 'share') {
       // Partage en story : un groupe (ses tracés affichés, sinon tous), une
       // activité (ses sections) ou une section seule.
@@ -913,6 +1000,8 @@ function App() {
           setHoveredId={setHoveredId}
           selectedId={selectedId}
           setSelectedId={setSelectedId}
+          multiSel={multiSel}
+          setMultiSel={setMultiSel}
           dark={dark}
           accent={t.accent}
           density={t.density}
@@ -1003,6 +1092,7 @@ function App() {
           visibleIds={visibleIds}
           hoveredId={hoveredId}
           setHoveredId={setHoveredId}
+          multiSel={multiSel}
           importPreview={importing ? importPreview : null}
           accent={t.accent}
           dark={dark}

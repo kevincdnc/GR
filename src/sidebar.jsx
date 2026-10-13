@@ -7,7 +7,7 @@ const { useState, useRef, useEffect } = React;
 
 function Sidebar({
   groups, setGroups, visibleIds, setVisibleIds, hoveredId, setHoveredId,
-  selectedId, setSelectedId, dark, accent, density,
+  selectedId, setSelectedId, multiSel, setMultiSel, dark, accent, density,
   onCreate, onImport, onSuggest, onCreateGroup, onDrawZone, onAction, forceCreateMenu,
   view, onViewChange
 }) {
@@ -18,6 +18,62 @@ function Sidebar({
   const filtered = groups;
   // Onboarding can force the CTA dropdown open.
   const ctaOpen = menuOpen || forceCreateMenu;
+
+  // --- Sélection multiple (Maj+clic : plage, Cmd/Ctrl+clic : ajout/retrait) ---
+  const sel = multiSel || new Set();
+  const anchorRef = useRef(null);
+  const displayedIds = () => groups.flatMap((g) => (g.ungrouped || g.expanded ? g.itineraries.map((it) => it.id) : []));
+  const onMultiClick = (id, e) => {
+    if (!setMultiSel) return false;
+    if (e.shiftKey && anchorRef.current) {
+      const ids = displayedIds();
+      const a = ids.indexOf(anchorRef.current), b = ids.indexOf(id);
+      if (a !== -1 && b !== -1) {
+        const range = ids.slice(Math.min(a, b), Math.max(a, b) + 1);
+        setMultiSel(new Set(e.metaKey || e.ctrlKey ? [...sel, ...range] : range));
+        return true;
+      }
+    }
+    if (e.shiftKey || e.metaKey || e.ctrlKey) {
+      const n = new Set(sel);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      setMultiSel(n);
+      anchorRef.current = id;
+      return true;
+    }
+    // Clic simple : point de départ d'une future plage, sélection effacée
+    anchorRef.current = id;
+    if (sel.size) setMultiSel(new Set());
+    return false;
+  };
+  // Échap vide la sélection ; ids disparus retirés
+  useEffect(() => {
+    if (!sel.size) return;
+    const onKey = (e) => { if (e.key === 'Escape') setMultiSel(new Set()); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [sel.size]);
+  useEffect(() => {
+    if (!sel.size) return;
+    const all = new Set(groups.flatMap((g) => g.itineraries.map((it) => it.id)));
+    if ([...sel].some((id) => !all.has(id))) setMultiSel(new Set([...sel].filter((id) => all.has(id))));
+  }, [groups]);
+  const [bulkColorOpen, setBulkColorOpen] = useState(false);
+  const bulkRef = useRef(null);
+  useEffect(() => {
+    if (!bulkColorOpen) return;
+    const onDoc = (e) => { if (bulkRef.current && !bulkRef.current.contains(e.target)) setBulkColorOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [bulkColorOpen]);
+  const setBulkColor = (key) => {
+    setGroups((gs) => gs.map((g) => ({
+      ...g,
+      itineraries: g.itineraries.map((it) => (sel.has(it.id)
+        ? { ...it, color: key, sections: it.sections ? it.sections.map((sec) => ({ ...sec, color: key })) : it.sections }
+        : it)),
+    })));
+  };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -224,7 +280,9 @@ function Sidebar({
                     handleDrop={handleDrop}
                     isNoopDrop={isNoopDrop}
                     isLast={idx === group.itineraries.length - 1}
-                    justDropped={justDropped === it.id} />
+                    justDropped={justDropped === it.id}
+                    multiSelected={sel.has(it.id)}
+                    onMultiClick={onMultiClick} />
                 )}
                 {/* Visual divider between ungrouped and first group */}
                 {filtered.length > 1 && (
@@ -296,7 +354,9 @@ function Sidebar({
                   handleDrop={handleDrop}
                   isNoopDrop={isNoopDrop}
                   isLast={idx === group.itineraries.length - 1}
-                  justDropped={justDropped === it.id} />
+                  justDropped={justDropped === it.id}
+                  multiSelected={sel.has(it.id)}
+                  onMultiClick={onMultiClick} />
 
                 )
                 }
@@ -309,6 +369,52 @@ function Sidebar({
         <EmptyStateIllustration dark={dark} accent={accent} onOpenMenu={() => setMenuOpen(true)} />
         }
       </div>
+
+      {/* Barre d'actions de la sélection multiple */}
+      {sel.size > 0 && (
+        <div className={`mx-3 mb-2 rounded-lg border p-2.5 animate-menu ${dark ? 'bg-neutral-900/90 border-blue-500/40' : 'bg-white border-blue-300'}`}>
+          <div className="flex items-center justify-between px-0.5 mb-2">
+            <span className={`text-[12px] font-semibold ${dark ? 'text-white' : 'text-neutral-900'}`}>
+              {sel.size} tracé{sel.size > 1 ? 's' : ''} sélectionné{sel.size > 1 ? 's' : ''}
+            </span>
+            <button onClick={() => setMultiSel(new Set())} title="Désélectionner (Échap)"
+              className={`p-1 rounded transition-colors ${dark ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-neutral-500 hover:bg-neutral-100'}`}>
+              <I.X size={13} />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            <div className="relative" ref={bulkRef}>
+              <button onClick={() => setBulkColorOpen((o) => !o)}
+                className={`w-full flex flex-col items-center gap-1 rounded-md py-1.5 text-[11px] font-medium transition-colors ${dark ? 'text-neutral-200 hover:bg-white/10' : 'text-neutral-700 hover:bg-neutral-100'}`}>
+                <span className="w-4 h-4 rounded-full" style={{ background: 'conic-gradient(#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7,#ef4444)' }}></span>
+                Couleur
+              </button>
+              {bulkColorOpen && (
+                <div className="absolute left-0 bottom-full mb-1.5 z-40 w-[194px] p-2 rounded-md shadow-2xl animate-menu glass-strong">
+                  <div className={`text-[10px] font-semibold uppercase tracking-wider px-0.5 pb-1.5 ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>Couleur des tracés</div>
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {Object.entries(ROUTE_COLORS).map(([key, c]) => (
+                      <button key={key} title={c.name} onClick={() => { setBulkColor(key); setBulkColorOpen(false); }}
+                        className="w-6 h-6 rounded-full transition-transform hover:scale-110" style={{ background: c.hex }}></button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button onClick={() => onAction && onAction('mergeItins', { ids: sel })} disabled={sel.size < 2}
+              title={sel.size < 2 ? 'Sélectionnez au moins 2 tracés' : 'Enchaîner les tracés sélectionnés en un seul'}
+              className={`flex flex-col items-center gap-1 rounded-md py-1.5 text-[11px] font-medium transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${dark ? 'text-neutral-200 hover:bg-white/10' : 'text-neutral-700 hover:bg-neutral-100'}`}>
+              <I.Merge size={16} />
+              Fusionner
+            </button>
+            <button onClick={() => onAction && onAction('duplicateItins', { ids: sel })}
+              className={`flex flex-col items-center gap-1 rounded-md py-1.5 text-[11px] font-medium transition-colors ${dark ? 'text-neutral-200 hover:bg-white/10' : 'text-neutral-700 hover:bg-neutral-100'}`}>
+              <I.Copy size={16} />
+              Dupliquer
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Primary action — dropdown CTA, en bas de la navigation (menu vers le haut) */}
       <div className={`px-4 pt-3 pb-3 relative border-t ${dark ? 'border-neutral-800' : 'border-neutral-200'}`} ref={menuRef}>
@@ -370,7 +476,8 @@ function Sidebar({
 function ItineraryRow({
   it, idx, groupId, visState, onToggleVisible, visibleIds, onToggleSection,
   selected, onSelect, onHover, hoveredId, onAction, setGroups,
-  dark, accent, rowPad, drag, setDrag, dragOver, setDragOver, handleDrop, isNoopDrop, isLast, justDropped
+  dark, accent, rowPad, drag, setDrag, dragOver, setDragOver, handleDrop, isNoopDrop, isLast, justDropped,
+  multiSelected, onMultiClick
 }) {
   const Icon = I[ACTIVITIES[it.activity].icon] || I.Route;
   const color = ROUTE_COLORS[it.color].hex;
@@ -458,7 +565,8 @@ function ItineraryRow({
   // expanded state only meaningful for composites: clicking the row toggles section list
   const expanded = isComposite && selected;
 
-  const handleRowClick = () => {
+  const handleRowClick = (e) => {
+    if (onMultiClick && onMultiClick(it.id, e)) return;
     if (isComposite) onSelect();
   };
 
@@ -488,7 +596,8 @@ function ItineraryRow({
           ref={rowRef}
           onMouseEnter={() => { if (!drag) onHover(it.id); }}
           onMouseLeave={() => onHover(null)}
-          className={`group relative flex items-center gap-2 ${rowPad} pl-3.5 pr-2 rounded-lg ${isComposite ? 'cursor-pointer' : ''} transition-colors ${dark ? 'hover:bg-neutral-800/70' : 'hover:bg-neutral-100'} ${isHovered ? (dark ? 'bg-neutral-800/70' : 'bg-neutral-100') : visible ? (dark ? 'bg-neutral-800/40' : 'bg-neutral-50/60') : ''}`}
+          onMouseDown={(e) => { if (e.shiftKey) e.preventDefault(); /* pas de sélection de texte */ }}
+          className={`group relative flex items-center gap-2 ${rowPad} pl-3.5 pr-2 rounded-lg select-none ${isComposite ? 'cursor-pointer' : ''} transition-colors ${multiSelected ? (dark ? 'bg-blue-500/15 ring-1 ring-inset ring-blue-500/60' : 'bg-blue-50 ring-1 ring-inset ring-blue-400') : (dark ? 'hover:bg-neutral-800/70' : 'hover:bg-neutral-100')} ${multiSelected ? '' : isHovered ? (dark ? 'bg-neutral-800/70' : 'bg-neutral-100') : visible ? (dark ? 'bg-neutral-800/40' : 'bg-neutral-50/60') : ''}`}
           onClick={handleRowClick}>
           
           {/* Drag handle */}

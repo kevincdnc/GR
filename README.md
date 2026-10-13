@@ -18,6 +18,7 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 | Zoom (jusqu’à 20, continu et fluide à la molette / au trackpad), géolocalisation | **Réel** |
 | Import de fichiers GPX (un ou plusieurs à la fois, un tracé par fichier) | **Réel** (analysés dans le navigateur) |
 | Création / édition d'itinéraires, sections, repères, groupes, glisser-déposer | Réel, sauvegardé dans le navigateur |
+| Sélection multiple (Maj+clic, Cmd/Ctrl+clic) : couleur, fusion, duplication | **Réel** |
 | Recherche de lieu | Réel (Nominatim) |
 | Altitudes d'un tracé dessiné à la main | Simulé (pas de service d'altitude) |
 | Partage en story (menu ⋯ d'une activité ou d'un groupe, bouton *Partager* des stats) : 10 modèles 1080×1920, données affichées au choix, photo de fond, export PNG / copie / partage natif | **Réel** (rendu dans le navigateur) |
