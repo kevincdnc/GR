@@ -1243,11 +1243,10 @@ function App() {
 
         {/* Aucun tracé affiché (mais au moins un itinéraire existe) */}
         {visibleIds.size === 0 && !creating && groups.some((g) => g.itineraries.length > 0) &&
-        <div className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-md px-5 py-4 glass ${dark ? 'text-neutral-200' : 'text-neutral-700'}`}>
-            <div className="flex items-center gap-3">
-              <I.Eye size={18} className={dark ? 'text-neutral-400' : 'text-neutral-500'} />
-              <span className="text-[13px]">Cliquez sur un itinéraire pour l'afficher.</span>
-            </div>
+        <div className={`pointer-events-none absolute left-4 z-10 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11.5px] glass ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}
+            style={{ bottom: isMobile ? 'calc(env(safe-area-inset-bottom, 0px) + 40px)' : 16 }}>
+            <I.Eye size={13} />
+            <span>Cliquez sur un itinéraire pour l'afficher.</span>
           </div>
         }
 
