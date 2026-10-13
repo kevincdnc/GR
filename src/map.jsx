@@ -165,9 +165,22 @@ function mapFitPadding(extraLeft = 60) {
     : { paddingTopLeft: [MAP_UNDERLAY_DESKTOP + extraLeft, 80], paddingBottomRight: [80, 80] };
 }
 const MAP_STYLE_KEY = 'gr34_map_style';
+// Réglages par défaut de la carte : fond sombre, 80 % d'opacité, sentiers balisés.
+const MAP_STYLE_DEFAULT = 'sombre';
+const MAP_OPACITY_DEFAULT = 80;
+// Appliqués une fois aux réglages déjà enregistrés (changement de défaut), puis
+// les choix de l'utilisateur reprennent la main.
+try {
+  if (localStorage.getItem('gr34_map_defaults') !== '2') {
+    localStorage.setItem('gr34_map_style', MAP_STYLE_DEFAULT);
+    localStorage.setItem('gr34_map_opacity', String(MAP_OPACITY_DEFAULT));
+    localStorage.setItem('gr34_trails_overlay', '1');
+    localStorage.setItem('gr34_map_defaults', '2');
+  }
+} catch (e) {}
 const MAP_OPACITY_KEY = 'gr34_map_opacity';
 function savedMapOpacity() {
-  try { const v = Number(localStorage.getItem(MAP_OPACITY_KEY)); return Number.isFinite(v) && v >= 0 && v <= 100 && localStorage.getItem(MAP_OPACITY_KEY) !== null ? v : 100; } catch (e) { return 100; }
+  try { const v = Number(localStorage.getItem(MAP_OPACITY_KEY)); return Number.isFinite(v) && v >= 0 && v <= 100 && localStorage.getItem(MAP_OPACITY_KEY) !== null ? v : MAP_OPACITY_DEFAULT; } catch (e) { return MAP_OPACITY_DEFAULT; }
 }
 // Opacité du fond de carte (les tracés restent opaques) — fond noir dessous
 function applyMapOpacity(map, pct) {
@@ -189,7 +202,7 @@ function applyMapBg(map, color) {
   try { map.getContainer().style.background = color; } catch (e) {}
 }
 function savedMapStyle() {
-  try { const v = localStorage.getItem(MAP_STYLE_KEY); return BASE_LAYERS[v] ? v : 'plan'; } catch (e) { return 'plan'; }
+  try { const v = localStorage.getItem(MAP_STYLE_KEY); return BASE_LAYERS[v] ? v : MAP_STYLE_DEFAULT; } catch (e) { return MAP_STYLE_DEFAULT; }
 }
 // Remplace le fond de carte courant (et sa surcouche éventuelle).
 function applyBaseLayer(map, key) {
