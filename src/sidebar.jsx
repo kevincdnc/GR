@@ -100,28 +100,48 @@ function Sidebar({
     return 'some';
   };
 
+  // Glisser-déposer : `dragOver` vaut « groupId|index » (point d'insertion)
+  // ou « groupId|head » (en-tête de groupe = ajout à la fin).
+  const [justDropped, setJustDropped] = useState(null);
   const handleDrop = (targetGroupId, targetIndex) => {
     if (!drag) return;
+    const movedId = drag.itineraryId;
     setGroups((gs) => {
-      // remove from source
       const newGs = gs.map((g) => ({ ...g, itineraries: [...g.itineraries] }));
-      let moved = null;
+      let moved = null, srcGroup = null, srcIdx = -1;
       for (const g of newGs) {
-        const idx = g.itineraries.findIndex((i) => i.id === drag.itineraryId);
-        if (idx !== -1) {
-          moved = g.itineraries.splice(idx, 1)[0];
-          break;
-        }
+        const idx = g.itineraries.findIndex((i) => i.id === movedId);
+        if (idx !== -1) { moved = g.itineraries.splice(idx, 1)[0]; srcGroup = g; srcIdx = idx; break; }
       }
       if (!moved) return gs;
       const target = newGs.find((g) => g.id === targetGroupId);
       if (!target) return gs;
-      const insertAt = Math.min(targetIndex, target.itineraries.length);
+      // Même groupe, vers le bas : l'élément retiré décale les index suivants
+      let insertAt = target === srcGroup && srcIdx < targetIndex ? targetIndex - 1 : targetIndex;
+      insertAt = Math.max(0, Math.min(insertAt, target.itineraries.length));
       target.itineraries.splice(insertAt, 0, moved);
+      if (target !== srcGroup) target.expanded = true;
       return newGs;
     });
     setDrag(null);
     setDragOver(null);
+    setJustDropped(movedId);
+    setTimeout(() => setJustDropped((id) => (id === movedId ? null : id)), 900);
+  };
+  // Point d'insertion sans effet (juste avant / après l'élément déplacé)
+  const isNoopDrop = (groupId, index) => {
+    if (!drag) return true;
+    const g = groups.find((x) => x.id === groupId);
+    if (!g) return true;
+    const src = g.itineraries.findIndex((i) => i.id === drag.itineraryId);
+    return src !== -1 && (index === src || index === src + 1);
+  };
+  // Défilement automatique de la liste près des bords pendant un glisser
+  const onListDragOver = (e) => {
+    if (!drag) return;
+    const el = e.currentTarget, r = el.getBoundingClientRect(), EDGE = 48;
+    if (e.clientY < r.top + EDGE) el.scrollTop -= Math.ceil((r.top + EDGE - e.clientY) / 4);
+    else if (e.clientY > r.bottom - EDGE) el.scrollTop += Math.ceil((e.clientY - (r.bottom - EDGE)) / 4);
   };
 
   const rowPad = density === 'compact' ? 'py-1.5' : 'py-2.5';
@@ -171,7 +191,7 @@ function Sidebar({
       </div>
 
       {/* Groups list */}
-      <div className="flex-1 overflow-y-auto px-2 pb-4 sb-scroll">
+      <div className="flex-1 overflow-y-auto px-2 pb-4 sb-scroll" onDragOver={onListDragOver}>
         {filtered.map((group) => {
           const vState = groupVisibilityState(group);
           // Ungrouped bucket — render itineraries directly without a header.
@@ -201,16 +221,11 @@ function Sidebar({
                     setDrag={setDrag}
                     dragOver={dragOver}
                     setDragOver={setDragOver}
-                    handleDrop={handleDrop} />
+                    handleDrop={handleDrop}
+                    isNoopDrop={isNoopDrop}
+                    isLast={idx === group.itineraries.length - 1}
+                    justDropped={justDropped === it.id} />
                 )}
-                {/* drop zone at the end of ungrouped bucket */}
-                {drag &&
-                  <div
-                    className={`h-2 rounded ${dragOver === group.id + '_end' ? dark ? 'bg-sky-500/40' : 'bg-sky-200' : ''}`}
-                    onDragOver={(e) => {e.preventDefault();setDragOver(group.id + '_end');}}
-                    onDragLeave={() => setDragOver(null)}
-                    onDrop={(e) => {e.preventDefault();handleDrop(group.id, group.itineraries.length);}} />
-                }
                 {/* Visual divider between ungrouped and first group */}
                 {filtered.length > 1 && (
                   <div className={`mx-2 my-1.5 h-px ${dark ? 'bg-neutral-800' : 'bg-neutral-200'}`}></div>
@@ -247,7 +262,12 @@ function Sidebar({
               {group.expanded &&
               <div className="mt-0.5 mb-1 relative">
                   {group.itineraries.length === 0 ?
-                <div className={`text-[11px] py-2 px-2 ${dark ? 'text-neutral-500' : 'text-neutral-400'}`}>Aucun itinéraire</div> :
+                <div
+                  onDragOver={(e) => { if (drag) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragOver !== group.id + '|0') setDragOver(group.id + '|0'); } }}
+                  onDrop={(e) => { e.preventDefault(); handleDrop(group.id, 0); }}
+                  className={`text-[11px] py-2 px-2 rounded-lg border border-dashed transition-colors ${drag && dragOver === group.id + '|0' ? 'border-blue-500/70 bg-blue-500/10 text-blue-400' : drag ? (dark ? 'border-neutral-700 text-neutral-500' : 'border-neutral-300 text-neutral-400') : 'border-transparent ' + (dark ? 'text-neutral-500' : 'text-neutral-400')}`}>
+                  {drag ? 'Déposer ici' : 'Aucun itinéraire'}
+                </div> :
 
                 group.itineraries.map((it, idx) =>
                 <ItineraryRow
@@ -272,18 +292,12 @@ function Sidebar({
                   setDrag={setDrag}
                   dragOver={dragOver}
                   setDragOver={setDragOver}
-                  handleDrop={handleDrop} />
+                  handleDrop={handleDrop}
+                  isNoopDrop={isNoopDrop}
+                  isLast={idx === group.itineraries.length - 1}
+                  justDropped={justDropped === it.id} />
 
                 )
-                }
-                  {/* drop zone at the end of group */}
-                  {drag &&
-                <div
-                  className={`h-2 rounded ${dragOver === group.id + '_end' ? dark ? 'bg-sky-500/40' : 'bg-sky-200' : ''}`}
-                  onDragOver={(e) => {e.preventDefault();setDragOver(group.id + '_end');}}
-                  onDragLeave={() => setDragOver(null)}
-                  onDrop={(e) => {e.preventDefault();handleDrop(group.id, group.itineraries.length);}} />
-
                 }
                 </div>
               }
@@ -355,12 +369,29 @@ function Sidebar({
 function ItineraryRow({
   it, idx, groupId, visState, onToggleVisible, visibleIds, onToggleSection,
   selected, onSelect, onHover, hoveredId, onAction, setGroups,
-  dark, accent, rowPad, drag, setDrag, dragOver, setDragOver, handleDrop
+  dark, accent, rowPad, drag, setDrag, dragOver, setDragOver, handleDrop, isNoopDrop, isLast, justDropped
 }) {
   const Icon = I[ACTIVITIES[it.activity].icon] || I.Route;
   const color = ROUTE_COLORS[it.color].hex;
   const isDragging = drag && drag.itineraryId === it.id;
-  const dropKey = groupId + '_' + idx;
+  // Insertion avant (moitié haute) ou après (moitié basse) cette ligne
+  const onRowDragOver = (e) => {
+    if (!drag) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    const r = e.currentTarget.getBoundingClientRect();
+    const key = groupId + '|' + (e.clientY < r.top + r.height / 2 ? idx : idx + 1);
+    if (dragOver !== key) setDragOver(key);
+  };
+  const onRowDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const m = /\|(\d+)$/.exec(dragOver || '');
+    handleDrop(groupId, m ? Number(m[1]) : idx);
+  };
+  const lineBefore = !!drag && dragOver === groupId + '|' + idx && !isNoopDrop(groupId, idx);
+  const lineAfter = !!drag && isLast && dragOver === groupId + '|' + (idx + 1) && !isNoopDrop(groupId, idx + 1);
   const stats = itineraryStats(it);
   const visible = visState !== 'none';
   const isComposite = stats.isComposite;
@@ -432,25 +463,29 @@ function ItineraryRow({
 
   return (
     <>
-      {/* Drop zone above */}
-      {drag &&
-      <div
-        className={`h-1 rounded transition-colors ${dragOver === dropKey ? dark ? 'bg-sky-500/40' : 'bg-sky-200' : ''}`}
-        onDragOver={(e) => {e.preventDefault();setDragOver(dropKey);}}
-        onDragLeave={() => setDragOver(null)}
-        onDrop={(e) => {e.preventDefault();handleDrop(groupId, idx);}} />
-
-      }
-      <div className={`rounded-lg transition-all ${isDragging ? 'opacity-40' : ''}`}>
+      <div onDragOver={onRowDragOver} onDrop={onRowDrop}
+        className={`relative rounded-lg transition-all duration-150 ${isDragging ? 'opacity-30 scale-[0.98]' : ''} ${justDropped ? 'drop-flash' : ''}`}>
+        {/* Ligne d'insertion */}
+        {(lineBefore || lineAfter) && (
+          <div className={`absolute left-1 right-1 z-20 pointer-events-none ${lineBefore ? '-top-[3px]' : '-bottom-[3px]'}`}>
+            <div className="relative h-[2px] rounded-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.7)]">
+              <span className="absolute -left-1 -top-[3px] w-2 h-2 rounded-full bg-blue-500"></span>
+            </div>
+          </div>
+        )}
         <div
           draggable
           onDragStart={(e) => {
-            setDrag({ itineraryId: it.id, fromGroupId: groupId });
             e.dataTransfer.effectAllowed = 'move';
+            try { e.dataTransfer.setData('text/plain', it.name); } catch (err) {}
+            try { e.dataTransfer.setDragImage(e.currentTarget, 24, e.currentTarget.offsetHeight / 2); } catch (err) {}
+            onHover(null);
+            // Après la capture de l'image de glisser, sinon le style « fantôme » s'y retrouve
+            requestAnimationFrame(() => setDrag({ itineraryId: it.id, fromGroupId: groupId }));
           }}
           onDragEnd={() => {setDrag(null);setDragOver(null);}}
           ref={rowRef}
-          onMouseEnter={() => onHover(it.id)}
+          onMouseEnter={() => { if (!drag) onHover(it.id); }}
           onMouseLeave={() => onHover(null)}
           className={`group relative flex items-center gap-2 ${rowPad} pl-3.5 pr-2 rounded-lg ${isComposite ? 'cursor-pointer' : ''} transition-colors ${dark ? 'hover:bg-neutral-800/70' : 'hover:bg-neutral-100'} ${isHovered ? (dark ? 'bg-neutral-800/70' : 'bg-neutral-100') : visible ? (dark ? 'bg-neutral-800/40' : 'bg-neutral-50/60') : ''}`}
           onClick={handleRowClick}>
@@ -794,10 +829,9 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
 
   return (
     <div
-      className={`group flex items-center rounded-lg ${grpPad} px-2 transition-colors ${editing ? '' : 'cursor-pointer'} ${dragOver === group.id + '_head' ? dark ? 'bg-neutral-800/80' : 'bg-sky-50' : dark ? 'hover:bg-neutral-800/60' : 'hover:bg-neutral-100'}`}
+      className={`group flex items-center rounded-lg ${grpPad} px-2 transition-colors ${editing ? '' : 'cursor-pointer'} ${drag && dragOver === group.id + '|head' ? 'ring-2 ring-blue-500/70 ' + (dark ? 'bg-blue-500/10' : 'bg-blue-50') : dark ? 'hover:bg-neutral-800/60' : 'hover:bg-neutral-100'}`}
       onClick={() => {if (!editing) onToggleExpand();}}
-      onDragOver={(e) => {if (drag) {e.preventDefault();setDragOver(group.id + '_head');}}}
-      onDragLeave={() => setDragOver(null)}
+      onDragOver={(e) => {if (drag) {e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (dragOver !== group.id + '|head') setDragOver(group.id + '|head');}}}
       onDrop={(e) => {e.preventDefault();handleDrop(group.id, group.itineraries.length);}}>
       
       <button
