@@ -3211,10 +3211,11 @@ function UnitCard({ dark, title, sub, selected, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`relative rounded-lg border px-3 py-2.5 text-left transition-all ${selected ? 'border-blue-500 ring-2 ring-blue-500/30' : (dark ? 'border-neutral-800 hover:border-neutral-700' : 'border-neutral-200 hover:border-neutral-300')}`}
+      className={`relative h-9 rounded-md border px-2.5 flex items-baseline gap-1.5 text-left transition-all ${selected ? 'border-blue-500 ring-2 ring-blue-500/30' : (dark ? 'border-neutral-800 hover:border-neutral-700 hover:bg-white/5' : 'border-neutral-200 hover:border-neutral-300')}`}
+      style={{ alignItems: 'center' }}
     >
-      <div className={`text-[13px] font-semibold leading-tight ${selected ? 'text-blue-600' : (dark ? 'text-white' : 'text-neutral-900')}`}>{title}</div>
-      <div className={`text-[11px] mt-0.5 ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{sub}</div>
+      <span className={`text-[12.5px] font-semibold ${selected ? 'text-blue-500' : (dark ? 'text-white' : 'text-neutral-900')}`}>{title}</span>
+      <span className={`text-[11px] truncate ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{sub}</span>
     </button>
   );
 }
