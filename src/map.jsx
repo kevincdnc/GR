@@ -2742,20 +2742,93 @@ function ForecastSlider({ dark, value, onChange }) {
   );
 }
 
-// Champ hexadécimal + sélecteur de couleur natif (pastille cliquable)
+// Conversions couleur pour le sélecteur maison (HSV <-> hex)
+function hexToHsv(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s: max ? d / max : 0, v: max };
+}
+function hsvToHex({ h, s, v }) {
+  const f = (k) => { const x = (k + h / 60) % 6; return v - v * s * Math.max(0, Math.min(x, 4 - x, 1)); };
+  return '#' + [f(5), f(3), f(1)].map((c) => Math.round(c * 255).toString(16).padStart(2, '0')).join('');
+}
+const MAP_BG_PRESETS = ['#171717', '#0a0a0a', '#262626', '#1c1917', '#0f172a', '#101838', '#0c1f17', '#2a1215', '#f5f5f4', '#e0f2fe'];
+
+// Sélecteur de couleur aux couleurs de l'app (le sélecteur natif du
+// navigateur ne se thématise pas) : saturation/luminosité, teinte,
+// pipette (si le navigateur la propose), couleurs rapides.
+function MapColorPicker({ dark, value, onChange, onClose }) {
+  const [hsv, setHsv] = useState(() => hexToHsv(value));
+  const ref = useRef(null);
+  useEffect(() => { if (hsvToHex(hsv) !== value) setHsv(hexToHsv(value)); }, [value]);
+  useEffect(() => {
+    const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target) && !e.target.closest('[data-color-swatch]')) onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
+  }, []);
+  const update = (next) => { setHsv(next); onChange(hsvToHex(next)); };
+  const drag = (e, el, fn) => {
+    e.preventDefault();
+    const move = (ev) => { const r = el.getBoundingClientRect(); fn(Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height))); };
+    move(e);
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  const svRef = useRef(null), hueRef = useRef(null);
+  const hueHex = hsvToHex({ h: hsv.h, s: 1, v: 1 });
+  const canPick = typeof window !== 'undefined' && 'EyeDropper' in window;
+  return (
+    <div ref={ref} className={`absolute left-full bottom-0 ml-6 z-50 w-[232px] p-3 rounded-md shadow-2xl animate-menu glass-strong ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}>
+      <div ref={svRef} onPointerDown={(e) => drag(e, svRef.current, (x, y) => update({ ...hsv, s: x, v: 1 - y }))}
+        className="relative h-[140px] rounded-md cursor-crosshair touch-none"
+        style={{ background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, ${hueHex})` }}>
+        <span className="absolute w-3.5 h-3.5 -ml-[7px] -mt-[7px] rounded-full border-2 border-white shadow pointer-events-none"
+          style={{ left: `${hsv.s * 100}%`, top: `${(1 - hsv.v) * 100}%`, background: value }}></span>
+      </div>
+      <div className="flex items-center gap-2.5 mt-3">
+        {canPick && (
+          <button title="Pipette" onClick={async () => { try { const r = await new window.EyeDropper().open(); const h = normalizeHex(r.sRGBHex); if (h) onChange(h); } catch (e) {} }}
+            className={`w-7 h-7 shrink-0 grid place-items-center rounded-md transition-colors ${dark ? 'text-neutral-300 hover:bg-neutral-800' : 'text-neutral-600 hover:bg-neutral-100'}`}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 22 1-1h3l9-9" /><path d="M3 21v-3l9-9" /><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z" /></svg>
+          </button>
+        )}
+        <div ref={hueRef} onPointerDown={(e) => drag(e, hueRef.current, (x) => update({ ...hsv, h: x * 359.9 }))}
+          className="relative flex-1 h-2.5 rounded-full cursor-pointer touch-none"
+          style={{ background: 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)' }}>
+          <span className="absolute top-1/2 w-3.5 h-3.5 -ml-[7px] -mt-[7px] rounded-full border-2 border-white shadow pointer-events-none"
+            style={{ left: `${(hsv.h / 360) * 100}%`, background: hueHex }}></span>
+        </div>
+      </div>
+      <div className="grid grid-cols-5 gap-1.5 mt-3">
+        {MAP_BG_PRESETS.map((c) => (
+          <button key={c} title={c.toUpperCase()} onClick={() => onChange(c)}
+            className={`h-6 rounded-md border transition-transform hover:scale-105 ${value === c ? 'ring-2 ring-blue-500' : ''} ${dark ? 'border-white/10' : 'border-black/10'}`}
+            style={{ background: c }}></button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Champ hexadécimal + pastille ouvrant le sélecteur de couleur
 function MapBgColorField({ dark, value, onChange }) {
   const [draft, setDraft] = useState(null);
+  const [open, setOpen] = useState(false);
   const text = draft != null ? draft : value.toUpperCase();
   const valid = normalizeHex(text);
   const commit = () => { if (valid) onChange(valid); setDraft(null); };
   return (
-    <div className="flex items-center gap-2">
-      <label title="Choisir une couleur"
-        className={`relative w-9 h-9 shrink-0 rounded-md border cursor-pointer overflow-hidden ${dark ? 'border-neutral-700' : 'border-neutral-300'}`}
-        style={{ background: valid || value }}>
-        <input type="color" value={value} onChange={(e) => { setDraft(null); onChange(e.target.value); }}
-          aria-label="Sélecteur de couleur" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-      </label>
+    <div className="relative flex items-center gap-2">
+      <button data-color-swatch title="Choisir une couleur" onClick={() => setOpen((o) => !o)} aria-expanded={open}
+        className={`w-9 h-9 shrink-0 rounded-md border transition-shadow ${open ? 'ring-2 ring-blue-500/60' : ''} ${dark ? 'border-neutral-700' : 'border-neutral-300'}`}
+        style={{ background: valid || value }}></button>
+      {open && <MapColorPicker dark={dark} value={value} onChange={(c) => { setDraft(null); onChange(c); }} onClose={() => setOpen(false)} />}
       <input value={text} onChange={(e) => setDraft(e.target.value)} onBlur={commit}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { setDraft(null); e.currentTarget.blur(); } }}
         aria-label="Couleur hexadécimale" spellCheck="false" maxLength={7}
