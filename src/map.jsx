@@ -310,6 +310,67 @@ function enableSmoothWheelZoom(map) {
   }, { passive: false });
 }
 
+// ---------------------------------------------------------------------------
+// Cap de l'appareil (boussole) pour orienter le point GPS.
+//  - iOS : DeviceOrientationEvent.webkitCompassHeading (permission requise,
+//    demandée au clic qui active la localisation : requestCompass()).
+//  - Android / Chrome : deviceorientationabsolute (alpha → cap).
+//  - Sinon : cap GPS (coords.heading) quand on se déplace.
+// Le cap est lissé (filtre passe-bas sur le cercle) pour éviter les à-coups.
+// ---------------------------------------------------------------------------
+const gpsHeading = (() => {
+  const subs = new Set();
+  let current = null, shown = null, started = false, raf = 0, lastCompass = 0;
+  const screenAngle = () => {
+    try { return (screen.orientation && screen.orientation.angle) || window.orientation || 0; } catch (e) { return 0; }
+  };
+  const emit = () => {
+    raf = 0;
+    if (current == null) { shown = null; subs.forEach((f) => f(null)); return; }
+    if (shown == null) shown = current;
+    else {
+      const d = ((current - shown + 540) % 360) - 180; // plus court chemin
+      shown = (shown + d * 0.35 + 360) % 360;
+      if (Math.abs(d) > 0.5) raf = requestAnimationFrame(emit);
+    }
+    subs.forEach((f) => f(shown));
+  };
+  const push = (h) => { current = (h + 360) % 360; if (!raf) raf = requestAnimationFrame(emit); };
+  const onOrient = (e) => {
+    let h = null;
+    if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) h = e.webkitCompassHeading;
+    else if (e.absolute && typeof e.alpha === 'number') h = 360 - e.alpha;
+    if (h == null) return;
+    lastCompass = Date.now();
+    push(h + screenAngle());
+  };
+  const start = () => {
+    if (started) return; started = true;
+    if ('ondeviceorientationabsolute' in window) window.addEventListener('deviceorientationabsolute', onOrient, true);
+    window.addEventListener('deviceorientation', onOrient, true);
+  };
+  return {
+    subscribe(f) { subs.add(f); f(shown); return () => subs.delete(f); },
+    // À appeler dans un geste utilisateur (iOS demande l'autorisation)
+    requestCompass() {
+      try {
+        const D = window.DeviceOrientationEvent;
+        if (D && typeof D.requestPermission === 'function') {
+          D.requestPermission().then((r) => { if (r === 'granted') start(); }).catch(() => {});
+          return;
+        }
+      } catch (e) {}
+      start();
+    },
+    // Cap GPS de secours (en mouvement, sans boussole récente)
+    fromGps(coords) {
+      if (Date.now() - lastCompass < 3000) return;
+      if (coords && typeof coords.heading === 'number' && !isNaN(coords.heading) && (coords.speed || 0) > 0.6) push(coords.heading);
+    },
+  };
+})();
+window.gpsHeading = gpsHeading;
+
 function MapView({
   groups, visibleIds, hoveredId, setHoveredId, multiSel, accent, dark, showLegend, onToggleVisible,
   creating, draftCoords, previewCoords, draftRouteType, draftDistance, draftActivity,
@@ -461,26 +522,51 @@ function MapView({
     applyMapOpacity(map, savedMapOpacity());
   }, []);
 
-  // User geolocation marker (pulsing live dot) ----------------------------
+  // Position GPS : point bleu + cône de direction (boussole du téléphone,
+  // comme Google Maps) + cercle de précision. Le marqueur est créé une fois
+  // puis déplacé ; le cône tourne directement dans le DOM (pas de rendu React).
   const userLayerRef = useRef(null);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (userLayerRef.current) { try { userLayerRef.current.remove(); } catch (e) {} userLayerRef.current = null; }
-    if (!userLocation) return;
-    const icon = L.divIcon({
-      className: 'user-loc',
-      html:
-        `<div style="position:relative;width:18px;height:18px;">` +
-        `<div style="position:absolute;inset:0;border-radius:9999px;background:rgba(59,130,246,0.25);animation:grPulse 1.6s ease-out infinite;"></div>` +
-        `<div style="position:absolute;inset:3px;border-radius:9999px;background:#3b82f6;box-shadow:0 0 0 2px #fff,0 1px 3px rgba(0,0,0,0.35);"></div>` +
-        `</div>`,
-      iconSize: [18, 18],
-      iconAnchor: [9, 9],
-    });
-    const m = L.marker(userLocation, { icon, interactive: false, zIndexOffset: 600 }).addTo(map);
-    userLayerRef.current = m;
+    if (!userLocation) {
+      if (userLayerRef.current) { userLayerRef.current.remove(); userLayerRef.current = null; }
+      return;
+    }
+    const acc = (window.__gpsAccuracy || 0);
+    if (!userLayerRef.current) {
+      const icon = L.divIcon({
+        className: 'user-loc',
+        html:
+          `<div class="ul-wrap">` +
+          `<div class="ul-cone"></div>` +
+          `<div class="ul-pulse"></div>` +
+          `<div class="ul-dot"></div>` +
+          `</div>`,
+        iconSize: [80, 80],
+        iconAnchor: [40, 40],
+      });
+      const marker = L.marker(userLocation, { icon, interactive: false, zIndexOffset: 600 }).addTo(map);
+      const circle = L.circle(userLocation, { radius: acc || 1, stroke: true, weight: 1, color: '#3b82f6', opacity: 0.35, fillColor: '#3b82f6', fillOpacity: 0.1, interactive: false }).addTo(map);
+      const cone = () => marker.getElement() && marker.getElement().querySelector('.ul-cone');
+      const unsub = gpsHeading.subscribe((h) => {
+        const el = cone(); if (!el) return;
+        if (h == null) { el.style.opacity = '0'; return; }
+        el.style.opacity = '1';
+        el.style.transform = `rotate(${h}deg)`;
+      });
+      userLayerRef.current = {
+        marker, circle,
+        remove() { unsub(); try { marker.remove(); circle.remove(); } catch (e) {} },
+      };
+    } else {
+      userLayerRef.current.marker.setLatLng(userLocation);
+      userLayerRef.current.circle.setLatLng(userLocation);
+    }
+    userLayerRef.current.circle.setRadius(acc || 1);
+    userLayerRef.current.circle.setStyle({ opacity: acc > 15 ? 0.35 : 0, fillOpacity: acc > 15 ? 0.1 : 0 });
   }, [userLocation]);
+  useEffect(() => () => { if (userLayerRef.current) userLayerRef.current.remove(); }, []);
 
   // Live elevation profile derived from draft coords. Pseudo-altitudes are
   // generated deterministically from each point's lat/lng so the profile keeps
@@ -2700,7 +2786,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
           <button
             onClick={() => {
               dismissLocateHint();
-              if (userLocation && onCenterUserLocation) onCenterUserLocation();
+              if (userLocation && onCenterUserLocation) { try { gpsHeading.requestCompass(); } catch (e) {} onCenterUserLocation(); }
               else if (!userLocation && onRequestLocation) onRequestLocation();
             }}
             data-onboard="locate"

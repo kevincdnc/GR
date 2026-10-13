@@ -1240,9 +1240,13 @@ function App() {
               showToast('Géolocalisation indisponible sur cet appareil.');
               return;
             }
+            // Boussole : demandée dans ce même geste (obligatoire sur iOS)
+            try { window.gpsHeading && window.gpsHeading.requestCompass(); } catch (e) {}
             let first = true;
             const id = navigator.geolocation.watchPosition((pos) => {
               const here = [pos.coords.latitude, pos.coords.longitude];
+              window.__gpsAccuracy = pos.coords.accuracy || 0;
+              try { window.gpsHeading && window.gpsHeading.fromGps(pos.coords); } catch (e) {}
               setUserLocation(here);
               setLocationPrompt('accepted');
               if (first && mapInstance) {

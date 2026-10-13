@@ -187,6 +187,19 @@
   /* Glisser-déposer : bref surlignage de l'élément déposé */
   @keyframes dropFlash { 0% { box-shadow: 0 0 0 2px rgba(59,130,246,0.85); background: rgba(59,130,246,0.14); } 100% { box-shadow: 0 0 0 2px rgba(59,130,246,0); background: transparent; } }
   .drop-flash { animation: dropFlash 0.9s ease-out; }
+  /* Point GPS : point bleu, halo, cône de direction (boussole) */
+  .user-loc { pointer-events: none; }
+  .user-loc .ul-wrap { position: relative; width: 80px; height: 80px; }
+  .user-loc .ul-cone {
+    position: absolute; left: 50%; top: -6px; width: 76px; height: 46px; margin-left: -38px;
+    transform-origin: 50% 100%; opacity: 0; transition: opacity .3s;
+    background: radial-gradient(ellipse 55% 100% at 50% 100%, rgba(59,130,246,0.75), rgba(59,130,246,0.32) 55%, rgba(59,130,246,0) 100%);
+    clip-path: polygon(50% 100%, 2% 0, 98% 0);
+    -webkit-mask: radial-gradient(circle at 50% 100%, #000 0, #000 70%, transparent 100%);
+            mask: radial-gradient(circle at 50% 100%, #000 0, #000 70%, transparent 100%);
+  }
+  .user-loc .ul-pulse { position: absolute; left: 31px; top: 31px; width: 18px; height: 18px; border-radius: 9999px; background: rgba(59,130,246,0.28); animation: grPulse 1.8s ease-out infinite; }
+  .user-loc .ul-dot { position: absolute; left: 32px; top: 32px; width: 16px; height: 16px; border-radius: 9999px; background: #3b82f6; box-shadow: 0 0 0 3px #fff, 0 2px 6px rgba(0,0,0,0.4); }
   @keyframes grPulse {
     0%   { transform: scale(1);   opacity: .8; }
     100% { transform: scale(2.4); opacity: 0; }
