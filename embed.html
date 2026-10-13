@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Routdoor · Carte</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="vendor/leaflet.css" />
+<script src="vendor/leaflet.js"></script>
+<style>
+  @font-face { font-family: 'Barlow'; font-weight: 400; font-display: swap; src: url(fonts/barlow-latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Barlow'; font-weight: 600; font-display: swap; src: url(fonts/barlow-latin-600-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Barlow'; font-weight: 700; font-display: swap; src: url(fonts/barlow-latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Barlow Semi Condensed'; font-weight: 700; font-display: swap; src: url(fonts/barlow-semi-condensed-latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Unbounded'; font-weight: 800; font-display: swap; src: url(fonts/unbounded-latin-800-normal.woff2) format('woff2'); }
+  html, body, #embed { height: 100%; margin: 0; }
+  body { background: #e5e7eb; font-family: Barlow, system-ui, sans-serif; }
+  .rd-msg { height: 100%; display: grid; place-items: center; color: #737373; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="embed"><div class="rd-msg">Chargement du tracé…</div></div>
+<script src="js/src/share-link.js"></script>
+<script>
+  (async function () {
+    const el = document.getElementById('embed');
+    const RL = window.RoutdoorLink;
+    const h = RL.readHash(location.hash);
+    try {
+      const data = await RL.decodeShare(h.data);
+      if (!data || !data.parts.length) throw new Error('vide');
+      el.innerHTML = '';
+      if (h.opts && h.opts.theme === 'dark') document.body.style.background = '#171717';
+      RL.mountEmbed(el, data, { ...h.opts, href: RL.shareUrl(h.data) });
+    } catch (e) {
+      el.innerHTML = '<div class="rd-msg">Tracé introuvable ou lien incomplet.</div>';
+    }
+  })();
+</script>
+</body>
+</html>

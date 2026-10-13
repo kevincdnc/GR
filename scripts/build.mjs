@@ -121,6 +121,8 @@ export function build({ single = false } = {}) {
     mkdirSync(join(out, 'fonts'), { recursive: true })
     for (const f of fontFiles) cpSync(f.path, join(out, 'fonts', f.name))
     writeFileSync(join(out, 'index.html'), html)
+    // Carte intégrable (iframe) : page légère, sans React
+    writeFileSync(join(out, 'embed.html'), readFileSync(join(ROOT, 'embed.html'), 'utf8'))
     console.log(`dist/ prêt en ${Date.now() - t0} ms (${scripts.length} scripts)`)
     return
   }

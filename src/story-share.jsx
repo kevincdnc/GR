@@ -157,14 +157,20 @@ const ST_TILES = {
 };
 
 // Fond de carte en tuiles (CORS) ; une tuile refusée est simplement sautée
-async function stDrawTiles(ctx, provider, proj, area, layer = 'url') {
+// `pr` = pixels réels par unité de dessin (export haute définition : tuiles
+// d'un niveau plus détaillé, dans la limite de `maxTiles`).
+async function stDrawTiles(ctx, provider, proj, area, layer = 'url', pr = 1, maxTiles = 320) {
   const def = ST_TILES[provider];
-  const tz = Math.max(0, Math.min(def.max, Math.round(proj.z)));
-  const scale = 2 ** (proj.z - tz); // px canvas par px de tuile
-  const size = 256 * scale;
-  const n = 2 ** tz;
-  const tx0 = Math.floor((area.x - proj.ox) / size), tx1 = Math.floor((area.x + area.w - proj.ox) / size);
-  const ty0 = Math.max(0, Math.floor((area.y - proj.oy) / size)), ty1 = Math.min(n - 1, Math.floor((area.y + area.h - proj.oy) / size));
+  let tz = Math.max(0, Math.min(def.max, Math.round(proj.z + Math.log2(Math.max(0.25, pr)))));
+  let size, n, tx0, tx1, ty0, ty1;
+  for (;;) {
+    size = 256 * 2 ** (proj.z - tz); // unités de dessin par tuile
+    n = 2 ** tz;
+    tx0 = Math.floor((area.x - proj.ox) / size); tx1 = Math.floor((area.x + area.w - proj.ox) / size);
+    ty0 = Math.max(0, Math.floor((area.y - proj.oy) / size)); ty1 = Math.min(n - 1, Math.floor((area.y + area.h - proj.oy) / size));
+    if ((tx1 - tx0 + 1) * (ty1 - ty0 + 1) <= maxTiles || tz <= 0) break;
+    tz--;
+  }
   const jobs = [];
   for (let ty = ty0; ty <= ty1; ty++) {
     for (let tx = tx0; tx <= tx1; tx++) {
@@ -759,14 +765,124 @@ function StorySwitch({ on }) {
   );
 }
 
+// Ligne « libellé + interrupteur »
+function ShareFieldRow({ dark, label, on, onToggle }) {
+  return (
+    <button onClick={onToggle}
+      className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-[12.5px] transition-colors ${dark ? 'hover:bg-white/5' : 'hover:bg-neutral-100'}`}>
+      <span>{label}</span>
+      <StorySwitch on={!!on} />
+    </button>
+  );
+}
+
+// Choix des tracés inclus (partagé par les 3 modes)
+function ShareRoutesPicker({ allRoutes, included, setIncluded, dark, sectionTitle, label }) {
+  if (allRoutes.length < 2) return null;
+  return (
+    <div>
+      <div className={sectionTitle}>Tracés</div>
+      <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto sb-scroll -mx-1 px-1">
+        {allRoutes.map((r) => {
+          const on = included.has(r.id);
+          return (
+            <button key={r.id} onClick={() => setIncluded((s) => { const n = new Set(s); if (n.has(r.id)) { if (n.size > 1) n.delete(r.id); } else n.add(r.id); return n; })}
+              className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors ${dark ? 'hover:bg-white/5' : 'hover:bg-neutral-100'}`}>
+              <span className={`w-4 h-4 shrink-0 rounded grid place-items-center border ${on ? 'bg-blue-500 border-blue-500' : (dark ? 'border-neutral-600' : 'border-neutral-300')}`}>
+                {on && <I.Check size={11} stroke="white" strokeWidth="3" />}
+              </span>
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: r.color }}></span>
+              <span className={`flex-1 min-w-0 truncate text-[12.5px] ${on ? '' : label}`}>{r.name}</span>
+              <span className={`text-[11px] tabular-nums ${label}`}>{stNum(r.distance)} km</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const SHARE_MODES = [
+  { id: 'story', name: 'Story', icon: 'Story' },
+  { id: 'poster', name: 'Poster', icon: 'Poster' },
+  { id: 'embed', name: 'Embed', icon: 'Code' },
+];
+const SHARE_MODE_KEY = 'gr34_share_mode';
+
+// Modale de partage : Story (réseaux sociaux) · Poster (impression) · Embed
+// (carte intégrable), plus l'envoi du lien à un ami.
 function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast }) {
   const allRoutes = useStMemo(() => resolveShareRoutes(parts), [parts]);
   const [included, setIncluded] = useStState(() => new Set(allRoutes.map((r) => r.id)));
   const routes = useStMemo(() => allRoutes.filter((r) => included.has(r.id)), [allRoutes, included]);
   const agg = useStMemo(() => aggregateShare(routes), [routes]);
+  const [title, setTitle] = useStState(initialTitle || '');
+  const [mode, setModeState] = useStState(() => { try { const m = localStorage.getItem(SHARE_MODE_KEY); return SHARE_MODES.some((x) => x.id === m) ? m : 'story'; } catch (e) { return 'story'; } });
+  const setMode = (m) => { setModeState(m); try { localStorage.setItem(SHARE_MODE_KEY, m); } catch (e) {} };
+  const isMobile = useIsMobile();
+
+  // Échap pour fermer
+  useStEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const label = dark ? 'text-neutral-400' : 'text-neutral-500';
+  const strong = dark ? 'text-white' : 'text-neutral-900';
+  const common = { allRoutes, routes, included, setIncluded, agg, title, setTitle, initialTitle, dark, isMobile, onToast };
+  const linkTitle = title.trim() || initialTitle || '';
+
+  const toggle = (
+    <div className={`flex p-0.5 rounded-lg ${dark ? 'bg-white/[0.06] ring-1 ring-white/[0.06]' : 'bg-neutral-100'}`}>
+      {SHARE_MODES.map((m) => {
+        const Ico = I[m.icon];
+        const on = m.id === mode;
+        return (
+          <button key={m.id} onClick={() => setMode(m.id)}
+            className={`h-8 flex items-center gap-1.5 rounded-md text-[12.5px] font-semibold transition-colors ${isMobile ? 'flex-1 justify-center px-2' : 'px-3.5'} ${on ? (dark ? 'bg-white/[0.14] text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900')}`}>
+            <Ico size={15} /> {m.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div className={`fixed inset-0 z-[3000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-menu ${isMobile ? '' : 'p-4'}`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={`glass-strong shadow-2xl flex flex-col overflow-hidden ${isMobile ? '' : 'rounded-xl'} ${strong}`}
+        style={isMobile ? { width: '100vw', height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' } : { width: 'min(1240px, 98vw)', height: 'min(860px, 96vh)' }}>
+        {/* En-tête : titre · toggle des modes + lien · fermer */}
+        <div className={`relative z-30 flex items-center justify-between gap-3 px-5 py-3 border-b ${dark ? 'border-white/10' : 'border-neutral-200'} ${isMobile ? 'flex-wrap px-3' : ''}`}>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="w-8 h-8 grid place-items-center rounded-lg bg-blue-500/15 text-blue-400"><I.Share size={16} /></span>
+            <div className="min-w-0">
+              <div className="text-[15px] font-semibold leading-tight">Partager</div>
+              <div className={`text-[12px] truncate ${label}`}>
+                {routes.length} tracé{routes.length > 1 ? 's' : ''} · {stNum(agg.distance)} km · {stNum(agg.ascent, 0)} m D+
+              </div>
+            </div>
+          </div>
+          <div className={isMobile ? 'order-3 w-full flex items-center gap-2' : 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2'}>
+            <div className={isMobile ? 'flex-1' : ''}>{toggle}</div>
+            <ShareLinkButton title={linkTitle} routes={routes} dark={dark} onToast={onToast} compact={isMobile} />
+          </div>
+          <button onClick={onClose} aria-label="Fermer" className={`w-8 h-8 grid place-items-center rounded-md transition-colors ${dark ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-neutral-500 hover:bg-neutral-100'}`}>
+            <I.X size={16} />
+          </button>
+        </div>
+
+        {mode === 'story' && <StoryPane {...common} />}
+        {mode === 'poster' && <PosterPane {...common} />}
+        {mode === 'embed' && <EmbedPane {...common} />}
+      </div>
+    </div>
+  );
+}
+
+function StoryPane({ allRoutes, routes, included, setIncluded, agg, title, setTitle, initialTitle, dark, isMobile, onToast }) {
   const [tplId, setTplId] = useStState('trace');
   const [show, setShow] = useStState(() => Object.fromEntries(SHARE_FIELDS.map((f) => [f.key, f.def])));
-  const [title, setTitle] = useStState(initialTitle || '');
   const [color, setColor] = useStState(allRoutes.length > 1 ? 'routes' : '#fc5200');
   const [photo, setPhoto] = useStState(null); // { url, img }
   const [busy, setBusy] = useStState(false);
@@ -781,13 +897,6 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
     routes, agg, show, title: title.trim() || initialTitle || 'Ma sortie',
     stats: shareStats(agg, show), color, photo: photo && photo.img,
   }), [routes, agg, show, title, color, photo]);
-
-  // Échap pour fermer
-  useStEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
 
   // Aperçu + vignettes, redessinés à chaque changement (le dernier gagne)
   const token = useStRef(0);
@@ -866,29 +975,9 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
   const strong = dark ? 'text-white' : 'text-neutral-900';
   const sectionTitle = `text-[10.5px] font-semibold uppercase tracking-wider mb-2 ${label}`;
   const multi = allRoutes.length > 1;
-  const isMobile = useIsMobile();
   const sep = dark ? 'border-white/10' : 'border-neutral-200';
 
   return (
-    <div className={`fixed inset-0 z-[3000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-menu ${isMobile ? '' : 'p-4'}`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={`glass-strong shadow-2xl flex flex-col overflow-hidden ${isMobile ? '' : 'rounded-xl'} ${strong}`}
-        style={isMobile ? { width: '100vw', height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' } : { width: 'min(1240px, 98vw)', height: 'min(860px, 96vh)' }}>
-        {/* En-tête */}
-        <div className={`flex items-center justify-between px-5 py-3.5 border-b ${dark ? 'border-white/10' : 'border-neutral-200'}`}>
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="w-8 h-8 grid place-items-center rounded-lg bg-blue-500/15 text-blue-400"><I.Share size={16} /></span>
-            <div className="min-w-0">
-              <div className="text-[15px] font-semibold leading-tight">Partager</div>
-              <div className={`text-[12px] truncate ${label}`}>
-                {routes.length} tracé{routes.length > 1 ? 's' : ''} · {stNum(agg.distance)} km · {stNum(agg.ascent, 0)} m D+
-              </div>
-            </div>
-          </div>
-          <button onClick={onClose} aria-label="Fermer" className={`w-8 h-8 grid place-items-center rounded-md transition-colors ${dark ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-neutral-500 hover:bg-neutral-100'}`}>
-            <I.X size={16} />
-          </button>
-        </div>
-
         <div className={`flex-1 min-h-0 flex ${isMobile ? 'flex-col overflow-y-auto sb-scroll' : ''}`}>
           {/* Modèles (mobile : bandeau horizontal sous l'aperçu) */}
           <div className={isMobile ? `order-2 shrink-0 px-3 pt-3 pb-1 border-t ${sep}` : `w-[248px] shrink-0 overflow-y-auto sb-scroll p-4 border-r ${sep}`}>
@@ -937,27 +1026,7 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
           {/* Options */}
           <div className={isMobile ? `order-3 flex flex-col border-t ${sep}` : `w-[300px] shrink-0 flex flex-col border-l ${sep}`}>
             <div className={isMobile ? 'p-4 flex flex-col gap-5' : 'flex-1 overflow-y-auto sb-scroll p-4 flex flex-col gap-5'}>
-              {multi && (
-                <div>
-                  <div className={sectionTitle}>Tracés</div>
-                  <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto sb-scroll -mx-1 px-1">
-                    {allRoutes.map((r) => {
-                      const on = included.has(r.id);
-                      return (
-                        <button key={r.id} onClick={() => setIncluded((s) => { const n = new Set(s); if (n.has(r.id)) { if (n.size > 1) n.delete(r.id); } else n.add(r.id); return n; })}
-                          className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors ${dark ? 'hover:bg-white/5' : 'hover:bg-neutral-100'}`}>
-                          <span className={`w-4 h-4 shrink-0 rounded grid place-items-center border ${on ? 'bg-blue-500 border-blue-500' : (dark ? 'border-neutral-600' : 'border-neutral-300')}`}>
-                            {on && <I.Check size={11} stroke="white" strokeWidth="3" />}
-                          </span>
-                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: r.color }}></span>
-                          <span className={`flex-1 min-w-0 truncate text-[12.5px] ${on ? '' : label}`}>{r.name}</span>
-                          <span className={`text-[11px] tabular-nums ${label}`}>{stNum(r.distance)} km</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <ShareRoutesPicker allRoutes={allRoutes} included={included} setIncluded={setIncluded} dark={dark} sectionTitle={sectionTitle} label={label} />
 
               <div>
                 <div className={sectionTitle}>Données affichées</div>
@@ -1033,9 +1102,8 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
             </div>
           </div>
         </div>
-      </div>
-    </div>
   );
 }
 
-Object.assign(window, { StoryShareModal, sharePartsOf, STORY_TEMPLATES, renderStory, resolveShareRoutes, aggregateShare, shareStats });
+
+Object.assign(window, { StoryShareModal, StoryPane, ShareFieldRow, ShareRoutesPicker, sharePartsOf, STORY_TEMPLATES, renderStory, resolveShareRoutes, aggregateShare, shareStats });

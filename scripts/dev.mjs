@@ -22,7 +22,7 @@ const safeBuild = () => {
 safeBuild()
 
 let timer = null
-for (const p of ['src', 'gpx', 'assets', 'lib', 'index.html', 'tweaks-panel.jsx', 'tailwind.config.cjs']) {
+for (const p of ['src', 'gpx', 'assets', 'lib', 'index.html', 'embed.html', 'tweaks-panel.jsx', 'tailwind.config.cjs']) {
   watch(join(ROOT, p), { recursive: true }, () => {
     dirty = true
     clearTimeout(timer)

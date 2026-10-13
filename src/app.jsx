@@ -619,8 +619,8 @@ function App() {
   };
 
   // Import de plusieurs GPX : un itinéraire à étapes ou des itinéraires séparés
-  const handleSaveImportBatch = ({ mode, name, groupId, activity, privacy, items }) => {
-    const IMPORT_GROUP_NAME = 'Import GPX';
+  const handleSaveImportBatch = ({ mode, name, groupId, activity, privacy, items, groupName }) => {
+    const IMPORT_GROUP_NAME = groupName || 'Import GPX';
     const stamp = Date.now();
     const sum = (k) => items.reduce((a, it) => a + (it[k] || 0), 0);
     const newItins = mode === 'sections'
@@ -673,6 +673,48 @@ function App() {
     showToast(mode === 'sections'
       ? `« ${name} » importé (${items.length} étapes).`
       : `${items.length} itinéraires importés.`);
+  };
+
+  // Tracé reçu par lien (« #t=… ») : affiché sur la carte avec une carte
+  // « Ajouter à mes tracés ».
+  const [sharedRoute, setSharedRoute] = useAppState(null); // { title, parts }
+  useAppEffect(() => {
+    const read = () => {
+      const h = window.RoutdoorLink && window.RoutdoorLink.readHash(location.hash);
+      if (!h || !h.data) return;
+      window.RoutdoorLink.decodeShare(h.data)
+        .then((d) => { if (d && d.parts.length) { setSharedRoute(d); setViewState('map'); } })
+        .catch(() => showToast('Ce lien de tracé est incomplet ou invalide.'));
+    };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, []);
+  const sharedPreview = useAppMemo(() => sharedRoute && {
+    id: 'i_shared_preview',
+    routes: sharedRoute.parts.map((p, i) => ({ id: 'shared_' + i, name: p.name, color: routeColorKey(p.color), distance: p.distance, ascent: p.ascent, coords: p.coords })),
+  }, [sharedRoute]);
+  useAppEffect(() => {
+    if (!sharedRoute || !mapInstance) return;
+    try {
+      const b = L.latLngBounds(sharedRoute.parts.flatMap((p) => p.coords.map((c) => [c[0], c[1]])));
+      mapInstance.flyToBounds(b, { paddingTopLeft: isMobileNow() ? [30, 90] : [416, 60], paddingBottomRight: isMobileNow() ? [30, 200] : [60, 180], duration: 0.9 });
+    } catch (e) {}
+  }, [sharedRoute, mapInstance]);
+  const closeShared = () => {
+    setSharedRoute(null);
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  };
+  const saveShared = () => {
+    const d = sharedRoute; if (!d) return;
+    const items = d.parts.map((p, i) => ({
+      id: 'sh' + i, num: 0,
+      name: d.parts.length === 1 ? (d.title || p.name || 'Tracé partagé') : (p.name || `Étape ${i + 1}`),
+      color: routeColorKey(p.color), distance: p.distance || 0, ascent: p.ascent || 0, descent: p.descent || 0,
+      movingMin: p.durationMin || null, gpxDate: p.date || null, coords: p.coords, time: '—',
+    }));
+    handleSaveImportBatch({ mode: items.length > 1 ? 'sections' : 'separate', name: d.title || 'Tracé partagé', groupId: null, activity: 'hiking', privacy: 'private', items, groupName: 'Partagés avec moi' });
+    closeShared();
   };
 
   const previewImportBatch = (items, opts) => {
@@ -1174,7 +1216,7 @@ function App() {
           hoveredId={hoveredId}
           setHoveredId={setHoveredId}
           multiSel={multiSel}
-          importPreview={importing ? importPreview : null}
+          importPreview={importing ? importPreview : sharedPreview}
           accent={t.accent}
           dark={dark}
           showLegend={t.showLegend}
@@ -1396,6 +1438,10 @@ function App() {
                 setView('map');
               }} />
           </div>
+        )}
+
+        {sharedRoute && !importing && (
+          <SharedRouteBanner shared={sharedRoute} dark={dark} onSave={saveShared} onClose={closeShared} />
         )}
 
         {storyShare && (
