@@ -236,42 +236,122 @@ function stWrap(ctx, text, maxW, maxLines) {
   return lines;
 }
 
-// Libellé + valeur (+ unité plus petite)
-function stStat(ctx, s, x, y, o) {
-  const { size = 88, color = '#fff', labelColor = 'rgba(255,255,255,0.75)', align = 'left', labelSize = size * 0.34 } = o;
-  ctx.textAlign = align;
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = labelColor;
-  ctx.font = stFont(500, labelSize, ST_TXT);
-  ctx.fillText(s.label, x, y - size * 0.98);
-  ctx.font = stFont(700, size, ST_NUM);
-  const vw = ctx.measureText(s.value).width;
-  ctx.font = stFont(600, size * 0.42, ST_NUM);
-  const uw = s.unit ? ctx.measureText(' ' + s.unit).width : 0;
-  let x0 = align === 'center' ? x - (vw + uw) / 2 : align === 'right' ? x - vw - uw : x;
+// ---------------------------------------------------------------------------
+// Système typographique commun à tous les modèles
+//   - compteurs : Barlow Semi Condensed 700, unité en 600 plus petite
+//   - libellés : Barlow 600 en capitales espacées
+//   - titres : Barlow 700
+// Les compteurs se réduisent automatiquement pour toujours tenir dans leur
+// colonne (jamais plus gros que la taille demandée).
+// ---------------------------------------------------------------------------
+
+const ST_PAD = 96; // marge latérale commune
+
+// Texte espacé (letter-spacing manuel : fiable sur tous les navigateurs)
+function stSpaced(ctx, text, x, y, spacing, align = 'left') {
+  const chars = [...String(text)];
+  const widths = chars.map((c) => ctx.measureText(c).width);
+  const total = widths.reduce((a, b) => a + b, 0) + spacing * Math.max(0, chars.length - 1);
+  let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
+  const prev = ctx.textAlign;
   ctx.textAlign = 'left';
+  chars.forEach((c, i) => { ctx.fillText(c, cx, y); cx += widths[i] + spacing; });
+  ctx.textAlign = prev;
+  return total;
+}
+function stLabel(ctx, text, x, y, size, color, align = 'left') {
+  ctx.font = stFont(600, size, ST_TXT);
   ctx.fillStyle = color;
+  return stSpaced(ctx, String(text).toUpperCase(), x, y, size * 0.14, align);
+}
+function stLabelWidth(ctx, text, size) {
+  ctx.font = stFont(600, size, ST_TXT);
+  const t = String(text).toUpperCase();
+  return ctx.measureText(t).width + size * 0.14 * Math.max(0, t.length - 1);
+}
+
+// Largeur d'un compteur (valeur + unité) à une taille donnée
+function stValueWidth(ctx, s, size) {
+  ctx.font = stFont(700, size, ST_NUM);
+  let w = ctx.measureText(s.value).width;
+  if (s.unit) { ctx.font = stFont(600, size * 0.4, ST_NUM); w += ctx.measureText(' ' + s.unit).width; }
+  return w;
+}
+function stValue(ctx, s, x, y, size, color, align = 'left') {
+  const w = stValueWidth(ctx, s, size);
+  let x0 = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  ctx.textAlign = 'left'; ctx.fillStyle = color;
   ctx.font = stFont(700, size, ST_NUM);
   ctx.fillText(s.value, x0, y);
-  if (s.unit) { ctx.font = stFont(600, size * 0.42, ST_NUM); ctx.fillText(' ' + s.unit, x0 + vw, y); }
+  if (s.unit) {
+    const vw = ctx.measureText(s.value).width;
+    ctx.font = stFont(600, size * 0.4, ST_NUM);
+    ctx.fillText(' ' + s.unit, x0 + vw, y);
+  }
+  return w;
 }
 
-// Grille de stats (n colonnes) dans une largeur donnée
-function stStatGrid(ctx, stats, x, y, w, o) {
-  const cols = o.cols || Math.min(3, Math.max(1, stats.length));
-  const rowH = o.rowH || (o.size || 88) * 1.75;
-  const cw = w / cols;
-  stats.forEach((s, i) => {
-    const c = i % cols, r = Math.floor(i / cols);
-    stStat(ctx, s, x + c * cw + (o.align === 'center' ? cw / 2 : 0), y + r * rowH, o);
-  });
-  return Math.ceil(stats.length / cols) * rowH;
-}
-
-// Ordonnée de la 1re rangée pour que la grille tienne au-dessus de `bottom`
-function stGridY(desired, n, cols, rowH, bottom = ST_H - 90) {
+// Mise en page d'une grille de compteurs : taille commune ajustée
+function stStatsLayout(ctx, stats, w, o = {}) {
+  const n = stats.length;
+  const cols = Math.max(1, Math.min(o.cols || (n === 4 ? 2 : 3), n || 1));
   const rows = Math.max(1, Math.ceil(n / cols));
-  return Math.min(desired, bottom - (rows - 1) * rowH);
+  const cw = w / cols;
+  const inner = cw - (o.cellPad != null ? o.cellPad : 36);
+  let size = o.maxSize || 96;
+  stats.forEach((s) => { const vw = stValueWidth(ctx, s, size); if (vw > inner) size = size * inner / vw; });
+  size = Math.max(36, size);
+  const labelSize = Math.max(22, Math.min(o.labelSize || 28, size * 0.34));
+  const gapLV = labelSize * 0.75;
+  const cellH = labelSize + gapLV + size * 0.78;
+  const rowGap = o.rowGap != null ? o.rowGap : size * 0.55;
+  return { cols, rows, cw, size, labelSize, gapLV, cellH, rowGap, height: rows * cellH + (rows - 1) * rowGap };
+}
+// Dessine la grille ; `top` = haut du bloc. Renvoie la hauteur occupée.
+function stDrawStats(ctx, stats, x, top, w, o = {}) {
+  const L = o.layout || stStatsLayout(ctx, stats, w, o);
+  const align = o.align || 'center';
+  const color = o.color || '#ffffff', labelColor = o.labelColor || 'rgba(255,255,255,0.68)';
+  stats.forEach((s, i) => {
+    const c = i % L.cols, r = Math.floor(i / L.cols);
+    // Rangée incomplète centrée quand la grille est centrée
+    const inRow = Math.min(L.cols, stats.length - r * L.cols);
+    const shift = align === 'center' ? (L.cols - inRow) * L.cw / 2 : 0;
+    const cx = (align === 'center' ? x + c * L.cw + L.cw / 2 : x + c * L.cw) + shift;
+    const ty = top + r * (L.cellH + L.rowGap);
+    stLabel(ctx, s.label, cx, ty + L.labelSize * 0.8, L.labelSize, labelColor, align);
+    stValue(ctx, s, cx, ty + L.labelSize + L.gapLV + L.size * 0.74, L.size, color, align);
+    if (o.dividers && c > 0) {
+      ctx.save(); ctx.fillStyle = o.dividerColor || 'rgba(255,255,255,0.22)';
+      ctx.fillRect(x + shift + c * L.cw - 1, ty + 4, 2, L.cellH - 4);
+      ctx.restore();
+    }
+  });
+  return L.height;
+}
+
+// Titre (1 à 3 lignes) + date en capitales ; renvoie la hauteur
+function stHeading(ctx, d, x, top, w, o = {}) {
+  const t = d.show.title ? d.title : '';
+  const date = d.show.date ? d.agg.dateLabel : '';
+  const size = o.titleSize || 64, align = o.align || 'left';
+  let y = top;
+  if (date && o.dateFirst) { stLabel(ctx, date, x, y + 26, 26, o.dateColor || 'rgba(255,255,255,0.7)', align); y += 26 + 26; }
+  if (t) {
+    ctx.font = stFont(700, size, ST_TXT); ctx.fillStyle = o.color || '#ffffff'; ctx.textAlign = align;
+    stWrap(ctx, t, w, o.maxLines || 2).forEach((l, i) => { ctx.fillText(l, x, y + size * 0.86); y += size * 1.12; });
+  }
+  if (date && !o.dateFirst) { y += t ? 14 : 0; stLabel(ctx, date, x, y + 26, 26, o.dateColor || 'rgba(255,255,255,0.7)', align); y += 26 + 8; }
+  return y - top;
+}
+function stHeadingHeight(ctx, d, w, o = {}) {
+  const t = d.show.title ? d.title : '';
+  const date = d.show.date ? d.agg.dateLabel : '';
+  const size = o.titleSize || 64;
+  let h = 0;
+  if (t) { ctx.font = stFont(700, size, ST_TXT); h += stWrap(ctx, t, w, o.maxLines || 2).length * size * 1.12; }
+  if (date) h += (t ? 14 : 0) + 34;
+  return h;
 }
 
 function stRoundRect(ctx, x, y, w, h, r) {
@@ -358,266 +438,281 @@ function stProfile(routes) {
 
 const STORY_TEMPLATES = [
   {
+    // Calque : tracé lumineux + compteurs alignés, à poser sur une photo/vidéo
     id: 'trace', name: 'Tracé', kind: 'Calque', transparent: true,
     async draw(ctx, d) {
-      const proj = stFit(d.routes, { x: 150, y: 330, w: 780, h: 900 });
-      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 14, casing: 'rgba(0,0,0,0.25)', casingWidth: 5, glow: 18 });
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.45)'; ctx.shadowBlur = 16;
-      await stDrawLogo(ctx, ST_W / 2, 170, 62, '#ffffff', 'center');
-      let y = 1430;
-      const t = stTitleText(d);
-      if (t) {
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = stFont(700, 62, ST_TXT);
-        stWrap(ctx, t, 900, 2).forEach((l) => { ctx.fillText(l, ST_W / 2, y); y += 72; });
-        y += 10;
-      }
-      if (d.show.date && d.agg.dateLabel) { ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.textAlign = 'center'; ctx.font = stFont(500, 38, ST_TXT); ctx.fillText(d.agg.dateLabel, ST_W / 2, y); y += 50; }
-      stStatGrid(ctx, d.stats, 90, stGridY(y + 120, d.stats.length, 3, 161), 900, { size: 92, align: 'center', cols: Math.min(3, d.stats.length || 1) });
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 18;
+      await stDrawLogo(ctx, ST_W / 2, 190, 58, '#ffffff', 'center');
+      const w = ST_W - 2 * ST_PAD;
+      const L = stStatsLayout(ctx, d.stats, w, { maxSize: 96 });
+      const hh = stHeadingHeight(ctx, d, w, { titleSize: 60 });
+      const statsTop = ST_H - 250 - L.height;
+      const headTop = statsTop - (hh ? hh + 56 : 0);
+      if (hh) stHeading(ctx, d, ST_W / 2, headTop, w, { titleSize: 60, align: 'center' });
+      if (d.stats.length) stDrawStats(ctx, d.stats, ST_PAD, statsTop, w, { layout: L, dividers: true, dividerColor: 'rgba(255,255,255,0.35)' });
       ctx.restore();
+      const proj = stFit(d.routes, { x: 150, y: 340, w: 780, h: Math.max(400, headTop - 120 - 340) });
+      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 13, casing: 'rgba(0,0,0,0.22)', casingWidth: 5, glow: 22 });
     },
   },
   {
+    // Calque : compteurs empilés au centre, tracé en filigrane derrière
     id: 'colonne', name: 'Colonne', kind: 'Calque', transparent: true,
     async draw(ctx, d) {
-      const proj = stFit(d.routes, { x: 240, y: 260, w: 600, h: 1400 });
-      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 16, markers: false });
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 18;
-      await stDrawLogo(ctx, ST_W / 2, 330, 70, '#ffffff', 'center');
+      const proj = stFit(d.routes, { x: 200, y: 300, w: 680, h: 1320 });
+      ctx.save(); ctx.globalAlpha = 0.9;
+      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 15, markers: false });
+      ctx.restore();
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 22;
+      await stDrawLogo(ctx, ST_W / 2, 250, 64, '#ffffff', 'center');
       const items = [...d.stats];
-      if (d.show.date && d.agg.dateLabel) items.push({ label: 'Date', value: d.agg.dateLabel, unit: '', small: true });
-      const t = stTitleText(d);
-      let y = 560;
-      if (t) { ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = stFont(700, 52, ST_TXT); stWrap(ctx, t, 820, 2).forEach((l) => { ctx.fillText(l, ST_W / 2, y); y += 62; }); y += 40; }
-      const step = Math.min(200, 1050 / Math.max(1, items.length));
+      if (d.show.date && d.agg.dateLabel) items.push({ label: 'Date', value: d.agg.dateLabel, unit: '', isDate: true });
+      const t = d.show.title ? d.title : '';
+      let y = 420;
+      if (t) { ctx.font = stFont(700, 56, ST_TXT); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; stWrap(ctx, t, 820, 2).forEach((l) => { y += 56; ctx.fillText(l, ST_W / 2, y); y += 10; }); y += 30; }
+      const avail = 1640 - y;
+      const step = Math.min(250, avail / Math.max(1, items.length));
+      const size = Math.min(110, step * 0.5);
       items.forEach((s, i) => {
-        const yy = y + 90 + i * step;
-        if (s.small) {
-          ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.font = stFont(500, 32, ST_TXT); ctx.fillText(s.label, ST_W / 2, yy - 66);
-          ctx.fillStyle = '#fff'; ctx.font = stFont(700, 54, ST_NUM); ctx.fillText(s.value, ST_W / 2, yy);
-        } else stStat(ctx, s, ST_W / 2, yy, { size: 84, align: 'center', labelColor: 'rgba(255,255,255,0.85)' });
+        const top = y + i * step + (step - size * 1.35) / 2;
+        stLabel(ctx, s.label, ST_W / 2, top + 24, 26, 'rgba(255,255,255,0.85)', 'center');
+        if (s.isDate) { ctx.font = stFont(700, size * 0.6, ST_NUM); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText(s.value, ST_W / 2, top + 40 + size * 0.6); }
+        else {
+          let sz = size; const vw = stValueWidth(ctx, s, sz); if (vw > 860) sz *= 860 / vw;
+          stValue(ctx, s, ST_W / 2, top + 40 + sz * 0.76, sz, '#ffffff', 'center');
+        }
       });
       ctx.restore();
     },
   },
   {
+    // Calque : pastilles façon badges, tracé dessous
     id: 'pastilles', name: 'Pastilles', kind: 'Calque', transparent: true,
     async draw(ctx, d) {
       const pills = [];
       if (d.show.date && d.agg.dateLabel) pills.push(d.agg.dateLabel.toUpperCase());
-      d.stats.forEach((s) => pills.push(`${s.label.toUpperCase()} ${s.value}${s.unit ? ' ' + s.unit.toUpperCase() : ''}`));
-      ctx.font = stFont(600, 34, ST_NUM);
-      const h = 72, gap = 14, maxW = 940;
-      // Rangées centrées ; logo dans la première pastille
-      const logoW = 46 * 1237 / 284 + 56;
-      const widths = pills.map((p) => ctx.measureText(p).width + 56);
+      d.stats.forEach((s) => pills.push(`${s.label.toUpperCase()}  ${s.value}${s.unit ? ' ' + s.unit.toUpperCase() : ''}`));
+      const h = 84, gap = 16, maxW = ST_W - 2 * ST_PAD, fs = 34;
+      ctx.font = stFont(600, fs, ST_NUM);
+      const logoH = 44, logoW = logoH * 1237 / 284 + 64;
+      const widths = pills.map((p) => ctx.measureText(p).width + 64);
       const rows = [[{ logo: true, w: logoW }]];
       widths.forEach((w, i) => {
         const row = rows[rows.length - 1];
         const rw = row.reduce((a, b) => a + b.w + gap, 0);
         if (rw + w > maxW) rows.push([{ i, w }]); else row.push({ i, w });
       });
-      let y = 360;
-      const t = stTitleText(d);
+      let y = 300;
+      const t = d.show.title ? d.title : '';
       if (t) {
-        ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 14;
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = stFont(700, 56, ST_TXT);
-        stWrap(ctx, t, 900, 2).forEach((l) => { ctx.fillText(l, ST_W / 2, y); y += 66; });
-        ctx.restore(); y += 30;
+        ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 16;
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = stFont(700, 58, ST_TXT);
+        stWrap(ctx, t, maxW, 2).forEach((l) => { ctx.fillText(l, ST_W / 2, y + 50); y += 66; });
+        ctx.restore(); y += 34;
       }
       for (const row of rows) {
         const rw = row.reduce((a, b) => a + b.w, 0) + gap * (row.length - 1);
         let x = (ST_W - rw) / 2;
         for (const cell of row) {
           stRoundRect(ctx, x, y, cell.w, h, h / 2);
-          ctx.fillStyle = cell.logo ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.35)'; ctx.fill();
-          ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke();
-          if (cell.logo) await stDrawLogo(ctx, x + cell.w / 2, y + (h - 46) / 2, 46, '#111111', 'center');
-          else { ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = stFont(600, 34, ST_NUM); ctx.fillText(pills[cell.i], x + cell.w / 2, y + h / 2 + 2); ctx.textBaseline = 'alphabetic'; }
+          ctx.fillStyle = cell.logo ? '#ffffff' : 'rgba(0,0,0,0.38)'; ctx.fill();
+          ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+          if (cell.logo) await stDrawLogo(ctx, x + cell.w / 2, y + (h - logoH) / 2, logoH, '#111111', 'center');
+          else { ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = stFont(600, fs, ST_NUM); ctx.fillText(pills[cell.i], x + cell.w / 2, y + h / 2 + 2); ctx.textBaseline = 'alphabetic'; }
           x += cell.w + gap;
         }
         y += h + gap;
       }
-      const proj = stFit(d.routes, { x: 260, y: y + 90, w: 560, h: Math.max(300, 1700 - y - 90) });
-      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 11, casing: 'rgba(255,255,255,0.9)', casingWidth: 4 });
+      const proj = stFit(d.routes, { x: 200, y: y + 110, w: 680, h: Math.max(320, 1640 - y - 110) });
+      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 12, casing: '#ffffff', casingWidth: 5 });
     },
   },
   {
+    // Photo plein cadre, dégradés haut/bas, titre + compteurs en bas
     id: 'photo', name: 'Photo', kind: 'Photo', photo: true,
     async draw(ctx, d) {
       if (d.photo) stCover(ctx, d.photo, 0, 0, ST_W, ST_H); else stPlaceholderPhoto(ctx, 0, 0, ST_W, ST_H);
-      let g = ctx.createLinearGradient(0, 0, 0, 420); g.addColorStop(0, 'rgba(0,0,0,0.45)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, ST_W, 420);
-      g = ctx.createLinearGradient(0, ST_H * 0.48, 0, ST_H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.78)');
-      ctx.fillStyle = g; ctx.fillRect(0, ST_H * 0.48, ST_W, ST_H * 0.52);
-      await stDrawLogo(ctx, 80, 110, 54, '#ffffff');
-      // Mini tracé en haut à droite
-      const proj = stFit(d.routes, { x: 760, y: 90, w: 240, h: 240 });
-      stDrawRoutes(ctx, d.routes, proj, { color: '#ffffff', width: 6, markers: false, glow: 6 });
-      let y = 1290;
-      const t = stTitleText(d);
-      ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
-      if (t) { ctx.font = stFont(700, 64, ST_TXT); stWrap(ctx, t, 920, 3).forEach((l) => { ctx.fillText(l, 80, y); y += 74; }); y += 20; }
-      if (d.show.date && d.agg.dateLabel) { ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.font = stFont(500, 36, ST_TXT); ctx.fillText(d.agg.dateLabel, 80, y); y += 40; }
-      stStatGrid(ctx, d.stats, 80, stGridY(Math.max(y + 130, 1560), d.stats.length, 2, 175), 920, { size: 86, cols: 2, rowH: 175, labelColor: 'rgba(255,255,255,0.8)' });
+      let g = ctx.createLinearGradient(0, 0, 0, 460); g.addColorStop(0, 'rgba(0,0,0,0.5)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, ST_W, 460);
+      g = ctx.createLinearGradient(0, ST_H * 0.45, 0, ST_H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.55, 'rgba(0,0,0,0.45)'); g.addColorStop(1, 'rgba(0,0,0,0.82)');
+      ctx.fillStyle = g; ctx.fillRect(0, ST_H * 0.45, ST_W, ST_H * 0.55);
+      await stDrawLogo(ctx, ST_PAD, 150, 50, '#ffffff');
+      const proj = stFit(d.routes, { x: ST_W - ST_PAD - 220, y: 120, w: 220, h: 220 });
+      stDrawRoutes(ctx, d.routes, proj, { color: '#ffffff', width: 6, markers: false, glow: 8 });
+      const w = ST_W - 2 * ST_PAD;
+      const L = stStatsLayout(ctx, d.stats, w, { maxSize: 92, align: 'left' });
+      const statsTop = ST_H - 240 - L.height;
+      const hh = stHeadingHeight(ctx, d, w, { titleSize: 68, maxLines: 3 });
+      if (hh) stHeading(ctx, d, ST_PAD, statsTop - 60 - hh, w, { titleSize: 68, maxLines: 3 });
+      if (d.stats.length) stDrawStats(ctx, d.stats, ST_PAD, statsTop, w, { layout: L, align: 'left', labelColor: 'rgba(255,255,255,0.75)' });
     },
   },
   {
+    // Polaroïd posé sur fond crème, légende manuscrite, compteurs sobres
     id: 'polaroid', name: 'Polaroïd', kind: 'Photo', photo: true,
     async draw(ctx, d) {
-      ctx.fillStyle = '#f3efe6'; ctx.fillRect(0, 0, ST_W, ST_H);
-      // Cadre photo légèrement incliné
+      const ink = '#1c1917', mute = '#78716c';
+      ctx.fillStyle = '#f2ede3'; ctx.fillRect(0, 0, ST_W, ST_H);
+      await stDrawLogo(ctx, ST_W / 2, 140, 44, ink, 'center');
       ctx.save();
-      ctx.translate(ST_W / 2, 700); ctx.rotate(-0.025);
-      ctx.shadowColor = 'rgba(0,0,0,0.22)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 18;
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(-440, -520, 880, 1060);
+      ctx.translate(ST_W / 2, 780); ctx.rotate(-0.03);
+      ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 50; ctx.shadowOffsetY = 22;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(-420, -500, 840, 1000);
       ctx.shadowColor = 'transparent';
-      ctx.save(); ctx.beginPath(); ctx.rect(-400, -480, 800, 860); ctx.clip();
-      if (d.photo) stCover(ctx, d.photo, -400, -480, 800, 860); else stPlaceholderPhoto(ctx, -400, -480, 800, 860);
+      ctx.save(); ctx.beginPath(); ctx.rect(-384, -464, 768, 800); ctx.clip();
+      if (d.photo) stCover(ctx, d.photo, -384, -464, 768, 800); else stPlaceholderPhoto(ctx, -384, -464, 768, 800);
       ctx.restore();
-      const t = stTitleText(d) || d.title;
-      ctx.fillStyle = '#262626'; ctx.textAlign = 'center'; ctx.font = stFont(600, 46, ST_TXT);
-      ctx.fillText(stWrap(ctx, t, 760, 1)[0] || '', 0, 470);
+      // mini tracé blanc dans le coin de la photo
+      const proj = stFit(d.routes, { x: 160, y: -440, w: 200, h: 200 });
+      stDrawRoutes(ctx, d.routes, proj, { color: '#ffffff', width: 5, markers: false, glow: 6 });
+      const cap = (d.show.title ? d.title : '') || d.title;
+      ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.font = stFont(600, 46, ST_TXT);
+      ctx.fillText(stWrap(ctx, cap, 720, 1)[0] || '', 0, 420);
       ctx.restore();
-      // Tracé + stats dessous
-      const proj = stFit(d.routes, { x: 90, y: 1340, w: 300, h: 420 });
-      stDrawRoutes(ctx, d.routes, proj, { color: d.color === '#ffffff' ? '#171717' : d.color, width: 8, markers: true });
-      let y = 1400;
-      if (d.show.date && d.agg.dateLabel) { ctx.textAlign = 'left'; ctx.fillStyle = '#737373'; ctx.font = stFont(500, 34, ST_TXT); ctx.fillText(d.agg.dateLabel, 450, y); y += 30; }
-      stStatGrid(ctx, d.stats, 450, y + 110, 560, { size: 66, cols: 2, rowH: 140, color: '#171717', labelColor: '#737373' });
-      await stDrawLogo(ctx, ST_W / 2, 1810, 40, '#171717', 'center');
+      const w = ST_W - 2 * ST_PAD;
+      let top = 1390;
+      if (d.show.date && d.agg.dateLabel) { stLabel(ctx, d.agg.dateLabel, ST_W / 2, top + 26, 26, mute, 'center'); top += 80; }
+      if (d.stats.length) stDrawStats(ctx, d.stats, ST_PAD, top, w, { maxSize: 84, color: ink, labelColor: mute, dividers: true, dividerColor: 'rgba(28,25,23,0.15)' });
     },
   },
   {
+    // Carte sombre + tracé lumineux, carte de stats en verre
     id: 'nuit', name: 'Carte nuit', kind: 'Carte',
     async draw(ctx, d) {
-      ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, ST_W, ST_H);
-      const proj = stFit(d.routes, { x: 110, y: 230, w: 860, h: 1050 }, 15);
+      ctx.fillStyle = '#1c1c1c'; ctx.fillRect(0, 0, ST_W, ST_H);
+      const w = ST_W - 2 * ST_PAD - 2 * 56;
+      const L = stStatsLayout(ctx, d.stats, w, { maxSize: 84 });
+      const hh = stHeadingHeight(ctx, d, w, { titleSize: 54, maxLines: 2 });
+      const cardH = 64 + (hh ? hh + 44 : 0) + L.height + 64;
+      const cardY = ST_H - 200 - cardH;
+      const proj = stFit(d.routes, { x: 130, y: 260, w: 820, h: Math.max(400, cardY - 120 - 260) }, 15);
       await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w: ST_W, h: ST_H });
       await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w: ST_W, h: ST_H }, 'labels');
-      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 11, glow: 26 });
-      await stDrawLogo(ctx, 80, 100, 54, '#ffffff');
-      // Carte de stats en verre sombre
-      const t = stTitleText(d);
-      const rows = Math.ceil(d.stats.length / 3);
-      const ch = 90 + (t ? 90 : 0) + (d.show.date && d.agg.dateLabel ? 50 : 0) + rows * 170;
-      const cy = ST_H - 70 - ch;
-      stRoundRect(ctx, 60, cy, ST_W - 120, ch, 36);
-      ctx.fillStyle = 'rgba(10,10,10,0.72)'; ctx.fill();
+      const g = ctx.createLinearGradient(0, 0, 0, 360); g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, ST_W, 360);
+      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 11, glow: 28 });
+      await stDrawLogo(ctx, ST_PAD, 150, 50, '#ffffff');
+      stRoundRect(ctx, ST_PAD, cardY, ST_W - 2 * ST_PAD, cardH, 40);
+      ctx.fillStyle = 'rgba(12,12,12,0.78)'; ctx.fill();
       ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.stroke();
-      let y = cy + 90;
-      ctx.textAlign = 'left';
-      if (t) { ctx.fillStyle = '#fff'; ctx.font = stFont(700, 54, ST_TXT); ctx.fillText(stWrap(ctx, t, ST_W - 240, 1)[0], 110, y); y += 60; }
-      if (d.show.date && d.agg.dateLabel) { ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = stFont(500, 34, ST_TXT); ctx.fillText(d.agg.dateLabel, 110, y); y += 50; }
-      stStatGrid(ctx, d.stats, 110, y + 120, ST_W - 220, { size: 76, cols: 3, rowH: 170, labelColor: 'rgba(255,255,255,0.6)' });
+      let y = cardY + 64;
+      if (hh) { stHeading(ctx, d, ST_PAD + 56, y, w, { titleSize: 54, dateColor: 'rgba(255,255,255,0.55)' }); y += hh + 44; }
+      if (d.stats.length) stDrawStats(ctx, d.stats, ST_PAD + 56, y, w, { layout: L, align: 'left', labelColor: 'rgba(255,255,255,0.55)' });
     },
   },
   {
+    // Satellite, tracé cerclé de blanc, texte sur dégradé
     id: 'satellite', name: 'Satellite', kind: 'Carte',
     async draw(ctx, d) {
-      ctx.fillStyle = '#1f2a1f'; ctx.fillRect(0, 0, ST_W, ST_H);
-      const proj = stFit(d.routes, { x: 120, y: 260, w: 840, h: 1050 }, 16);
+      ctx.fillStyle = '#26301f'; ctx.fillRect(0, 0, ST_W, ST_H);
+      const w = ST_W - 2 * ST_PAD;
+      const L = stStatsLayout(ctx, d.stats, w, { maxSize: 92 });
+      const hh = stHeadingHeight(ctx, d, w, { titleSize: 64 });
+      const statsTop = ST_H - 240 - L.height;
+      const headTop = statsTop - (hh ? hh + 52 : 0);
+      const proj = stFit(d.routes, { x: 130, y: 280, w: 820, h: Math.max(420, headTop - 120 - 280) }, 16);
       await stDrawTiles(ctx, 'satellite', proj, { x: 0, y: 0, w: ST_W, h: ST_H });
-      let g = ctx.createLinearGradient(0, 0, 0, 380); g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, ST_W, 380);
-      g = ctx.createLinearGradient(0, ST_H * 0.6, 0, ST_H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.85)');
-      ctx.fillStyle = g; ctx.fillRect(0, ST_H * 0.6, ST_W, ST_H * 0.4);
+      let g = ctx.createLinearGradient(0, 0, 0, 400); g.addColorStop(0, 'rgba(0,0,0,0.6)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, ST_W, 400);
+      g = ctx.createLinearGradient(0, headTop - 260, 0, ST_H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.4, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0.88)');
+      ctx.fillStyle = g; ctx.fillRect(0, headTop - 260, ST_W, ST_H);
       stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 10, casing: '#ffffff', casingWidth: 4 });
-      await stDrawLogo(ctx, 80, 100, 54, '#ffffff');
-      let y = 1470;
-      const t = stTitleText(d);
-      ctx.textAlign = 'left'; ctx.fillStyle = '#fff';
-      if (t) { ctx.font = stFont(700, 60, ST_TXT); stWrap(ctx, t, 920, 2).forEach((l) => { ctx.fillText(l, 80, y); y += 70; }); }
-      if (d.show.date && d.agg.dateLabel) { ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.font = stFont(500, 36, ST_TXT); ctx.fillText(d.agg.dateLabel, 80, y); y += 30; }
-      stStatGrid(ctx, d.stats, 80, stGridY(Math.max(y + 130, 1700), d.stats.length, 3, 160), 920, { size: 80, cols: 3, rowH: 160 });
+      await stDrawLogo(ctx, ST_PAD, 150, 50, '#ffffff');
+      if (hh) stHeading(ctx, d, ST_PAD, headTop, w, { titleSize: 64 });
+      if (d.stats.length) stDrawStats(ctx, d.stats, ST_PAD, statsTop, w, { layout: L, align: 'left', labelColor: 'rgba(255,255,255,0.7)' });
     },
   },
   {
+    // Carte claire façon appli, feuille blanche en bas
     id: 'carte', name: 'Carte claire', kind: 'Carte',
     async draw(ctx, d) {
-      ctx.fillStyle = '#eef2ee'; ctx.fillRect(0, 0, ST_W, ST_H);
-      const proj = stFit(d.routes, { x: 110, y: 200, w: 860, h: 1080 }, 16);
+      const ink = '#171717', mute = '#737373';
+      ctx.fillStyle = '#eef1ec'; ctx.fillRect(0, 0, ST_W, ST_H);
+      const w = ST_W - 2 * ST_PAD;
+      const L = stStatsLayout(ctx, d.stats, w, { maxSize: 84 });
+      const hh = stHeadingHeight(ctx, d, w - 260, { titleSize: 54, maxLines: 2 });
+      const sheetH = 120 + Math.max(hh, 50) + 56 + L.height + 220;
+      const sheetY = ST_H - sheetH;
+      const proj = stFit(d.routes, { x: 130, y: 220, w: 820, h: Math.max(420, sheetY - 100 - 220) }, 16);
       await stDrawTiles(ctx, 'topo', proj, { x: 0, y: 0, w: ST_W, h: ST_H });
       stDrawRoutes(ctx, d.routes, proj, { color: d.color === '#ffffff' ? '#fc5200' : d.color, width: 11, casing: '#ffffff', casingWidth: 4 });
-      // Bandeau blanc arrondi en bas
-      const t = stTitleText(d);
-      const rows = Math.ceil(d.stats.length / 3);
-      const ch = 110 + (t ? 80 : 0) + (d.show.date && d.agg.dateLabel ? 50 : 0) + rows * 165;
-      const cy = ST_H - ch;
-      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.18)'; ctx.shadowBlur = 40;
-      stRoundRect(ctx, 0, cy, ST_W, ch + 60, 48); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.restore();
-      let y = cy + 100;
-      ctx.textAlign = 'left';
-      if (t) { ctx.fillStyle = '#171717'; ctx.font = stFont(700, 54, ST_TXT); ctx.fillText(stWrap(ctx, t, 640, 1)[0], 80, y); y += 54; }
-      if (d.show.date && d.agg.dateLabel) { ctx.fillStyle = '#737373'; ctx.font = stFont(500, 34, ST_TXT); ctx.fillText(d.agg.dateLabel, 80, y); y += 40; }
-      await stDrawLogo(ctx, ST_W - 80, cy + 55, 42, '#171717', 'right');
-      stStatGrid(ctx, d.stats, 80, y + 120, ST_W - 160, { size: 74, cols: 3, rowH: 165, color: '#171717', labelColor: '#737373' });
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.16)'; ctx.shadowBlur = 50;
+      stRoundRect(ctx, 0, sheetY, ST_W, sheetH + 80, 56); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.restore();
+      ctx.fillStyle = '#e5e5e5'; stRoundRect(ctx, ST_W / 2 - 50, sheetY + 24, 100, 10, 5); ctx.fill();
+      let y = sheetY + 96;
+      await stDrawLogo(ctx, ST_W - ST_PAD, y + 4, 40, ink, 'right');
+      if (hh) stHeading(ctx, d, ST_PAD, y, w - 260, { titleSize: 54, color: ink, dateColor: mute });
+      y += Math.max(hh, 50) + 56;
+      if (d.stats.length) stDrawStats(ctx, d.stats, ST_PAD, y, w, { layout: L, align: 'left', color: ink, labelColor: mute });
     },
   },
   {
+    // Affiche : gros chiffre, tracé au centre, cadre fin
     id: 'affiche', name: 'Affiche', kind: 'Graphique',
     async draw(ctx, d) {
-      const bg = '#14251d', ink = '#efe6d2';
+      const bg = '#13251c', ink = '#efe6d2', mute = 'rgba(239,230,210,0.62)', line = 'rgba(239,230,210,0.3)';
       ctx.fillStyle = bg; ctx.fillRect(0, 0, ST_W, ST_H);
-      ctx.strokeStyle = 'rgba(239,230,210,0.35)'; ctx.lineWidth = 3; ctx.strokeRect(50, 50, ST_W - 100, ST_H - 100);
-      await stDrawLogo(ctx, ST_W / 2, 110, 44, ink, 'center');
-      // Gros chiffre : distance
-      ctx.fillStyle = ink; ctx.textAlign = 'center';
-      ctx.font = stFont(800, 230, ST_LOGO);
-      ctx.fillText(stNum(d.agg.distance, d.agg.distance >= 100 ? 0 : 1), ST_W / 2, 470);
-      ctx.font = stFont(600, 44, ST_TXT); ctx.fillText('KILOMÈTRES', ST_W / 2, 545);
-      const proj = stFit(d.routes, { x: 160, y: 640, w: 760, h: 760 });
-      stDrawRoutes(ctx, d.routes, proj, { color: d.color === 'routes' ? '#e8813a' : d.color, width: 10, markers: false });
-      let y = 1500;
-      const t = stTitleText(d);
-      if (t) { ctx.fillStyle = ink; ctx.font = stFont(700, 54, ST_TXT); stWrap(ctx, t.toUpperCase(), 900, 2).forEach((l) => { ctx.fillText(l, ST_W / 2, y); y += 64; }); }
-      if (d.show.date && d.agg.dateLabel) { ctx.fillStyle = 'rgba(239,230,210,0.7)'; ctx.font = stFont(500, 34, ST_TXT); ctx.fillText(d.agg.dateLabel, ST_W / 2, y); y += 20; }
+      ctx.strokeStyle = line; ctx.lineWidth = 3; ctx.strokeRect(56, 56, ST_W - 112, ST_H - 112);
+      await stDrawLogo(ctx, ST_W / 2, 130, 42, ink, 'center');
+      // Gros compteur : même famille que tous les compteurs
+      const big = { value: stNum(d.agg.distance, d.agg.distance >= 100 ? 0 : 1), unit: '' };
+      let size = 280; const bw = stValueWidth(ctx, big, size); if (bw > 820) size *= 820 / bw;
+      stValue(ctx, big, ST_W / 2, 250 + size * 0.78, size, ink, 'center');
+      stLabel(ctx, 'Kilomètres', ST_W / 2, 250 + size * 0.78 + 64, 32, mute, 'center');
       const rest = d.stats.filter((s) => s.key !== 'distance');
+      const w = ST_W - 2 * 150;
+      const L = stStatsLayout(ctx, rest, w, { maxSize: 76 });
+      const hh = stHeadingHeight(ctx, d, w, { titleSize: 50 });
+      const statsTop = ST_H - 190 - L.height;
+      const ruleY = statsTop - 70;
+      const headTop = ruleY - 60 - hh;
+      const proj = stFit(d.routes, { x: 190, y: 250 + size * 0.78 + 150, w: 700, h: Math.max(320, (hh ? headTop : ruleY) - 110 - (250 + size * 0.78 + 150)) });
+      stDrawRoutes(ctx, d.routes, proj, { color: d.color === 'routes' ? '#e8813a' : d.color, width: 10, markers: false });
+      if (hh) {
+        const dd = { ...d, title: (d.title || '').toUpperCase() };
+        stHeading(ctx, dd, ST_W / 2, headTop, w, { titleSize: 50, align: 'center', color: ink, dateColor: mute });
+      }
       if (rest.length) {
-        ctx.strokeStyle = 'rgba(239,230,210,0.35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(140, y + 30); ctx.lineTo(ST_W - 140, y + 30); ctx.stroke();
-        stStatGrid(ctx, rest, 120, stGridY(Math.max(y + 170, 1720), rest.length, 3, 140, ST_H - 110), ST_W - 240, { size: 66, cols: Math.min(3, rest.length), align: 'center', rowH: 140, color: ink, labelColor: 'rgba(239,230,210,0.65)' });
+        ctx.fillStyle = line; ctx.fillRect(150, ruleY, ST_W - 300, 2);
+        stDrawStats(ctx, rest, 150, statsTop, w, { layout: L, color: ink, labelColor: mute, dividers: true, dividerColor: line });
       }
     },
   },
   {
+    // Profil d'altitude en dégradé, tracé au-dessus
     id: 'profil', name: 'Profil', kind: 'Graphique',
     async draw(ctx, d) {
-      const g = ctx.createLinearGradient(0, 0, 0, ST_H); g.addColorStop(0, '#0b1220'); g.addColorStop(1, '#16213a');
+      const g = ctx.createLinearGradient(0, 0, 0, ST_H); g.addColorStop(0, '#0b1220'); g.addColorStop(1, '#172138');
       ctx.fillStyle = g; ctx.fillRect(0, 0, ST_W, ST_H);
       const accent = d.color === 'routes' ? (d.routes[0] ? d.routes[0].color : '#3b82f6') : d.color;
-      await stDrawLogo(ctx, 80, 100, 50, '#ffffff');
-      let y = 300;
-      const t = stTitleText(d);
-      ctx.textAlign = 'left'; ctx.fillStyle = '#fff';
-      if (t) { ctx.font = stFont(700, 60, ST_TXT); stWrap(ctx, t, 920, 2).forEach((l) => { ctx.fillText(l, 80, y); y += 70; }); }
-      if (d.show.date && d.agg.dateLabel) { ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = stFont(500, 36, ST_TXT); ctx.fillText(d.agg.dateLabel, 80, y); y += 40; }
-      // Profil d'altitude
+      await stDrawLogo(ctx, ST_PAD, 150, 50, '#ffffff');
+      const w = ST_W - 2 * ST_PAD;
+      let y = 290;
+      const hh = stHeadingHeight(ctx, d, w, { titleSize: 64 });
+      if (hh) { stHeading(ctx, d, ST_PAD, y, w, { titleSize: 64, dateColor: 'rgba(255,255,255,0.55)' }); y += hh + 40; }
+      const L = stStatsLayout(ctx, d.stats, w, { maxSize: 84 });
+      const statsTop = ST_H - 220 - L.height;
+      const py1 = statsTop - 150, py0 = py1 - 380;
+      const proj = stFit(d.routes, { x: 170, y: y + 20, w: 740, h: Math.max(260, py0 - 130 - y - 20) });
+      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 9, glow: 16 });
       const pts = stProfile(d.routes);
-      // Stats ancrées en bas, profil juste au-dessus
-      const statsY = stGridY(1800, d.stats.length, 3, 150);
-      const px0 = 0, px1 = ST_W, py1 = statsY - 210, py0 = py1 - 360;
-      const rTop = Math.max(y + 40, 380);
-      const proj = stFit(d.routes, { x: 180, y: rTop, w: 720, h: Math.max(240, py0 - 110 - rTop) });
-      stDrawRoutes(ctx, d.routes, proj, { color: d.color, width: 9, glow: 14 });
       if (pts.length > 1) {
         const maxD = pts[pts.length - 1].d || 1;
         let lo = Infinity, hi = -Infinity; pts.forEach((p) => { lo = Math.min(lo, p.e); hi = Math.max(hi, p.e); });
         const span = Math.max(30, hi - lo);
-        const X = (dd) => px0 + (dd / maxD) * (px1 - px0);
+        const X = (dd) => (dd / maxD) * ST_W;
         const Y = (e) => py1 - ((e - lo) / span) * (py1 - py0);
-        const step = 1;
-        ctx.beginPath(); ctx.moveTo(X(0), py1 + 60);
-        for (let i = 0; i < pts.length; i += step) ctx.lineTo(X(pts[i].d), Y(pts[i].e));
-        ctx.lineTo(X(maxD), Y(pts[pts.length - 1].e)); ctx.lineTo(X(maxD), py1 + 60); ctx.closePath();
-        const fg = ctx.createLinearGradient(0, py0, 0, py1 + 60); fg.addColorStop(0, accent + 'cc'); fg.addColorStop(1, accent + '00');
+        ctx.beginPath(); ctx.moveTo(0, py1 + 70);
+        pts.forEach((p) => ctx.lineTo(X(p.d), Y(p.e)));
+        ctx.lineTo(ST_W, py1 + 70); ctx.closePath();
+        const fg = ctx.createLinearGradient(0, py0, 0, py1 + 70); fg.addColorStop(0, accent + 'bb'); fg.addColorStop(1, accent + '00');
         ctx.fillStyle = fg; ctx.fill();
-        ctx.beginPath();
-        for (let i = 0; i < pts.length; i += step) { const x = X(pts[i].d), yy = Y(pts[i].e); if (i) ctx.lineTo(x, yy); else ctx.moveTo(x, yy); }
-        ctx.strokeStyle = accent; ctx.lineWidth = 5; ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = stFont(600, 32, ST_NUM); ctx.textAlign = 'left';
-        ctx.fillText(`Alt. max ${Math.round(hi)} m`, 80, py0 - 40);
-        ctx.textAlign = 'right'; ctx.fillText(`${stNum(maxD)} km`, ST_W - 80, py0 - 40);
+        ctx.beginPath(); pts.forEach((p, i) => { if (i) ctx.lineTo(X(p.d), Y(p.e)); else ctx.moveTo(X(p.d), Y(p.e)); });
+        ctx.strokeStyle = accent; ctx.lineWidth = 5; ctx.lineJoin = 'round'; ctx.stroke();
+        stLabel(ctx, `Alt. max ${Math.round(hi)} m`, ST_PAD, py0 - 44, 24, 'rgba(255,255,255,0.6)');
+        stLabel(ctx, `${stNum(maxD)} km`, ST_W - ST_PAD, py0 - 44, 24, 'rgba(255,255,255,0.6)', 'right');
       }
-      stStatGrid(ctx, d.stats, 80, statsY, 920, { size: 76, cols: Math.min(3, d.stats.length || 1), rowH: 150 });
+      if (d.stats.length) stDrawStats(ctx, d.stats, ST_PAD, statsTop, w, { layout: L, align: 'left', labelColor: 'rgba(255,255,255,0.6)' });
     },
   },
 ];
