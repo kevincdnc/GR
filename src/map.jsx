@@ -749,6 +749,27 @@ function MapView({
     return () => window.removeEventListener('gr-show-endpoints', on);
   }, []);
 
+  // Survol depuis la carte : le « mouseout » d'un tracé peut ne jamais arriver
+  // (tracé passé au premier plan, tracés redessinés sous le pointeur…). Filet
+  // de sécurité : dès que le pointeur bouge hors d'un tracé ou quitte la
+  // carte, on retire la mise en avant posée depuis la carte.
+  const mapHoverRef = useRef(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !setHoveredId) return;
+    const isRoutePath = (el) => {
+      let found = false;
+      routeLayersRef.current.forEach((l) => { if (l.line.getElement() === el || l.casing.getElement() === el) found = true; });
+      return found;
+    };
+    const clear = () => { if (mapHoverRef.current != null) { mapHoverRef.current = null; setHoveredId(null); } };
+    const onMove = (e) => { if (mapHoverRef.current != null && !isRoutePath(e.originalEvent && e.originalEvent.target)) clear(); };
+    const el = map.getContainer();
+    map.on('mousemove', onMove);
+    el.addEventListener('mouseleave', clear);
+    return () => { map.off('mousemove', onMove); el.removeEventListener('mouseleave', clear); };
+  }, [setHoveredId]);
+
   // Sync route polylines + fit bounds
   useEffect(() => {
     const map = mapRef.current;
@@ -760,6 +781,8 @@ function MapView({
       try { endMarker && endMarker.remove(); } catch (e) {}
     });
     routeLayersRef.current.clear();
+    // Tracés redessinés : une mise en avant posée depuis la carte n'a plus de sens
+    if (mapHoverRef.current != null && setHoveredId) { mapHoverRef.current = null; setHoveredId(null); }
     // Jonctions : une extrémité proche (< 400 m) d'une extrémité d'un autre tracé
     // affiché n'a pas de marqueur ; le départ et l'arrivée de la chaîne
     // gardent les leurs (cercle de départ, check d'arrivée).
@@ -823,8 +846,8 @@ function MapView({
       // Survol d'un tracé sur la carte : le met en avant (carte + navigation)
       if (!creating && setHoveredId) {
         [line, casing].forEach((l) => {
-          l.on('mouseover', () => setHoveredId(r.id));
-          l.on('mouseout', () => setHoveredId(null));
+          l.on('mouseover', () => { mapHoverRef.current = r.id; setHoveredId(r.id); });
+          l.on('mouseout', () => { mapHoverRef.current = null; setHoveredId(null); });
         });
       }
 
