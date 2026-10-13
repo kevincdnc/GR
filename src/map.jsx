@@ -108,6 +108,20 @@ const BASE_LAYERS = {
   },
   ign: { url: IGN_WMTS('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'png'), attribution: IGN_ATTR, maxNativeZoom: 19 },
   ortho: { url: IGN_WMTS('ORTHOIMAGERY.ORTHOPHOTOS', 'jpeg'), attribution: IGN_ATTR, maxNativeZoom: 19 },
+  // Carte routière IGN façon Visorando : villes, routes, sites. SCAN 1000 aux
+  // petites échelles puis SCAN Régional (1/250 000) ; Esri World Street Map
+  // dessous prend le relais hors de France ou si l'IGN ne répond pas.
+  routiere: {
+    url: IGN_WMTS('SCANREG_PYR-JPEG_WLD_WM', 'jpeg'),
+    thumb: IGN_WMTS('SCANREG_PYR-JPEG_WLD_WM', 'jpeg').replace('{z}', '10').replace('{x}', '500').replace('{y}', '355'),
+    thumbFallback: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/10/355/500',
+    attribution: IGN_ATTR + ' (SCAN Régional, SCAN 1000) · Fond © Esri, HERE, Garmin',
+    stack: [
+      { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', maxNativeZoom: 19 },
+      { url: IGN_WMTS('SCAN1000_PYR-JPEG_WLD_WM', 'jpeg'), maxNativeZoom: 10, maxZoom: 9 },
+      { url: IGN_WMTS('SCANREG_PYR-JPEG_WLD_WM', 'jpeg'), maxNativeZoom: 12, minZoom: 9.0001 },
+    ],
+  },
   relief: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Fond © Esri, HERE, Garmin, FAO, NOAA, USGS, ' + OSM_ATTR, maxNativeZoom: 19,
@@ -168,7 +182,12 @@ function applyBaseLayer(map, key) {
     attribution: d.attribution, maxZoom: MAP_MAX_ZOOM, maxNativeZoom: d.maxNativeZoom,
     ...(d.subdomains ? { subdomains: d.subdomains } : {}),
   });
-  const layers = [L.tileLayer(def.url, opts(def))];
+  const layers = def.stack
+    ? def.stack.map((d, i) => L.tileLayer(d.url, {
+        ...opts(d), attribution: i === 0 ? def.attribution : '',
+        ...(d.minZoom != null ? { minZoom: d.minZoom } : {}), ...(d.maxZoom != null ? { maxZoom: d.maxZoom } : {}),
+      }))
+    : [L.tileLayer(def.url, opts(def))];
   if (def.overlay) layers.push(L.tileLayer(def.overlay.url, { ...opts(def.overlay), attribution: '' }));
   layers.forEach((l, i) => { l.addTo(map); l.setZIndex(i); });
   map.__baseLayers = layers;
@@ -2546,7 +2565,7 @@ function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity,
   // Resolve a maps/*.png to its inlined blob URL in the standalone build.
   const M = (name) => (window.__resources && window.__resources['map_' + name]) || ('assets/maps/' + name + '.png');
   // Vignette = vraie tuile (zoom 12, autour de Quimper) pour les fonds sans image dédiée
-  const TILE_THUMB = (key) => BASE_LAYERS[key].url
+  const TILE_THUMB = (key) => BASE_LAYERS[key].thumb || BASE_LAYERS[key].url
     .replace('{s}', 'a').replace('{r}', '@2x').replace('{z}', '12').replace('{x}', '2001').replace('{y}', '1423');
 
   return (
@@ -2559,6 +2578,7 @@ function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity,
           <TerrainCard dark={dark} label="Plan" selected={mapStyle === 'plan'} onClick={() => setMapStyle('plan')} img={TILE_THUMB('plan')} />
           <TerrainCard dark={dark} label="Topo" selected={mapStyle === 'topo'} onClick={() => setMapStyle('topo')} img={M('topo')} />
           <TerrainCard dark={dark} label="IGN" selected={mapStyle === 'ign'} onClick={() => setMapStyle('ign')} img={TILE_THUMB('ign')} />
+          <TerrainCard dark={dark} label="Routière" selected={mapStyle === 'routiere'} onClick={() => setMapStyle('routiere')} img={TILE_THUMB('routiere')} fallback={BASE_LAYERS.routiere.thumbFallback} />
           <TerrainCard dark={dark} label="Relief" selected={mapStyle === 'relief'} onClick={() => setMapStyle('relief')} img={TILE_THUMB('relief')} />
           <TerrainCard dark={dark} label="Photos IGN" selected={mapStyle === 'ortho'} onClick={() => setMapStyle('ortho')} img={TILE_THUMB('ortho')} />
           <TerrainCard dark={dark} label="Satellite" selected={mapStyle === 'satellite'} onClick={() => setMapStyle('satellite')} img={M('satellite')} />
@@ -2600,14 +2620,15 @@ function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity,
   );
 }
 
-function TerrainCard({ dark, label, selected, onClick, img, preview }) {
+function TerrainCard({ dark, label, selected, onClick, img, preview, fallback }) {
   return (
     <button
       onClick={onClick}
       className={`group relative rounded-lg overflow-hidden border transition-all text-left ${selected ? 'border-blue-500 ring-2 ring-blue-500/30' : (dark ? 'border-neutral-800 hover:border-neutral-700' : 'border-neutral-200 hover:border-neutral-300')}`}
     >
       <div className="aspect-[5/3] relative bg-neutral-200">
-        {img ? <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover" draggable="false" /> : preview}
+        {img ? <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover" draggable="false"
+          onError={fallback ? (e) => { if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback; } : undefined} /> : preview}
       </div>
       <div className={`px-2 py-1.5 text-[12px] font-medium leading-tight ${selected ? 'text-blue-600' : (dark ? 'text-neutral-200' : 'text-neutral-800')}`}>{label}</div>
     </button>
