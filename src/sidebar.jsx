@@ -452,8 +452,8 @@ function Sidebar({
             <MenuItem
             dark={dark} accent={accent}
             icon={<I.Upload size={16} />}
-            title="Importer un GPX"
-            desc="Depuis Strava, Garmin, Komoot…"
+            title="Importer un tracé"
+            desc="GPX, FIT, TCX, KML, GeoJSON…"
             onClick={pick(onImport)} />
           
             <MenuDivider dark={dark} />

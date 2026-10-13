@@ -4,6 +4,47 @@
 const { useState: useImportState, useRef: useImportRef } = React;
 const Tooltip = window.Tooltip;
 
+// Formats de trace acceptés (GPX, FIT, TCX, KML/KMZ, GeoJSON, IGC)
+const TRACK_EXTS = (window.GpxLib && window.GpxLib.TRACK_EXTENSIONS) || ['gpx'];
+const TRACK_ACCEPT = TRACK_EXTS.map((e) => '.' + e).join(',');
+const isTrackFile = (f) => new RegExp('\\.(' + TRACK_EXTS.join('|') + ')$', 'i').test((f && f.name) || '');
+const trackExt = (name) => ((String(name || '').match(/\.([a-z0-9]+)$/i) || [])[1] || 'gpx').toUpperCase();
+
+// KMZ = archive ZIP contenant un .kml : lecture du répertoire central puis
+// décompression « deflate » native du navigateur (DecompressionStream).
+async function unzipFirstKml(buf) {
+  const dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('archive KMZ invalide');
+  let p = dv.getUint32(eocd + 16, true);
+  const n = dv.getUint16(eocd + 10, true);
+  const dec = new TextDecoder();
+  for (let k = 0; k < n; k++) {
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const local = dv.getUint32(p + 42, true);
+    const name = dec.decode(new Uint8Array(buf, p + 46, nlen));
+    p += 46 + nlen + xlen + clen;
+    if (!/\.kml$/i.test(name)) continue;
+    const start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+    const data = new Uint8Array(buf, start, csize);
+    if (method === 0) return dec.decode(data);
+    if (method !== 8 || typeof DecompressionStream === 'undefined') throw new Error('KMZ non pris en charge par ce navigateur');
+    const out = await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
+    return dec.decode(out);
+  }
+  throw new Error('aucun .kml dans le KMZ');
+}
+
+// Lit n'importe quel fichier de trace et renvoie l'étape analysée
+async function readTrackFile(f) {
+  const buf = await f.arrayBuffer();
+  const data = /\.kmz$/i.test(f.name) ? await unzipFirstKml(buf) : buf;
+  const track = window.GpxLib.parseTrack(/\.kmz$/i.test(f.name) ? f.name.replace(/\.kmz$/i, '.kml') : f.name, data);
+  return window.GpxLib.buildStageFromTrack(track, f.name);
+}
+
 // Realistic fake-parsed GPX presets cycled on each fake upload.
 // Each preset includes a centroid (lat/lng) so we can fly the map there
 // on save, simulating a real GPX import.
@@ -94,16 +135,16 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
   const [batchSkipped, setBatchSkipped] = useImportState([]);
 
   const handleFiles = (list) => {
-    const files = Array.from(list || []).filter((f) => /\.gpx$/i.test(f.name || ''));
-    if (files.length === 0) { setImportError('Aucun fichier .gpx dans la sélection.'); return; }
+    const files = Array.from(list || []).filter(isTrackFile);
+    if (files.length === 0) { setImportError('Aucun fichier de trace reconnu (GPX, FIT, TCX, KML, KMZ, GeoJSON, IGC).'); return; }
     if (files.length === 1 || !window.GpxLib) { handleFile(files[0]); return; }
     setImportError(null);
-    setFilename(files.length + ' fichiers GPX');
+    setFilename(files.length + ' fichiers');
     setStage('parsing');
     setProgress(0);
     const start = Date.now();
-    Promise.all(files.map((f) => f.text()
-      .then((xml) => ({ f, st: window.GpxLib.buildStage(xml, f.name) }))
+    Promise.all(files.map((f) => readTrackFile(f)
+      .then((st) => ({ f, st }))
       .catch(() => ({ f, st: null }))))
       .then((res) => {
         const ok = res.filter((r) => r.st && r.st.coords && r.st.coords.length >= 2);
@@ -162,14 +203,13 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
   };
   const handleFile = (f) => {
     if (!f) return;
-    if (!window.GpxLib || typeof f.text !== 'function') { fakeUpload(f.name || 'parcours.gpx'); return; }
+    if (!window.GpxLib || typeof f.arrayBuffer !== 'function') { fakeUpload(f.name || 'parcours.gpx'); return; }
     setImportError(null);
     setFilename(f.name);
     setStage('parsing');
     setProgress(0);
     const start = Date.now();
-    f.text().then((xml) => {
-      const st = window.GpxLib.buildStage(xml, f.name);
+    readTrackFile(f).then((st) => {
       const lats = st.coords.map((c) => c[0]);
       const lngs = st.coords.map((c) => c[1]);
       const center = [(Math.min(...lats) + Math.max(...lats)) / 2, (Math.min(...lngs) + Math.max(...lngs)) / 2];
@@ -204,7 +244,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
       requestAnimationFrame(tick);
     }).catch((e) => {
       setStage('drop');
-      setImportError('Fichier illisible : ' + (e && e.message ? e.message : 'GPX invalide'));
+      setImportError('Fichier illisible : ' + (e && e.message ? e.message : 'trace invalide'));
     });
   };
 
@@ -247,7 +287,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
             <I.ChevronLeft size={18} />
           </button>
           <div className="min-w-0">
-            <div className={`font-semibold text-[15px] tracking-tight truncate ${dark ? 'text-white' : 'text-neutral-900'}`}>Importer un GPX</div>
+            <div className={`font-semibold text-[15px] tracking-tight truncate ${dark ? 'text-white' : 'text-neutral-900'}`}>Importer un tracé</div>
             <div className={`text-[11px] truncate ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>
               {stage === 'drop' && 'Glissez votre fichier ou choisissez-le'}
               {stage === 'parsing' && (batch.length || /fichiers/.test(filename) ? 'Analyse des fichiers…' : 'Analyse du fichier…')}
@@ -293,7 +333,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
                 className="w-10 h-10 rounded-lg grid place-items-center shrink-0 text-[10.5px] font-bold tracking-wider"
                 style={{ background: accent + '22', color: accent }}
               >
-                GPX
+                {trackExt(filename)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className={`text-[13px] font-medium truncate ${dark ? 'text-white' : 'text-neutral-900'}`}>{filename}</div>
@@ -436,7 +476,7 @@ function ImportPanel({ onClose, onSave, onSaveBatch, onPreview, onPreviewBatch, 
       <input
         ref={inputRef}
         type="file"
-        accept=".gpx"
+        accept={TRACK_ACCEPT}
         multiple
         onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
         className="hidden"
@@ -505,7 +545,7 @@ function DropZone({ dark, accent, dragOver, setDragOver, onFile, onFiles, onPick
           </div>
           <div className={`mt-4 inline-flex items-center gap-1.5 text-[10px] tabular-nums px-2 py-1 rounded-md ${dark ? 'bg-neutral-800 text-neutral-400' : 'bg-white text-neutral-500 border border-neutral-200'}`}>
             <I.FileGpx size={11} />
-            un ou plusieurs .gpx
+            GPX · FIT · TCX · KML / KMZ · GeoJSON · IGC
           </div>
         </div>
       </div>

@@ -77,7 +77,7 @@ export function build({ single = false } = {}) {
   const data = buildStagesData()
   // Parseur GPX (lib/gpx.mjs) exposé au navigateur pour l'import de fichiers
   const gpxLib = '(function () {\n' + readFileSync(join(ROOT, 'lib', 'gpx.mjs'), 'utf8').replace(/^export /gm, '') +
-    '\nwindow.GpxLib = { buildStage: buildStage, parseGpx: parseGpx };\n})();\n'
+    '\nwindow.GpxLib = { buildStage: buildStage, buildStageFromTrack: buildStageFromTrack, parseTrack: parseTrack, parseGpx: parseGpx, TRACK_EXTENSIONS: TRACK_EXTENSIONS };\n})();\n'
 
   // Scripts JSX dans l'ordre de index.html
   const babelRe = /<script type="text\/babel" src="([^"]+)"><\/script>/g

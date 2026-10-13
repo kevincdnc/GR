@@ -16,7 +16,7 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 | Statistiques (bouton *Stats*) : tableau triable, km effort, durées, graphiques | **Réel** |
 | Fonds de carte (*Cartes* → Plan OSM France, Topo, IGN, Routière IGN, Relief, Photos IGN, Satellite, Sombre, Hiver), surcouche *Sentiers balisés* (GR, GRP, PR — Waymarked Trails) et opacité du fond (0–100 %) | **Réel** |
 | Zoom (jusqu’à 20, continu et fluide à la molette / au trackpad), géolocalisation | **Réel** |
-| Import de fichiers GPX (un ou plusieurs à la fois, un tracé par fichier) | **Réel** (analysés dans le navigateur) |
+| Import de traces GPX, FIT, TCX, KML / KMZ, GeoJSON, IGC (un ou plusieurs à la fois, un tracé par fichier) | **Réel** (analysés dans le navigateur) |
 | Création / édition d'itinéraires, sections, repères, groupes, glisser-déposer | Réel, sauvegardé dans le navigateur |
 | Sélection multiple (Maj+clic, Cmd/Ctrl+clic) : couleur, fusion, duplication | **Réel** |
 | Recherche de lieu | Réel (Nominatim) |
@@ -54,7 +54,7 @@ du design, sans dépendre de CDN.
 | `index.html`, `src/*.jsx`, `tweaks-panel.jsx`, `assets/` | Interface issue du prototype (modifiée là où elle est branchée sur les vraies données) |
 | `src/metrics.jsx` | Vue Statistiques GR34 |
 | `src/story-share.jsx` | Partage en story : modèles, aperçu en direct, export PNG |
-| `lib/gpx.mjs` | Parseur GPX + métriques (build et import dans le navigateur) |
+| `lib/gpx.mjs` | Lecture des traces (GPX, FIT, TCX, KML, GeoJSON, IGC) + métriques (build et import dans le navigateur) |
 | `scripts/build.mjs`, `scripts/dev.mjs` | Build et serveur de dev |
 
 Le site est publié sur GitHub Pages par `.github/workflows/deploy.yml` à chaque push.
