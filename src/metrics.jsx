@@ -70,7 +70,7 @@ function useMetricsRows(groups, visibleIds, meta) {
       const manual = m.duree ? parseDurationInput(m.duree) : null;
       let durationMin, durationSource;
       if (manual != null) { durationMin = manual; durationSource = 'saisie'; }
-      else if (st.gpxMovingMin) { durationMin = st.gpxMovingMin; durationSource = 'gpx'; }
+      else if (st.gpxMovingMin || x.movingMin) { durationMin = st.gpxMovingMin || x.movingMin; durationSource = 'gpx'; }
       else { durationMin = estimateDurationMin(distance, ascent, x.activity || 'hiking'); durationSource = 'estimée'; }
       const h = durationMin / 60;
       const pos = i + 1;
@@ -83,7 +83,7 @@ function useMetricsRows(groups, visibleIds, meta) {
         groupName: group.name,
         name: x.name.replace(/^Étape \d+ — /, ''),
         color: ROUTE_COLORS[x.color] ? x.color : 'blue',
-        date: m.date || (st.gpxDate ? st.gpxDate.slice(0, 10) : ''),
+        date: m.date || ((st.gpxDate || x.gpxDate) ? (st.gpxDate || x.gpxDate).slice(0, 10) : ''),
         duree: m.duree || '',
         distance,
         ascent,
@@ -91,6 +91,8 @@ function useMetricsRows(groups, visibleIds, meta) {
         kmEffort,
         durationMin,
         durationSource,
+        // Durée totale (pauses comprises) : horaires du GPX, sinon inconnue
+        totalMin: st.gpxTotalMin || x.totalMin || null,
         speed: h > 0 ? distance / h : 0,
         effortSpeed: h > 0 ? kmEffort / h : 0,
         gainPerKm: distance > 0 ? ascent / distance : 0,
@@ -127,6 +129,8 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
       gainPerKm: km ? gain / km : 0,
       altMax: rows.reduce((a, r) => Math.max(a, r.altMax), 0),
       estimated: rows.filter((r) => r.durationSource === 'estimée').length,
+      totalDur: rows.reduce((a, r) => a + (r.totalMin || 0), 0),
+      withTotal: rows.filter((r) => r.totalMin).length,
     };
   }, [rows]);
 
@@ -172,7 +176,8 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
     { key: 'ascent', label: 'D+', num: true },
     { key: 'descent', label: 'D−', num: true },
     { key: 'kmEffort', label: 'Km effort', num: true, title: 'km + D+/100' },
-    { key: 'durationMin', label: 'Durée', num: true },
+    { key: 'durationMin', label: 'Durée nette', num: true, title: 'Temps en mouvement (pauses exclues)' },
+    { key: 'totalMin', label: 'Durée totale', num: true, title: 'Du départ à l\'arrivée, pauses comprises (horaires du GPX)' },
     { key: 'speed', label: 'Vitesse', num: true, title: 'km/h sur la durée' },
     { key: 'effortSpeed', label: 'Allure effort', num: true, title: 'km effort par heure' },
     { key: 'gainPerKm', label: 'D+/km', num: true },
@@ -225,8 +230,18 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
             <MetKpi dark={dark} icon={<I.Distance size={14} />} label="Distance" value={fmtNum(totals.km)} unit="km" sub={`${fmtNum(totals.km / rows.length)} km / activité`} />
             <MetKpi dark={dark} icon={<I.Ruler size={14} />} label="Km effort" value={fmtNum(totals.eff)} unit="km-e" sub={`+${fmtNum(totals.eff - totals.km)} vs distance`} />
             <MetKpi dark={dark} icon={<I.TrendingUp size={14} />} label="Dénivelé +" value={fmtAscent(totals.gain).replace(' m', '')} unit="m" sub={`${Math.round(totals.gain / rows.length)} m / activité`} />
-            <MetKpi dark={dark} icon={<I.Clock size={14} />} label="Durée" value={fmtDuration(totals.dur)}
-              sub={totals.estimated ? `dont ${totals.estimated} estimée${totals.estimated > 1 ? 's' : ''}` : 'durées réelles'} />
+            <MetKpi dark={dark} icon={<I.Clock size={14} />} label="Durée nette" value={fmtDuration(totals.dur)}
+              sub={[totals.withTotal ? `${fmtDuration(totals.totalDur)} avec pauses${totals.withTotal < rows.length ? ` (${totals.withTotal}/${rows.length} GPX)` : ''}` : null, totals.estimated ? `${totals.estimated} estimée${totals.estimated > 1 ? 's' : ''}` : null].filter(Boolean).join(' · ') || 'durées réelles'} />
+          </div>
+
+          {/* Évolution au fil des activités */}
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+            <MetChartCard dark={dark} title="Distance" value={fmtNum(totals.km)} unit="km" sub="cumulée au fil des activités">
+              <MetEvolutionChart dark={dark} rows={rows} field="distance" color="#3b82f6" unit="km" label="Distance" />
+            </MetChartCard>
+            <MetChartCard dark={dark} title="Km effort" value={fmtNum(totals.eff)} unit="km-e" sub="cumulés au fil des activités">
+              <MetEvolutionChart dark={dark} rows={rows} field="kmEffort" color="#f97316" unit="km-e" label="Km effort" />
+            </MetChartCard>
           </div>
 
           {/* Table */}
@@ -279,6 +294,7 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
                       <MetNum dark={dark}>{fmtAscent(r.descent)}</MetNum>
                       <MetNum dark={dark}>{fmtNum(r.kmEffort)}</MetNum>
                       <td className="px-3 py-1.5 text-right"><MetDurationCell row={r} dark={dark} onCommit={(v) => updateMeta(r.metaKey, { duree: v })} /></td>
+                      <MetNum dark={dark}>{r.totalMin ? <span title={r.durationSource !== 'estimée' && r.totalMin > r.durationMin ? 'dont ' + fmtDuration(r.totalMin - r.durationMin) + ' de pause' : undefined}>{fmtDuration(r.totalMin)}</span> : <span className={muted}>—</span>}</MetNum>
                       <MetNum dark={dark}>{fmtNum(r.speed)} km/h</MetNum>
                       <MetNum dark={dark}>{fmtNum(r.effortSpeed)} km-e/h</MetNum>
                       <MetNum dark={dark}>{Math.round(r.gainPerKm)} m</MetNum>
@@ -296,6 +312,7 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
                     <MetNum dark={dark} strong>{fmtAscent(totals.loss)}</MetNum>
                     <MetNum dark={dark} strong>{fmtNum(totals.eff)}</MetNum>
                     <MetNum dark={dark} strong>{fmtDuration(totals.dur)}</MetNum>
+                    <MetNum dark={dark} strong>{totals.withTotal ? <span title={totals.withTotal < rows.length ? `Somme des ${totals.withTotal} activités dont le GPX est horodaté` : undefined}>{fmtDuration(totals.totalDur)}{totals.withTotal < rows.length && <span className={`ml-1 text-[10.5px] font-normal ${muted}`}>({totals.withTotal}/{rows.length})</span>}</span> : '—'}</MetNum>
                     <MetNum dark={dark} strong>{fmtNum(totals.speed)} km/h</MetNum>
                     <MetNum dark={dark} strong>{fmtNum(totals.effortSpeed)} km-e/h</MetNum>
                     <MetNum dark={dark} strong>{Math.round(totals.gainPerKm)} m</MetNum>
@@ -305,35 +322,13 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
               </table>
             </div>
             <p className={`px-4 py-3 text-[11px] border-t ${dark ? 'border-neutral-800 text-neutral-500' : 'border-neutral-100 text-neutral-500'}`}>
-              Durée : saisis ta durée réelle (ex. <span className="font-mono">7h30</span>). Sinon elle vient des horaires du GPX
-              (<span className="font-mono">GPX</span>) ou est estimée comme sur la carte (<span className="font-mono">EST.</span>, rando 4,2 km/h + 1 min / 10 m de D+).
+              Durée nette : temps en mouvement. Saisis-la (ex. <span className="font-mono">7h30</span>), sinon elle vient des horaires du GPX
+              (<span className="font-mono">GPX</span>, pauses exclues) ou est estimée comme sur la carte (<span className="font-mono">EST.</span>, rando 4,2 km/h + 1 min / 10 m de D+).
+              Durée totale : du premier au dernier point horodaté du GPX, pauses comprises.
               Km effort = km + D+/100.
             </p>
           </section>
 
-          {/* Charts */}
-          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))' }}>
-            <MetChartCard dark={dark} title="Distance et km effort par activité"
-              legend={[{ label: 'Distance', color: '#3b82f6' }, { label: 'Km effort', color: '#f97316' }]}>
-              <MetBarChart dark={dark} rows={rows} unit="km"
-                series={[
-                  { key: 'distance', label: 'Distance', color: '#3b82f6', fmt: (v) => fmtNum(v) + ' km' },
-                  { key: 'kmEffort', label: 'Km effort', color: '#f97316', fmt: (v) => fmtNum(v) + ' km-e' },
-                ]} />
-            </MetChartCard>
-            <MetChartCard dark={dark} title="Cumul : distance et km effort"
-              legend={[{ label: 'Distance cumulée', color: '#3b82f6' }, { label: 'Km effort cumulés', color: '#f97316' }]}>
-              <MetCumulChart dark={dark} rows={rows} />
-            </MetChartCard>
-            <MetChartCard dark={dark} title="Dénivelé positif par activité">
-              <MetBarChart dark={dark} rows={rows} unit="m" byStageColor labels
-                series={[{ key: 'ascent', label: 'D+', fmt: (v) => fmtAscent(v) }]} />
-            </MetChartCard>
-            <MetChartCard dark={dark} title="Durée par activité">
-              <MetBarChart dark={dark} rows={rows} unit="h" byStageColor labels
-                series={[{ key: 'durationMin', label: 'Durée', scale: 1 / 60, fmt: (v, r) => fmtDuration(v * 60) + (r.durationSource === 'estimée' ? ' (estimée)' : '') }]} />
-            </MetChartCard>
-          </div>
         </div>
       </div>
     </div>
@@ -343,9 +338,9 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
 function MetKpi({ dark, icon, label, value, unit, sub }) {
   return (
     <div className={`rounded-md border px-4 py-3 ${dark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-neutral-200/80'}`}>
-      <div className={`flex items-center gap-1.5 text-[11.5px] ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>{icon}{label}</div>
-      <div className={`mt-1 font-mono text-[22px] font-medium tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>
-        {value}{unit && <span className={`ml-1 text-[12px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{unit}</span>}
+      <div className={`flex items-center gap-1.5 text-[11.5px] font-medium ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>{icon}{label}</div>
+      <div className={`mt-1 font-mono text-[30px] leading-tight font-bold tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>
+        {value}{unit && <span className={`ml-1 text-[13px] font-semibold ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{unit}</span>}
       </div>
       {sub && <div className={`text-[11px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{sub}</div>}
     </div>
@@ -393,11 +388,19 @@ function MetDurationCell({ row, dark, onCommit }) {
   );
 }
 
-function MetChartCard({ dark, title, legend, children }) {
+function MetChartCard({ dark, title, value, unit, sub, legend, children }) {
   return (
     <section className={`rounded-md border p-4 ${dark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-neutral-200/80'}`}>
-      <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-        <h3 className={`text-[13px] font-semibold tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>{title}</h3>
+      <div className="flex items-end justify-between gap-3 mb-3 flex-wrap">
+        <div>
+          <h3 className={`text-[12px] font-semibold uppercase tracking-wider ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>{title}</h3>
+          {value != null && (
+            <div className={`mt-0.5 font-mono text-[20px] font-bold tracking-tight ${dark ? 'text-white' : 'text-neutral-900'}`}>
+              {value}{unit && <span className="ml-1 text-[12px] font-semibold text-neutral-500">{unit}</span>}
+            </div>
+          )}
+        </div>
+        {sub && <span className={`text-[11px] ${dark ? 'text-neutral-500' : 'text-neutral-500'}`}>{sub}</span>}
         {legend && (
           <div className="flex items-center gap-3">
             {legend.map((l) => (
@@ -420,7 +423,7 @@ function metNiceScale(max) {
   return { max: step * 4, ticks: [0, step, step * 2, step * 3, step * 4] };
 }
 
-const MET_W = 520, MET_H = 230, MET_PAD = { l: 44, r: 12, t: 18, b: 26 };
+const MET_W = 520, MET_H = 230, MET_PAD = { l: 58, r: 12, t: 18, b: 26 };
 
 function MetTooltip({ dark, x, y, children }) {
   return (
@@ -448,107 +451,52 @@ function MetAxes({ dark, scale, unit }) {
   });
 }
 
-function MetBarChart({ dark, rows, series, unit, byStageColor, labels }) {
-  const [hover, setHover] = useMetState(null);
-  const val = (r, s) => r[s.key] * (s.scale || 1);
-  const scale = metNiceScale(Math.max(1e-6, ...rows.flatMap((r) => series.map((s) => val(r, s)))));
-  const iw = MET_W - MET_PAD.l - MET_PAD.r, ih = MET_H - MET_PAD.t - MET_PAD.b;
-  const band = iw / rows.length;
-  const gap = 2;
-  const barW = Math.min(30, (band * 0.62 - gap * (series.length - 1)) / series.length);
-  const groupW = barW * series.length + gap * (series.length - 1);
-  const y = (v) => MET_PAD.t + ih - (v / scale.max) * ih;
-  return (
-    <div className="relative" onMouseLeave={() => setHover(null)}>
-      <svg viewBox={`0 0 ${MET_W} ${MET_H}`} className="w-full h-auto block" role="img" aria-label={series.map((s) => s.label).join(', ') + ' par activité'}>
-        <MetAxes dark={dark} scale={scale} unit={unit} />
-        {rows.map((r, i) => {
-          const x0 = MET_PAD.l + band * i + (band - groupW) / 2;
-          return (
-            <g key={r.id}>
-              {hover === i && <rect x={MET_PAD.l + band * i + 2} y={MET_PAD.t} width={band - 4} height={ih} rx="6" fill={dark ? '#ffffff0a' : '#0000000a'} />}
-              {series.map((s, si) => {
-                const v = val(r, s);
-                const top = y(v), h = Math.max(0, MET_PAD.t + ih - top);
-                const color = byStageColor ? ROUTE_COLORS[r.color].hex : s.color;
-                const x = x0 + si * (barW + gap);
-                const rr = Math.min(4, h, barW / 2);
-                return (
-                  <g key={s.key}>
-                    <path d={`M${x},${top + h} V${top + rr} Q${x},${top} ${x + rr},${top} H${x + barW - rr} Q${x + barW},${top} ${x + barW},${top + rr} V${top + h} Z`} fill={color} />
-                    {labels && (
-                      <text x={x + barW / 2} y={top - 5} textAnchor="middle" fontSize="10.5" fill={dark ? '#a3a3a3' : '#525252'} className="font-mono">
-                        {unit === 'h' ? fmtDuration(v * 60) : Math.round(v)}
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
-              <text x={MET_PAD.l + band * i + band / 2} y={MET_H - 8} textAnchor="middle" fontSize="11" fill={dark ? '#a3a3a3' : '#525252'} className="font-mono">#{r.label}</text>
-              <rect x={MET_PAD.l + band * i} y={MET_PAD.t} width={band} height={ih + MET_PAD.b} fill="transparent" onMouseEnter={() => setHover(i)} />
-            </g>
-          );
-        })}
-      </svg>
-      {hover != null && (
-        <MetTooltip dark={dark} x={(MET_PAD.l + band * hover + band / 2) / MET_W} y={8}>
-          <div className="font-semibold mb-0.5">#{rows[hover].label} {rows[hover].name}</div>
-          {series.map((s) => (
-            <div key={s.key} className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: byStageColor ? ROUTE_COLORS[rows[hover].color].hex : s.color }}></span>
-              <span className="opacity-70">{s.label}</span>
-              <span className="ml-auto pl-3 font-mono">{s.fmt(val(rows[hover], s), rows[hover])}</span>
-            </div>
-          ))}
-        </MetTooltip>
-      )}
-    </div>
-  );
-}
-
-function MetCumulChart({ dark, rows }) {
+// Évolution cumulée d'une valeur au fil des activités (aire + courbe) ;
+// l'info-bulle donne l'apport de l'activité et le cumul.
+function MetEvolutionChart({ dark, rows, field, color, unit, label }) {
   const [hover, setHover] = useMetState(null);
   const pts = [];
-  let km = 0, eff = 0, gain = 0;
-  rows.forEach((r) => { km += r.distance; eff += r.kmEffort; gain += r.ascent; pts.push({ r, km, eff, gain }); });
-  const scale = metNiceScale(Math.max(1, eff));
-  const iw = MET_W - MET_PAD.l - MET_PAD.r - 66, ih = MET_H - MET_PAD.t - MET_PAD.b;
-  const x = (i) => MET_PAD.l + 14 + (pts.length > 1 ? (i / (pts.length - 1)) * (iw - 14) : iw / 2);
+  let acc = 0;
+  rows.forEach((r) => { acc += r[field]; pts.push({ r, v: r[field], acc }); });
+  const scale = metNiceScale(Math.max(1, acc));
+  const iw = MET_W - MET_PAD.l - MET_PAD.r - 14, ih = MET_H - MET_PAD.t - MET_PAD.b;
+  const x = (i) => MET_PAD.l + 10 + (pts.length > 1 ? (i / (pts.length - 1)) * iw : iw / 2);
   const y = (v) => MET_PAD.t + ih - (v / scale.max) * ih;
-  const line = (k) => pts.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p[k])}`).join(' ');
-  const series = [{ k: 'km', color: '#3b82f6', unit: 'km' }, { k: 'eff', color: '#f97316', unit: 'km-e' }];
-  const last = pts[pts.length - 1];
+  const linePath = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.acc)}`).join(' ');
+  const areaPath = pts.length ? `${linePath} L${x(pts.length - 1)},${y(0)} L${x(0)},${y(0)} Z` : '';
+  const labelEvery = Math.max(1, Math.ceil(pts.length / 12));
+  const gid = 'met-grad-' + field;
+  const colW = pts.length > 1 ? iw / (pts.length - 1) : iw;
   return (
     <div className="relative" onMouseLeave={() => setHover(null)}>
-      <svg viewBox={`0 0 ${MET_W} ${MET_H}`} className="w-full h-auto block" role="img" aria-label="Distance et km effort cumulés">
-        <MetAxes dark={dark} scale={scale} unit="km" />
+      <svg viewBox={`0 0 ${MET_W} ${MET_H}`} className="w-full h-auto block" role="img" aria-label={`${label} : cumul au fil des activités`}>
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <MetAxes dark={dark} scale={scale} unit={unit} />
         {hover != null && <line x1={x(hover)} x2={x(hover)} y1={MET_PAD.t} y2={MET_PAD.t + ih} stroke={dark ? '#525252' : '#d4d4d4'} strokeDasharray="3 3" />}
-        {series.map((s) => (
-          <g key={s.k}>
-            <path d={line(s.k)} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-            {pts.map((p, i) => (
-              <circle key={i} cx={x(i)} cy={y(p[s.k])} r={hover === i ? 5 : 3.5} fill={dark ? '#0a0a0a' : '#fff'} stroke={s.color} strokeWidth="2" />
-            ))}
-          </g>
-        ))}
-        {last && series.map((s, si) => (
-          <text key={s.k} x={x(pts.length - 1) + 9} y={y(last[s.k]) + (si === 0 ? 10 : -2)} fontSize="11" fontWeight="600" fill={dark ? '#e5e5e5' : '#171717'} className="font-mono">
-            {Math.round(last[s.k])} {s.unit}
-          </text>
+        <path d={areaPath} fill={`url(#${gid})`} />
+        <path d={linePath} fill="none" stroke={color} strokeWidth="2.25" strokeLinejoin="round" strokeLinecap="round" />
+        {pts.map((p, i) => (
+          <circle key={p.r.id} cx={x(i)} cy={y(p.acc)} r={hover === i ? 4.5 : 2.75} fill={hover === i ? color : (dark ? '#0a0a0a' : '#fff')} stroke={color} strokeWidth="2" />
         ))}
         {pts.map((p, i) => (
-          <g key={p.r.id}>
-            <text x={x(i)} y={MET_H - 8} textAnchor="middle" fontSize="11" fill={dark ? '#a3a3a3' : '#525252'} className="font-mono">#{p.r.label}</text>
-            <rect x={x(i) - (iw / Math.max(1, pts.length - 1)) / 2} y={MET_PAD.t} width={iw / Math.max(1, pts.length - 1)} height={ih + MET_PAD.b} fill="transparent" onMouseEnter={() => setHover(i)} />
+          <g key={'l' + p.r.id}>
+            {(i % labelEvery === 0 || i === pts.length - 1) && (
+              <text x={x(i)} y={MET_H - 8} textAnchor="middle" fontSize="10.5" fill={dark ? '#a3a3a3' : '#525252'} className="font-mono">{p.r.label}</text>
+            )}
+            <rect x={x(i) - colW / 2} y={MET_PAD.t} width={colW} height={ih + MET_PAD.b} fill="transparent" onMouseEnter={() => setHover(i)} />
           </g>
         ))}
       </svg>
       {hover != null && (
         <MetTooltip dark={dark} x={x(hover) / MET_W} y={8}>
-          <div className="font-semibold mb-0.5">Après #{pts[hover].r.label}</div>
-          <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full" style={{ background: '#3b82f6' }}></span><span className="opacity-70">Distance</span><span className="ml-auto pl-3 font-mono">{fmtNum(pts[hover].km)} km</span></div>
-          <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full" style={{ background: '#f97316' }}></span><span className="opacity-70">Km effort</span><span className="ml-auto pl-3 font-mono">{fmtNum(pts[hover].eff)} km-e</span></div>
-          <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full opacity-0"></span><span className="opacity-70">D+</span><span className="ml-auto pl-3 font-mono">{fmtAscent(pts[hover].gain)}</span></div>
+          <div className="font-semibold mb-0.5">#{pts[hover].r.label} {pts[hover].r.name}</div>
+          <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full" style={{ background: color }}></span><span className="opacity-70">{label}</span><span className="ml-auto pl-3 font-mono">+{fmtNum(pts[hover].v)} {unit}</span></div>
+          <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full opacity-0"></span><span className="opacity-70">Cumul</span><span className="ml-auto pl-3 font-mono">{fmtNum(pts[hover].acc)} {unit}</span></div>
         </MetTooltip>
       )}
     </div>

@@ -495,6 +495,10 @@ function App() {
       ascent: data.ascent,
       time: data.time,
       difficulty: '—',
+      descent: data.descent,
+      movingMin: data.movingMin || null,
+      totalMin: data.totalMin || null,
+      gpxDate: data.gpxDate || null,
       coords: data.coords,
     };
     // Use a function to update groups; if we just created the group it might
@@ -549,6 +553,8 @@ function App() {
             color: it.color,
             distance: it.distance,
             ascent: it.ascent,
+            descent: it.descent,
+            movingMin: it.movingMin || null, totalMin: it.totalMin || null, gpxDate: it.gpxDate || null,
             coords: it.coords,
           })),
         }]
@@ -559,6 +565,8 @@ function App() {
           color: it.color,
           distance: it.distance, ascent: it.ascent,
           time: it.time, difficulty: '—',
+          descent: it.descent,
+          movingMin: it.movingMin || null, totalMin: it.totalMin || null, gpxDate: it.gpxDate || null,
           coords: it.coords,
         }));
     setGroups((gs) => {
