@@ -175,14 +175,14 @@
     .touch-hidden { visibility: hidden; }
   }
   /* Repère de localisation 3D (fenêtre « Activer votre localisation ») */
-  @keyframes geo3dSpin { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
-  @keyframes geo3dFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  @keyframes geo3dSpin { from { transform: rotateY(-360deg); } to { transform: rotateY(0deg); } }
+  @keyframes geo3dFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
   @keyframes geo3dRing { 0% { transform: scale(0.3); opacity: 0.9; } 100% { transform: scale(1.25); opacity: 0; } }
   @keyframes geo3dShadow { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(0.75); opacity: 0.55; } }
-  .geo3d-spin { animation: geo3dSpin 3.2s linear infinite; }
-  .geo3d-float { animation: geo3dFloat 2.4s ease-in-out infinite; }
+  .geo3d-spin { animation: geo3dSpin 1.6s cubic-bezier(.22,.8,.3,1) 1 both; }
+  .geo3d-float { animation: geo3dFloat 2.8s ease-in-out 1.6s infinite; }
   .geo3d-ring { animation: geo3dRing 2.4s ease-out infinite; opacity: 0; }
-  .geo3d-shadow { animation: geo3dShadow 2.4s ease-in-out infinite; }
+  .geo3d-shadow { animation: geo3dShadow 2.8s ease-in-out 1.6s infinite; }
   @media (prefers-reduced-motion: reduce) { .geo3d-spin, .geo3d-float, .geo3d-ring, .geo3d-shadow { animation: none; } .geo3d-ring { opacity: 0.4; } }
   /* Glisser-déposer : bref surlignage de l'élément déposé */
   @keyframes dropFlash { 0% { box-shadow: 0 0 0 2px rgba(59,130,246,0.85); background: rgba(59,130,246,0.14); } 100% { box-shadow: 0 0 0 2px rgba(59,130,246,0); background: transparent; } }

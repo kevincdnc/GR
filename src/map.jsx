@@ -2428,7 +2428,6 @@ function GeoIllustration({ dark }) {
                   </defs>
                 )}
                 <path d={PIN} fillRule="evenodd" fill={face ? `url(#geo3d-g${z})` : '#1e40af'} />
-                {face && <path d="M15 12c3-4 8-6 12-5" stroke="rgba(255,255,255,0.7)" strokeWidth="2.4" strokeLinecap="round" fill="none" />}
               </svg>
             );
           })}
