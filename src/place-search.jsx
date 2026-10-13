@@ -3,7 +3,7 @@
 
 const { useState: usePsState, useEffect: usePsEffect, useRef: usePsRef } = React;
 
-function PlaceSearch({ map, dark, accent }) {
+function PlaceSearch({ map, dark, accent, compact }) {
   const [q, setQ] = usePsState('');
   const [results, setResults] = usePsState([]);
   const [loading, setLoading] = usePsState(false);
@@ -113,7 +113,7 @@ function PlaceSearch({ map, dark, accent }) {
   };
 
   return (
-    <div ref={wrapRef} className="relative w-80 max-w-[calc(100vw-380px)] max-md:w-full max-md:max-w-none">
+    <div ref={wrapRef} className={`relative ${compact ? 'w-60 2xl:w-80' : 'w-80'} max-w-[calc(100vw-380px)] max-md:w-full max-md:max-w-none`}>
       <div
         className={`relative flex items-center rounded-md glass transition-colors ${dark ? 'focus-within:border-neutral-600' : 'focus-within:border-neutral-300'}`}
       >

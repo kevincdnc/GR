@@ -1154,7 +1154,7 @@ function App() {
             {/* Recherche de lieu — en haut à droite (masquée en vue Stats) */}
             <div className={isMobile ? 'absolute left-[68px] right-3 z-[500] flex items-center' : 'absolute top-4 right-4 z-[500] flex items-center gap-2'}
               style={isMobile ? { top: 'calc(env(safe-area-inset-top, 0px) + 12px)' } : undefined}>
-              {view === 'map' && <PlaceSearch map={mapInstance} dark={dark} accent={t.accent} />}
+              {view === 'map' && <PlaceSearch map={mapInstance} dark={dark} accent={t.accent} compact={creating} />}
             </div>
 
             {/* Floating, draggable custom-marker card (over the map) */}

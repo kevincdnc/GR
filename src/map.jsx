@@ -1813,7 +1813,45 @@ function MapView({
 
 // Barre d'outils pendant le tracé : tracé automatique (sentiers / chemins /
 // routes), recentrer, couleur, retour, supprimer.
+const DRAFT_BAR_POS_KEY = 'gr34_draft_bar_pos';
 function DraftToolbar({ dark, isMobile, autoRoute, onToggleAutoRoute, routeProfile, onRouteProfile, busy, color, onColor, canUndo, onUndo, onClear, canCenter, onCenter }) {
+  // Position libre (glisser la poignée), mémorisée ; double-clic = recentrer
+  const rootRef = useRef(null);
+  const [pos, setPos] = useState(() => { try { return JSON.parse(localStorage.getItem(DRAFT_BAR_POS_KEY) || 'null'); } catch (e) { return null; } });
+  const [dragging, setDragging] = useState(false);
+  const clampPos = (p) => {
+    const el = rootRef.current, parent = el && el.offsetParent;
+    if (!el || !parent || !p) return p;
+    return {
+      x: Math.max(8, Math.min(parent.clientWidth - el.offsetWidth - 8, p.x)),
+      y: Math.max(8, Math.min(parent.clientHeight - el.offsetHeight - 8, p.y)),
+    };
+  };
+  // Reste dans la carte si la fenêtre ou la barre change de taille
+  useEffect(() => {
+    if (!pos) return;
+    const fix = () => setPos((p) => clampPos(p));
+    fix();
+    window.addEventListener('resize', fix);
+    return () => window.removeEventListener('resize', fix);
+  }, [autoRoute]);
+  const startDrag = (e) => {
+    if (isMobile) return;
+    e.preventDefault(); e.stopPropagation();
+    const el = rootRef.current, parent = el.offsetParent;
+    const r = el.getBoundingClientRect(), pr = parent.getBoundingClientRect();
+    const gx = e.clientX - r.left, gy = e.clientY - r.top;
+    let last = null;
+    setDragging(true);
+    const move = (ev) => { last = clampPos({ x: ev.clientX - pr.left - gx, y: ev.clientY - pr.top - gy }); setPos(last); };
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+      try { if (last) localStorage.setItem(DRAFT_BAR_POS_KEY, JSON.stringify(last)); } catch (err) {}
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  };
+  const resetPos = () => { setPos(null); try { localStorage.removeItem(DRAFT_BAR_POS_KEY); } catch (e) {} };
   const [colorOpen, setColorOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const colorRef = useRef(null);
@@ -1829,9 +1867,17 @@ function DraftToolbar({ dark, isMobile, autoRoute, onToggleAutoRoute, routeProfi
   const sep = <span className={`w-px h-6 mx-1 ${dark ? 'bg-white/10' : 'bg-neutral-200'}`}></span>;
   const stop = (e) => e.stopPropagation();
   return (
-    <div onMouseDown={stop} onClick={stop} onDoubleClick={stop}
-      className={`absolute z-[650] flex items-center gap-0.5 p-1 rounded-lg glass-strong shadow-xl ${dark ? 'text-neutral-100' : 'text-neutral-900'} ${isMobile ? 'left-3 right-[60px] flex-wrap' : 'left-16 top-4'}`}
-      style={isMobile ? { top: 'calc(env(safe-area-inset-top, 0px) + 68px)' } : undefined}>
+    <div ref={rootRef} onMouseDown={stop} onClick={stop} onDoubleClick={stop}
+      className={`absolute z-[650] flex items-center gap-0.5 p-1 rounded-lg glass-strong ${dragging ? 'shadow-2xl ring-1 ring-white/20' : 'shadow-xl'} ${dark ? 'text-neutral-100' : 'text-neutral-900'} ${isMobile ? 'left-3 right-[60px] flex-wrap' : (pos ? '' : 'left-1/2 -translate-x-1/2 top-4')}`}
+      style={isMobile ? { top: 'calc(env(safe-area-inset-top, 0px) + 68px)' } : (pos ? { left: pos.x, top: pos.y } : undefined)}>
+      {!isMobile && (
+        <Tooltip dark={dark} label="Déplacer la barre" sub="Glisser · double-clic pour la recentrer">
+          <span onPointerDown={startDrag} onDoubleClick={resetPos}
+            className={`h-9 w-6 grid place-items-center rounded-md touch-none ${dragging ? 'cursor-grabbing' : 'cursor-grab'} ${dark ? 'text-neutral-500 hover:text-neutral-200 hover:bg-white/10' : 'text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100'}`}>
+            <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="3" r="1.4" /><circle cx="7.5" cy="3" r="1.4" /><circle cx="2.5" cy="8" r="1.4" /><circle cx="7.5" cy="8" r="1.4" /><circle cx="2.5" cy="13" r="1.4" /><circle cx="7.5" cy="13" r="1.4" /></svg>
+          </span>
+        </Tooltip>
+      )}
       {/* Tracé automatique */}
       <Tooltip dark={dark} label={autoRoute ? 'Tracé automatique activé' : 'Tracé automatique désactivé'} sub={autoRoute ? 'Le tracé suit les ' + ((ROUTE_PROFILES[routeProfile] || {}).label || '').toLowerCase() + ' de la carte' : 'Lignes droites entre les points'}>
         <button onClick={onToggleAutoRoute} aria-pressed={autoRoute}
@@ -1902,7 +1948,7 @@ function MapBtn({ children, dark, onClick, active, refEl }) {
     <button
       ref={refEl}
       onClick={onClick}
-      className={`w-9 h-9 grid place-items-center transition-colors ${active ? (dark ? 'text-white bg-neutral-800' : 'text-neutral-900 bg-neutral-100') : (dark ? 'text-neutral-300 hover:text-white hover:bg-neutral-800' : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50')}`}>
+      className={`w-9 h-9 grid place-items-center transition-colors ${active ? (dark ? 'text-white bg-white/[0.14] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]' : 'text-neutral-900 bg-neutral-100') : (dark ? 'text-neutral-300 hover:text-white hover:bg-white/[0.08]' : 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50')}`}>
       {children}
     </button>);
 }
@@ -2494,7 +2540,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
     return () => { try { map.off('rotate', read); map.off('moveend', read); } catch (e) {} };
   }, []);
 
-  const cardCls = 'rounded-md overflow-hidden glass';
+  const cardCls = 'rounded-md overflow-hidden glass glass-nav'; // même opacité que la navigation
 
   return (
     <div ref={wrapRef} className={`absolute flex flex-col gap-2 z-[600] ${isMobile ? 'right-3' : 'left-4 top-4'}`}
