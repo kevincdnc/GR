@@ -2402,22 +2402,22 @@ function GeoIllustration({ dark }) {
       style={{ background: dark ? 'radial-gradient(120% 90% at 50% 70%, #10213f 0%, #121212 70%)' : 'radial-gradient(120% 90% at 50% 70%, #dbeafe 0%, #f8fafc 70%)' }}>
       {/* Sol : ondes qui s'élargissent sous le repère */}
       <div className="absolute left-1/2 top-[74%] -translate-x-1/2 -translate-y-1/2" style={{ perspective: 400 }}>
-        <div style={{ transform: 'rotateX(72deg)', transformStyle: 'preserve-3d', width: 200, height: 200, position: 'relative' }}>
+        <div style={{ transform: 'rotateX(72deg)', transformStyle: 'preserve-3d', width: 160, height: 160, position: 'relative' }}>
           {[0, 1, 2].map((i) => (
             <span key={i} className="geo3d-ring absolute inset-0 rounded-full"
-              style={{ border: '3px solid #3b82f6', animationDelay: `${i * 0.8}s` }}></span>
+              style={{ border: '2px solid #3b82f6', animationDelay: `${i * 1.4}s` }}></span>
           ))}
-          <span className="geo3d-shadow absolute rounded-full" style={{ left: 70, top: 70, width: 60, height: 60, background: 'radial-gradient(circle, rgba(0,0,0,0.55), transparent 70%)' }}></span>
+          <span className="geo3d-shadow absolute rounded-full" style={{ left: 58, top: 58, width: 44, height: 44, background: 'radial-gradient(circle, rgba(0,0,0,0.55), transparent 70%)' }}></span>
         </div>
       </div>
       {/* Repère 3D */}
-      <div className="geo3d-float relative" style={{ perspective: 500, width: 72, height: 84, marginTop: -8 }}>
+      <div className="geo3d-float relative" style={{ perspective: 500, width: 52, height: 60, marginTop: -4 }}>
         <div className="geo3d-spin absolute inset-0" style={{ transformStyle: 'preserve-3d' }}>
           {layers.map((z) => {
             const face = Math.abs(z) === 5;
             return (
-              <svg key={z} viewBox="0 0 48 56" width="72" height="84" className="absolute inset-0"
-                style={{ transform: `translateZ(${z * 1.3}px)`, backfaceVisibility: 'visible' }}>
+              <svg key={z} viewBox="0 0 48 56" width="52" height="60" className="absolute inset-0"
+                style={{ transform: `translateZ(${z * 0.95}px)`, backfaceVisibility: 'visible' }}>
                 {face && (
                   <defs>
                     <linearGradient id={`geo3d-g${z}`} x1="0.2" y1="0" x2="0.8" y2="1">
