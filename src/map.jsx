@@ -1488,7 +1488,7 @@ function MapView({
         <div className="absolute left-[28px] top-[14px] px-2.5 py-1 rounded-md shadow-lg whitespace-nowrap text-[12px] font-medium text-white bg-black/80 flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin"></span> Calcul du tracé…
             </div> :
-        draftCoords.length >= 2 && !draftHintDismissed &&
+        draftCoords.length >= 2 && !draftHintDismissed && !isMobile &&
         <div className="absolute left-[28px] top-[16px] px-2.5 py-1.5 rounded-md shadow-lg text-[11.5px] leading-snug text-white bg-black/80 w-[230px]">
               Pour terminer, cliquez sur le dernier point posé ou appuyez sur <span className="font-semibold">Entrée ↵</span>.
             </div>
@@ -1631,7 +1631,8 @@ function MapView({
 
       {/* Drawing helper overlay (creating mode) — bottom-centered, full draft stats */}
       {creating &&
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 max-md:bottom-10 z-[500] w-[min(96%,1140px)]">
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 z-[500] w-[min(96%,1140px)]"
+        style={isMobile ? { bottom: 'calc(env(safe-area-inset-bottom, 0px) + 28px)' } : undefined}>
           <div
           className={`rounded-md glass ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}>
 
@@ -1649,6 +1650,39 @@ function MapView({
               </div>
             ) : (
               <>
+                {isMobile ? (
+                  /* Mobile : stats en grille compacte + actions pleine largeur, sans courbe */
+                  <div className="px-3.5 pt-3 pb-3">
+                    <div className="grid grid-cols-3 gap-x-3 gap-y-2.5">
+                      <DraftStatIcon dark={dark} icon={<I.Distance size={11} />} label="Distance"
+                        value={(shownStats?.distance || 0).toFixed(2) + ' km'} />
+                      <DraftStatIcon dark={dark} icon={<I.TrendingUp size={11} />} label="D+"
+                        value={shownStats?.noEle ? '—' : `${shownStats?.ascent || 0} m${shownStats?.partialEle ? ' …' : ''}`} />
+                      <DraftStatIcon dark={dark} icon={<I.TrendingDown size={11} />} label="D−"
+                        value={shownStats?.noEle ? '—' : `${shownStats?.descent || 0} m${shownStats?.partialEle ? ' …' : ''}`} />
+                      <DraftStatIcon dark={dark} icon={<I.Mountains size={11} />} label="Altitude"
+                        value={shownStats?.noEle ? '—' : `${shownStats?.minAlt || 0}–${shownStats?.maxAlt || 0} m`} />
+                      <DraftStatIcon dark={dark} icon={<I.Slope size={11} />} label="Pente"
+                        value={shownStats?.noEle ? '—' : `${shownStats?.slopeMin || 0}°/${shownStats?.slopeMax || 0}°`} />
+                      <DraftStatIcon dark={dark} icon={<I.Clock size={11} />} label="Estimé"
+                        value={fmtDuration(estimateDurationMin(shownStats?.distance || 0, shownStats?.ascent || 0, draftActivity))} />
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <button onClick={onAddSection}
+                        className={`flex-1 h-10 flex items-center justify-center gap-1.5 text-[13px] font-medium rounded-lg ${dark ? 'bg-white/[0.08] text-neutral-100 active:bg-white/[0.14]' : 'bg-black/[0.05] text-neutral-800'}`}>
+                        <I.Plus size={14} strokeWidth="2.4" /> Section
+                      </button>
+                      {draftCoords.length >= 2 && (
+                        <button onClick={onFinish}
+                          className="flex-[1.4] h-10 flex items-center justify-center gap-1.5 text-[13.5px] font-semibold rounded-lg text-white shadow-sm active:scale-[0.98]"
+                          style={{ background: accent }}>
+                          <I.Check size={14} stroke="white" strokeWidth="3" /> Valider l'itinéraire
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                <>
                 {/* Stats row */}
                 <div className="flex items-center justify-between gap-6 px-5 pt-3.5 pb-3">
                   <div className="flex items-center gap-7">
@@ -1690,8 +1724,11 @@ function MapView({
                   </div>
                 </div>
 
-                {/* Elevation chart */}
-                {draftCoords.length >= 2 && (
+                </>
+                )}
+
+                {/* Elevation chart (desktop) */}
+                {!isMobile && draftCoords.length >= 2 && (
                   <div className={`px-5 pb-3 pt-3 ${dark ? 'border-t border-neutral-700/50' : 'border-t border-neutral-200/70'}`}>
                     <DraftElevationChart
                       dark={dark}
@@ -1991,7 +2028,7 @@ function DraftStatIcon({ dark, icon, label, value, highlight, info }) {
         <span className={info ? 'border-b border-dotted border-current/40 cursor-help' : ''}>{label}</span>
       </div>
       <span
-        className={`text-[12.5px] font-semibold tabular-nums mt-0.5 transition-colors ${dark ? 'text-white' : 'text-neutral-900'}`}
+        className={`text-[12.5px] font-semibold tabular-nums mt-0.5 whitespace-nowrap transition-colors ${dark ? 'text-white' : 'text-neutral-900'}`}
         style={highlight ? { color: 'currentColor' } : undefined}
       >{value}</span>
     </div>
@@ -2519,7 +2556,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
 
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(null); };
+    const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target) && !(e.target.closest && e.target.closest('[data-map-pop]'))) setOpen(null); };
     const onKey = (e) => { if (e.key === 'Escape') setOpen(null); };
     document.addEventListener('mousedown', onDoc);
     document.addEventListener('keydown', onKey);
@@ -2582,6 +2619,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
         </div>
         {open === 'cartes' && (
           <CartesPopover
+            onClose={() => setOpen(null)}
             dark={dark}
             mapStyle={mapStyle}
             setMapStyle={setMapStyle}
@@ -2603,6 +2641,7 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
         )}
         {open === 'settings' && (
           <SettingsPopover
+            onClose={() => setOpen(null)}
             dark={dark}
             theme={theme} setTheme={setTheme}
             units={units} setUnits={setUnits}
@@ -2704,16 +2743,26 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
 }
 
 // --- Popover shell ------------------------------------------------------
-function PopoverShell({ dark, children, width = 340 }) {
+function PopoverShell({ dark, children, width = 340, title, onClose }) {
   const isMobile = useIsMobile();
   if (isMobile) {
-    // Mobile : feuille en bas d'écran, défilable
-    return (
-      <div className={`fixed left-2 right-2 z-[1250] rounded-xl animate-menu glass-strong overflow-y-auto sb-scroll ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}
-        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)', maxHeight: '78vh' }}>
-        <div className="flex justify-center pt-2"><span className={`w-10 h-1 rounded-full ${dark ? 'bg-white/20' : 'bg-black/15'}`}></span></div>
-        {children}
-      </div>
+    // Mobile : plein écran (pas de survol pour fermer), en-tête avec bouton fermer.
+    // Rendu dans <body> pour passer au-dessus de la barre de création et des contrôles.
+    return ReactDOM.createPortal(
+      <div data-map-pop className={`fixed inset-0 z-[3200] flex flex-col animate-menu ${dark ? 'bg-neutral-950 text-neutral-100' : 'bg-white text-neutral-900'}`}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div className={`shrink-0 flex items-center justify-between h-14 px-4 border-b ${dark ? 'border-white/10' : 'border-neutral-200'}`}>
+          <div className="text-[16px] font-semibold">{title}</div>
+          <button onClick={onClose} aria-label="Fermer"
+            className={`w-10 h-10 -mr-2 grid place-items-center rounded-full ${dark ? 'text-neutral-300 active:bg-white/10' : 'text-neutral-600 active:bg-neutral-100'}`}>
+            <I.X size={20} />
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto sb-scroll pt-2" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' }}>
+          {children}
+        </div>
+      </div>,
+      document.body
     );
   }
   return (
@@ -2727,6 +2776,8 @@ function PopoverShell({ dark, children, width = 340 }) {
 }
 
 function PopHeader({ dark, title }) {
+  // Sur mobile le titre est dans l'en-tête plein écran
+  if (isMobileNow()) return null;
   return (
     <div className={`px-4 pt-3.5 pb-2`}>
       <div className={`text-[13px] font-semibold ${dark ? 'text-white' : 'text-neutral-900'}`}>{title}</div>
@@ -2803,7 +2854,7 @@ function PreviewTopo({ dark }) {
   );
 }
 
-function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity, trailsOn, setTrailsOn, mapBg, setMapBg, forecastDay, setForecastDay, enrichment, setEnrichment, overlayTab, setOverlayTab, overlay, setOverlay }) {
+function CartesPopover({ onClose, dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity, trailsOn, setTrailsOn, mapBg, setMapBg, forecastDay, setForecastDay, enrichment, setEnrichment, overlayTab, setOverlayTab, overlay, setOverlay }) {
   // Resolve a maps/*.png to its inlined blob URL in the standalone build.
   const M = (name) => (window.__resources && window.__resources['map_' + name]) || ('assets/maps/' + name + '.png');
   // Vignette = vraie tuile (zoom 12, autour de Quimper) pour les fonds sans image dédiée
@@ -2811,7 +2862,7 @@ function CartesPopover({ dark, mapStyle, setMapStyle, mapOpacity, setMapOpacity,
     .replace('{s}', 'a').replace('{r}', '@2x').replace('{z}', '12').replace('{x}', '2001').replace('{y}', '1423');
 
   return (
-    <PopoverShell dark={dark} width={360}>
+    <PopoverShell dark={dark} width={360} title="Cartes" onClose={onClose}>
       <PopHeader dark={dark} title="Cartes" />
 
       {/* Terrains */}
@@ -3127,13 +3178,13 @@ function OpacitySlider({ dark, value, onChange }) {
   );
 }
 
-function SettingsPopover({ dark, theme, setTheme, units, setUnits }) {
+function SettingsPopover({ onClose, dark, theme, setTheme, units, setUnits }) {
   const [tempUnit, setTempUnit] = useState('c');
   const [slopeUnit, setSlopeUnit] = useState('deg');
   const [lang, setLang] = useState('fr');
   const [showEndpoints, setShowEndpoints] = useState(savedShowEndpoints);
   return (
-    <PopoverShell dark={dark} width={320}>
+    <PopoverShell dark={dark} width={320} title="Préférences carte" onClose={onClose}>
       <PopHeader dark={dark} title="Préférences carte" />
       <PopSection dark={dark} label="Unité de distance">
         <div className="grid grid-cols-2 gap-2">

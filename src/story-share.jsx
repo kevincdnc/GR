@@ -992,13 +992,31 @@ function StoryPane({ allRoutes, routes, included, setIncluded, agg, title, setTi
                       <canvas ref={(el) => { thumbRefs.current[t.id] = el; }} width={216} height={384} className="block w-full h-auto" />
                     </div>
                     <div className="flex items-center justify-between mt-1.5 px-0.5">
-                      <span className={`text-[12px] font-medium ${sel ? 'text-blue-400' : ''}`}>{t.name}</span>
-                      <span className={`text-[9.5px] uppercase tracking-wider ${label}`}>{t.kind}</span>
+                      <span className={`text-[12px] font-medium truncate ${sel ? 'text-blue-400' : ''}`}>{t.name}</span>
+                      {!isMobile && <span className={`text-[9.5px] uppercase tracking-wider ${label}`}>{t.kind}</span>}
                     </div>
                   </button>
                 );
               })}
             </div>
+            {/* Mobile : photo juste sous les modèles */}
+            {isMobile && (
+              <div className="pt-1 pb-3">
+                {photo ? (
+                  <div className={`flex items-center gap-3 rounded-lg p-2 ${dark ? 'bg-white/[0.05]' : 'bg-neutral-100'}`}>
+                    <img src={photo.url} alt="" className="w-11 h-11 rounded-md object-cover" />
+                    <span className="flex-1 text-[13px] font-medium">Ta photo</span>
+                    <button onClick={() => fileRef.current.click()} className="h-9 px-3 rounded-md text-[13px] font-medium text-blue-400">Changer</button>
+                    <button onClick={() => setPhoto(null)} aria-label="Retirer la photo" className={`w-9 h-9 grid place-items-center rounded-md ${label}`}><I.Trash size={16} /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => fileRef.current.click()}
+                    className={`w-full h-12 rounded-lg border border-dashed text-[13.5px] font-medium flex items-center justify-center gap-2 ${dark ? 'border-neutral-600 text-neutral-200 active:bg-white/5' : 'border-neutral-300 text-neutral-700'}`}>
+                    <I.Camera size={17} /> Ajouter ma photo
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Aperçu */}
@@ -1059,7 +1077,7 @@ function StoryPane({ allRoutes, routes, included, setIncluded, agg, title, setTi
                 </div>
               </div>
 
-              <div>
+              <div className={isMobile ? 'hidden' : ''}>
                 <div className={sectionTitle}>Photo de fond</div>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { loadPhoto(e.target.files[0]); e.target.value = ''; }} />
                 {photo ? (
@@ -1081,7 +1099,7 @@ function StoryPane({ allRoutes, routes, included, setIncluded, agg, title, setTi
             </div>
 
             {/* Actions */}
-            <div className={`p-4 border-t flex flex-col gap-2 ${sep} ${isMobile ? 'sticky bottom-0 z-10 glass-strong' : ''}`}
+            <div className={`p-4 border-t flex flex-col gap-2 ${sep} ${isMobile ? `sticky bottom-0 z-10 ${dark ? 'bg-neutral-900' : 'bg-white'}` : ''}`}
               style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' } : undefined}>
               {canShareFiles && (
                 <button onClick={doShare} disabled={busy}

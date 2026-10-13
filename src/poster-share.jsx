@@ -626,8 +626,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, agg, title, setT
                   <canvas ref={(el) => { thumbRefs.current[t.id] = el; }} width={220} height={311} className="block w-full h-full" />
                 </div>
                 <div className="flex items-center justify-between mt-1.5 px-0.5">
-                  <span className={`text-[12px] font-medium ${sel ? 'text-blue-400' : ''}`}>{t.name}</span>
-                  <span className={`text-[9.5px] uppercase tracking-wider ${label}`}>{t.kind}</span>
+                  <span className={`text-[12px] font-medium truncate ${sel ? 'text-blue-400' : ''}`}>{t.name}</span>
+                  {!isMobile && <span className={`text-[9.5px] uppercase tracking-wider ${label}`}>{t.kind}</span>}
                 </div>
               </button>
             );
@@ -726,7 +726,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, agg, title, setT
           </div>
         </div>
 
-        <div className={`p-4 border-t flex flex-col gap-2 ${sep} ${isMobile ? 'sticky bottom-0 z-10 glass-strong' : ''}`}
+        <div className={`p-4 border-t flex flex-col gap-2 ${sep} ${isMobile ? `sticky bottom-0 z-10 ${dark ? 'bg-neutral-900' : 'bg-white'}` : ''}`}
           style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' } : undefined}>
           <button onClick={doDownload} disabled={busy}
             className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-[13px] font-semibold text-white bg-blue-500 hover:bg-blue-600 disabled:opacity-50">
