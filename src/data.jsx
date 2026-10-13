@@ -112,7 +112,24 @@ function itineraryStats(it) {
   return { distance: it.distance || 0, ascent: it.ascent || 0, isComposite: false, sectionCount: 1 };
 }
 
-Object.assign(window, { ROUTE_COLORS, ACTIVITIES, SEED_GROUPS, PRO_SEED_GROUPS, buildGr34Groups, GR34_SECTION_COLORS, fmtDist, fmtAscent, itineraryStats, estimateDurationMin, fmtDuration });
+// Mobile : écran étroit (< 768 px). La version bureau reste inchangée au-delà.
+const MOBILE_QUERY = '(max-width: 767px)';
+function isMobileNow() {
+  try { return window.matchMedia(MOBILE_QUERY).matches; } catch (e) { return false; }
+}
+function useIsMobile() {
+  const [m, setM] = React.useState(isMobileNow);
+  React.useEffect(() => {
+    let mq;
+    try { mq = window.matchMedia(MOBILE_QUERY); } catch (e) { return; }
+    const on = () => setM(mq.matches);
+    if (mq.addEventListener) mq.addEventListener('change', on); else mq.addListener(on);
+    return () => { if (mq.removeEventListener) mq.removeEventListener('change', on); else mq.removeListener(on); };
+  }, []);
+  return m;
+}
+
+Object.assign(window, { isMobileNow, useIsMobile, ROUTE_COLORS, ACTIVITIES, SEED_GROUPS, PRO_SEED_GROUPS, buildGr34Groups, GR34_SECTION_COLORS, fmtDist, fmtAscent, itineraryStats, estimateDurationMin, fmtDuration });
 
 // ---- Map projection helpers ---------------------------------------------
 // The original seed routes are encoded as SVG paths in a 1200x800 viewport.

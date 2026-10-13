@@ -197,7 +197,7 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage, onShare
   return (
     <div className="flex flex-col h-full glass-backdrop">
       {/* Top bar */}
-      <div className={`px-8 pt-7 pb-5 border-b flex items-end justify-between gap-4 flex-wrap ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
+      <div className={`px-4 pt-[72px] pb-4 md:px-8 md:pt-7 md:pb-5 border-b flex items-end justify-between gap-4 flex-wrap ${dark ? 'border-neutral-800' : 'border-neutral-200/70'}`}>
         <div>
           <div className={`text-[11px] font-semibold uppercase tracking-wider ${muted}`}>
             {rows.length} activité{rows.length > 1 ? 's' : ''} · {selectedGroups.length} groupe{selectedGroups.length > 1 ? 's' : ''} sélectionné{selectedGroups.length > 1 ? 's' : ''}
@@ -232,9 +232,9 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage, onShare
       </div>
 
       <div className="flex-1 overflow-y-auto sb-scroll">
-        <div className="max-w-6xl mx-auto px-8 py-7 flex flex-col gap-6">
+        <div className="max-w-6xl mx-auto px-3 py-4 md:px-8 md:py-7 flex flex-col gap-4 md:gap-6">
           {/* KPIs */}
-          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
             <MetKpi dark={dark} icon={<I.Flag size={14} />} label="Activités" value={String(rows.length)} />
             <MetKpi dark={dark} icon={<I.Distance size={14} />} label="Distance" value={fmtNum(totals.km)} unit="km" sub={`${fmtNum(totals.km / rows.length)} km / activité`} />
             <MetKpi dark={dark} icon={<I.Ruler size={14} />} label="Km effort" value={fmtNum(totals.eff)} unit="km-e" sub={`+${fmtNum(totals.eff - totals.km)} vs distance`} />
@@ -255,7 +255,7 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage, onShare
 
           {/* Table */}
           <section className={cardCls}>
-            <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+            <div className="px-4 pt-4 pb-2 flex items-center justify-between gap-x-4 gap-y-1 flex-wrap">
               <h3 className={`text-[12px] font-semibold uppercase tracking-wider ${muted}`}>Activités</h3>
               <span className={`text-[11px] ${muted}`}>Clique sur une colonne pour trier · sur une activité pour la voir sur la carte</span>
             </div>

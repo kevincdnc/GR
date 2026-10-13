@@ -266,6 +266,9 @@ function App() {
   const [confirm, setConfirm] = useAppState(null); // { title, body, confirmLabel, onConfirm }
   const [sharingItinerary, setSharingItinerary] = useAppState(null);
   const [storyShare, setStoryShare] = useAppState(null); // { parts, title }
+  // Mobile : la navigation devient un tiroir ouvert par un bouton hamburger
+  const isMobile = useIsMobile();
+  const [navOpen, setNavOpen] = useAppState(false);
 
   const dark = !!t.dark;
 
@@ -596,7 +599,7 @@ function App() {
       routes: items.map((it) => ({ id: 'prev_' + it.id, name: it.name, color: it.color, distance: it.distance, ascent: it.ascent, coords: it.coords })),
     });
     if (mapInstance && !(opts && opts.fit === false)) {
-      try { mapInstance.flyToBounds(L.latLngBounds(items.flatMap((it) => it.coords.map((c) => [c[0], c[1]]))), { paddingTopLeft: [416, 60], paddingBottomRight: [60, 60], duration: 0.9 }); } catch (e) {}
+      try { mapInstance.flyToBounds(L.latLngBounds(items.flatMap((it) => it.coords.map((c) => [c[0], c[1]]))), { paddingTopLeft: isMobileNow() ? [30, 90] : [416, 60], paddingBottomRight: isMobileNow() ? [30, 140] : [60, 60], duration: 0.9 }); } catch (e) {}
     }
   };
 
@@ -806,8 +809,24 @@ function App() {
     <div className={`fixed inset-0 ${dark ? 'dark' : ''}`} style={{ background: dark ? '#171717' : '#f5f5f5' }}>
       {/* Sidebar (or create panel) */}
       {/* Navigation flottante en verre foncé, alignée sur les contrôles (16px du bord), rayon 6px */}
+      {isMobile && (
+        <>
+          {/* Bouton hamburger (mobile) */}
+          <button onClick={() => setNavOpen((o) => !o)} aria-label={navOpen ? 'Fermer le menu' : 'Ouvrir le menu'} aria-expanded={navOpen}
+            className={`absolute z-[1300] w-11 h-11 grid place-items-center rounded-md glass-strong transition-colors ${dark ? 'text-white' : 'text-neutral-900'}`}
+            style={{ top: 'calc(env(safe-area-inset-top, 0px) + 12px)', left: navOpen ? 'calc(min(86vw, 360px) - 56px)' : 12, transition: 'left .25s ease' }}>
+            {navOpen ? <I.X size={20} /> : <I.Menu size={20} />}
+          </button>
+          {/* Voile derrière le tiroir */}
+          <div onClick={() => setNavOpen(false)}
+            className={`absolute inset-0 z-[1150] bg-black/50 transition-opacity duration-200 ${navOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} />
+        </>
+      )}
       <aside
-        className="glass glass-nav absolute left-4 top-4 bottom-4 w-[340px] flex flex-col z-[1000] rounded-md transition-colors">
+        className={isMobile
+          ? `glass glass-nav absolute left-0 top-0 bottom-0 w-[min(86vw,360px)] flex flex-col z-[1200] rounded-r-xl transition-transform duration-250 ease-out ${navOpen ? 'translate-x-0' : '-translate-x-full'}`
+          : 'glass glass-nav absolute left-4 top-4 bottom-4 w-[340px] flex flex-col z-[1000] rounded-md transition-colors'}
+        style={isMobile ? { paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', transitionDuration: '250ms' } : undefined}>
         
         {settingsOpen ?
         <SettingsPanel
@@ -815,7 +834,7 @@ function App() {
           dark={dark}
           accent={t.accent}
           tab={settingsTab}
-          onTabChange={setSettingsTab} /> :
+          onTabChange={(tab) => { setSettingsTab(tab); if (isMobile) setNavOpen(false); }} /> :
         creating ?
         <CreatePanel
           onClose={cancelCreate}
@@ -904,7 +923,7 @@ function App() {
           onAction={handleAction}
           forceCreateMenu={onboardStep === 2}
           view={view}
-          onViewChange={setView} />
+          onViewChange={(v) => { setView(v); if (isMobile) setNavOpen(false); }} />
 
         }
 
@@ -957,13 +976,14 @@ function App() {
 
       {/* Main area: Settings content takes over when in settings mode, otherwise show map */}
       {/* Zone de contenu à droite de la navigation ; la carte s'étend dessous (cf. MAP_UNDERLAY) */}
-      <main className="absolute top-0 right-0 bottom-0 left-[356px]">
+      <main className={`absolute top-0 right-0 bottom-0 ${isMobile ? 'left-0' : 'left-[356px]'}`}>
         {settingsOpen ? (
           <SettingsContent tab={settingsTab} dark={dark} accent={t.accent} />
         ) : (
           <>
             {/* Recherche de lieu — en haut à droite (masquée en vue Stats) */}
-            <div className="absolute top-4 right-4 z-[500] flex items-center gap-2">
+            <div className={isMobile ? 'absolute left-[68px] right-3 z-[500] flex items-center' : 'absolute top-4 right-4 z-[500] flex items-center gap-2'}
+              style={isMobile ? { top: 'calc(env(safe-area-inset-top, 0px) + 12px)' } : undefined}>
               {view === 'map' && <PlaceSearch map={mapInstance} dark={dark} accent={t.accent} />}
             </div>
 

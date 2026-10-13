@@ -866,10 +866,13 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
   const strong = dark ? 'text-white' : 'text-neutral-900';
   const sectionTitle = `text-[10.5px] font-semibold uppercase tracking-wider mb-2 ${label}`;
   const multi = allRoutes.length > 1;
+  const isMobile = useIsMobile();
+  const sep = dark ? 'border-white/10' : 'border-neutral-200';
 
   return (
-    <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-menu" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={`glass-strong rounded-xl shadow-2xl flex flex-col overflow-hidden ${strong}`} style={{ width: 'min(1240px, 98vw)', height: 'min(860px, 96vh)' }}>
+    <div className={`fixed inset-0 z-[3000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-menu ${isMobile ? '' : 'p-4'}`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={`glass-strong shadow-2xl flex flex-col overflow-hidden ${isMobile ? '' : 'rounded-xl'} ${strong}`}
+        style={isMobile ? { width: '100vw', height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' } : { width: 'min(1240px, 98vw)', height: 'min(860px, 96vh)' }}>
         {/* En-tête */}
         <div className={`flex items-center justify-between px-5 py-3.5 border-b ${dark ? 'border-white/10' : 'border-neutral-200'}`}>
           <div className="flex items-center gap-3 min-w-0">
@@ -886,15 +889,15 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 flex">
-          {/* Modèles */}
-          <div className={`w-[248px] shrink-0 overflow-y-auto sb-scroll p-4 border-r ${dark ? 'border-white/10' : 'border-neutral-200'}`}>
+        <div className={`flex-1 min-h-0 flex ${isMobile ? 'flex-col overflow-y-auto sb-scroll' : ''}`}>
+          {/* Modèles (mobile : bandeau horizontal sous l'aperçu) */}
+          <div className={isMobile ? `order-2 shrink-0 px-3 pt-3 pb-1 border-t ${sep}` : `w-[248px] shrink-0 overflow-y-auto sb-scroll p-4 border-r ${sep}`}>
             <div className={sectionTitle}>Modèles</div>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className={isMobile ? 'flex gap-2.5 overflow-x-auto sb-scroll pb-2 -mx-3 px-3 snap-x' : 'grid grid-cols-2 gap-2.5'}>
               {STORY_TEMPLATES.map((t) => {
                 const sel = t.id === tplId;
                 return (
-                  <button key={t.id} onClick={() => setTplId(t.id)} className="text-left group">
+                  <button key={t.id} onClick={() => setTplId(t.id)} className={`text-left group ${isMobile ? 'w-[84px] shrink-0 snap-start' : ''}`}>
                     <div className={`relative rounded-lg overflow-hidden transition-all ${sel ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-neutral-900' : (dark ? 'ring-1 ring-white/10 group-hover:ring-white/30' : 'ring-1 ring-neutral-200')}`}
                       style={t.transparent ? ST_CHECKER : { background: '#111' }}>
                       <canvas ref={(el) => { thumbRefs.current[t.id] = el; }} width={216} height={384} className="block w-full h-auto" />
@@ -910,7 +913,8 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
           </div>
 
           {/* Aperçu */}
-          <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-5 gap-3"
+          <div className={`min-w-0 flex flex-col items-center justify-center gap-3 ${isMobile ? 'order-1 shrink-0 px-3 pt-3 pb-2' : 'flex-1 p-5'}`}
+            style={isMobile ? { height: 'min(62vh, 640px)' } : undefined}
             onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragPhoto(true); } }}
             onDragLeave={() => setDragPhoto(false)}
             onDrop={(e) => { e.preventDefault(); setDragPhoto(false); loadPhoto(e.dataTransfer.files[0]); }}>
@@ -931,8 +935,8 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
           </div>
 
           {/* Options */}
-          <div className={`w-[300px] shrink-0 flex flex-col border-l ${dark ? 'border-white/10' : 'border-neutral-200'}`}>
-            <div className="flex-1 overflow-y-auto sb-scroll p-4 flex flex-col gap-5">
+          <div className={isMobile ? `order-3 flex flex-col border-t ${sep}` : `w-[300px] shrink-0 flex flex-col border-l ${sep}`}>
+            <div className={isMobile ? 'p-4 flex flex-col gap-5' : 'flex-1 overflow-y-auto sb-scroll p-4 flex flex-col gap-5'}>
               {multi && (
                 <div>
                   <div className={sectionTitle}>Tracés</div>
@@ -1008,7 +1012,8 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
             </div>
 
             {/* Actions */}
-            <div className={`p-4 border-t flex flex-col gap-2 ${dark ? 'border-white/10' : 'border-neutral-200'}`}>
+            <div className={`p-4 border-t flex flex-col gap-2 ${sep} ${isMobile ? 'sticky bottom-0 z-10 glass-strong' : ''}`}
+              style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' } : undefined}>
               {canShareFiles && (
                 <button onClick={doShare} disabled={busy}
                   className="w-full flex items-center justify-center gap-2 rounded-lg py-2.5 text-[13px] font-semibold text-white bg-blue-500 hover:bg-blue-600 disabled:opacity-50">

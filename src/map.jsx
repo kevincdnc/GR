@@ -145,7 +145,15 @@ const BASE_LAYERS = {
 const MAP_MAX_ZOOM = 20;
 // La carte s'étend sous la navigation flottante (16px + 340px) : on décale le
 // cadrage automatique pour que les traces restent dans la partie visible.
-const MAP_UNDERLAY = 356;
+const MAP_UNDERLAY_DESKTOP = 356;
+// Largeur de carte cachée sous la navigation : aucune sur mobile (tiroir)
+function mapUnderlay() { return isMobileNow() ? 0 : MAP_UNDERLAY_DESKTOP; }
+// Marges de cadrage automatique : en haut la recherche, en bas la légende
+function mapFitPadding(extraLeft = 60) {
+  return isMobileNow()
+    ? { paddingTopLeft: [28, 90], paddingBottomRight: [28, 150] }
+    : { paddingTopLeft: [MAP_UNDERLAY_DESKTOP + extraLeft, 80], paddingBottomRight: [80, 80] };
+}
 const MAP_STYLE_KEY = 'gr34_map_style';
 const MAP_OPACITY_KEY = 'gr34_map_opacity';
 function savedMapOpacity() {
@@ -270,6 +278,7 @@ function MapView({
 }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
+  const isMobile = useIsMobile();
   // Keep the latest POI toggle handler in a ref so marker effects don't re-run
   // (and recreate/flicker markers) on every unrelated re-render (e.g. mousemove).
   const toggleFilterPoiRef = useRef(onToggleFilterPoi);
@@ -370,7 +379,7 @@ function MapView({
     // Fit roughly the metropolitan France bounding box so the whole country
     // is visible on first paint, regardless of viewport size.
     try {
-      map.fitBounds([[41.3, -5.5], [51.2, 9.8]], { paddingTopLeft: [MAP_UNDERLAY + 20, 20], paddingBottomRight: [20, 20], animate: false });
+      map.fitBounds([[41.3, -5.5], [51.2, 9.8]], { paddingTopLeft: [mapUnderlay() + 20, 20], paddingBottomRight: [20, 20], animate: false });
     } catch (e) {}
     if (onMapReady) onMapReady(map);
 
@@ -862,7 +871,7 @@ function MapView({
       });
       if (all.length > 0) {
         const bounds = L.latLngBounds(all);
-        map.fitBounds(bounds, { paddingTopLeft: [MAP_UNDERLAY + 60, 80], paddingBottomRight: [80, 80], maxZoom: 13, animate: true, duration: 0.5 });
+        map.fitBounds(bounds, { ...mapFitPadding(60), maxZoom: 13, animate: true, duration: 0.5 });
       }
     }
   }, [visibleRoutes, dark, creating]);
@@ -1275,7 +1284,7 @@ function MapView({
       <div
         ref={mapEl}
         className="absolute top-0 right-0 bottom-0"
-        style={{ '--accent': accent, left: -MAP_UNDERLAY, background: savedMapBg() }}>
+        style={{ '--accent': accent, left: -(isMobile ? 0 : MAP_UNDERLAY_DESKTOP), background: savedMapBg() }}>
       </div>
 
       {/* Custom POI placement cursor — when in POI step and a POI template is selected */}
@@ -1433,9 +1442,9 @@ function MapView({
           const stats = singleRouteStats.stats;
           const col = (ROUTE_COLORS[r.color] && ROUTE_COLORS[r.color].hex) || '#3b82f6';
           return (
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-6 z-[500] w-[min(94%,920px)]">
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-6 max-md:bottom-10 z-[500] w-[min(94%,920px)]">
               <div className={`rounded-md glass ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}>
-                <div className="flex items-center justify-between gap-6 pl-3 pr-5 pt-3.5 pb-3">
+                <div className="flex items-center justify-between gap-6 pl-3 pr-5 pt-3.5 pb-3 max-md:flex-col max-md:items-stretch max-md:gap-3 max-md:pr-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {(() => {
                     const parent = singleRouteStats.parentItinerary;
@@ -1455,7 +1464,7 @@ function MapView({
                       : r.name}
                   </span>
                 </div>
-                  <div className="flex items-center gap-7 shrink-0">
+                  <div className="flex items-center gap-7 shrink-0 max-md:flex-wrap max-md:gap-x-5 max-md:gap-y-3 max-md:pl-1">
                     <DraftStatIcon dark={dark} icon={<I.Distance size={11} />} label="Distance"
                       value={(singleRouteStats.distance || 0).toFixed(2) + ' km'} />
                     <DraftStatIcon dark={dark} icon={<I.Mountains size={11} />} label="Altitude"
@@ -1558,7 +1567,7 @@ function MapView({
 
       {/* Drawing helper overlay (creating mode) — bottom-centered, full draft stats */}
       {creating &&
-      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 z-[500] w-[min(96%,1140px)]">
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-6 max-md:bottom-10 z-[500] w-[min(96%,1140px)]">
           <div
           className={`rounded-md glass ${dark ? 'text-neutral-100' : 'text-neutral-800'}`}>
 
@@ -1702,7 +1711,8 @@ function MapView({
 
       {/* Quick-stats live legend */}
       {showLegend && totals.count > 0 && !creating && !singleRouteStats &&
-      <div className={`absolute bottom-4 right-4 z-[500] rounded-md overflow-hidden glass ${dark ? 'text-neutral-100' : 'text-neutral-900'}`} style={{ width: 'min(560px, 90vw)' }}>
+      <div className={`absolute z-[500] rounded-md overflow-hidden glass ${isMobile ? 'left-3 right-3' : 'bottom-4 right-4'} ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}
+        style={isMobile ? { bottom: 'calc(env(safe-area-inset-bottom, 0px) + 40px)' } : { width: 'min(560px, 90vw)' }}>
           <button type="button" onClick={() => setLegendOpen((o) => !o)} aria-expanded={legendOpen}
             title={legendOpen ? 'Masquer le détail' : 'Afficher le détail des itinéraires'}
             className={`w-full text-left px-5 pt-4 pb-3 flex items-center justify-between gap-8 transition-colors ${dark ? 'hover:bg-white/[0.03]' : 'hover:bg-black/[0.02]'}`}>
@@ -2260,6 +2270,7 @@ window.MapView = MapView;
 // Selection color stays blue (Tailwind blue) per design system.
 // ------------------------------------------------------------------------
 function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, onRequestLocation, onCenterUserLocation, mapRef }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(null); // 'cartes' | 'settings' | null
   // First-visit onboarding hint pointing at the locate button.
   const [showLocateHint, setShowLocateHint] = useState(() => {
@@ -2345,7 +2356,8 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
   const cardCls = 'rounded-md overflow-hidden glass';
 
   return (
-    <div ref={wrapRef} className="absolute left-4 top-4 flex flex-col gap-2 z-[600]">
+    <div ref={wrapRef} className={`absolute flex flex-col gap-2 z-[600] ${isMobile ? 'right-3' : 'left-4 top-4'}`}
+      style={isMobile ? { top: 'calc(env(safe-area-inset-top, 0px) + 68px)' } : undefined}>
       {/* Zoom stack */}
       <div className={`flex flex-col ${cardCls}`}>
         <MapBtn dark={dark} title="Zoomer" onClick={zoomIn}><I.ZoomIn size={16} /></MapBtn>
@@ -2497,6 +2509,17 @@ function MapControls({ dark, accent, zoomIn, zoomOut, creating, userLocation, on
 
 // --- Popover shell ------------------------------------------------------
 function PopoverShell({ dark, children, width = 340 }) {
+  const isMobile = useIsMobile();
+  if (isMobile) {
+    // Mobile : feuille en bas d'écran, défilable
+    return (
+      <div className={`fixed left-2 right-2 z-[1250] rounded-xl animate-menu glass-strong overflow-y-auto sb-scroll ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}
+        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)', maxHeight: '78vh' }}>
+        <div className="flex justify-center pt-2"><span className={`w-10 h-1 rounded-full ${dark ? 'bg-white/20' : 'bg-black/15'}`}></span></div>
+        {children}
+      </div>
+    );
+  }
   return (
     <div
       className={`absolute left-[44px] top-0 rounded-md animate-menu glass-strong ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}
@@ -2783,7 +2806,7 @@ const MAP_BG_PRESETS = ['#171717', '#0a0a0a', '#262626', '#1c1917', '#0f172a', '
 // Sélecteur de couleur aux couleurs de l'app (le sélecteur natif du
 // navigateur ne se thématise pas) : saturation/luminosité, teinte,
 // pipette (si le navigateur la propose), couleurs rapides.
-function MapColorPicker({ dark, value, onChange, onClose }) {
+function MapColorPicker({ dark, value, onChange, onClose, inline }) {
   const [hsv, setHsv] = useState(() => hexToHsv(value));
   const ref = useRef(null);
   useEffect(() => { if (hsvToHex(hsv) !== value) setHsv(hexToHsv(value)); }, [value]);
@@ -2807,7 +2830,7 @@ function MapColorPicker({ dark, value, onChange, onClose }) {
   const hueHex = hsvToHex({ h: hsv.h, s: 1, v: 1 });
   const canPick = typeof window !== 'undefined' && 'EyeDropper' in window;
   return (
-    <div ref={ref} className={`absolute left-full bottom-0 ml-6 z-50 w-[232px] p-3 rounded-md shadow-2xl animate-menu glass-strong ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}>
+    <div ref={ref} className={inline ? 'mt-3' : `absolute left-full bottom-0 ml-6 z-50 w-[232px] p-3 rounded-md shadow-2xl animate-menu glass-strong ${dark ? 'text-neutral-100' : 'text-neutral-900'}`}>
       <div ref={svRef} onPointerDown={(e) => drag(e, svRef.current, (x, y) => update({ ...hsv, s: x, v: 1 - y }))}
         className="relative h-[140px] rounded-md cursor-crosshair touch-none"
         style={{ background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, ${hueHex})` }}>
@@ -2846,12 +2869,14 @@ function MapBgColorField({ dark, value, onChange }) {
   const text = draft != null ? draft : value.toUpperCase();
   const valid = normalizeHex(text);
   const commit = () => { if (valid) onChange(valid); setDraft(null); };
+  const inline = isMobileNow(); // mobile : sélecteur déplié sous le champ
   return (
+    <div>
     <div className="relative flex items-center gap-2">
       <button data-color-swatch title="Choisir une couleur" onClick={() => setOpen((o) => !o)} aria-expanded={open}
         className={`w-9 h-9 shrink-0 rounded-md border transition-shadow ${open ? 'ring-2 ring-blue-500/60' : ''} ${dark ? 'border-neutral-700' : 'border-neutral-300'}`}
         style={{ background: valid || value }}></button>
-      {open && <MapColorPicker dark={dark} value={value} onChange={(c) => { setDraft(null); onChange(c); }} onClose={() => setOpen(false)} />}
+      {open && !inline && <MapColorPicker dark={dark} value={value} onChange={(c) => { setDraft(null); onChange(c); }} onClose={() => setOpen(false)} />}
       <input value={text} onChange={(e) => setDraft(e.target.value)} onBlur={commit}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { setDraft(null); e.currentTarget.blur(); } }}
         aria-label="Couleur hexadécimale" spellCheck="false" maxLength={7}
@@ -2860,6 +2885,8 @@ function MapBgColorField({ dark, value, onChange }) {
         className={`h-9 px-2.5 rounded-md text-[12px] font-medium transition-colors ${value === MAP_BG_DEFAULT ? (dark ? 'text-neutral-600' : 'text-neutral-400') : (dark ? 'text-neutral-300 hover:bg-neutral-800' : 'text-neutral-700 hover:bg-neutral-100')}`}>
         Défaut
       </button>
+    </div>
+    {open && inline && <MapColorPicker inline dark={dark} value={value} onChange={(c) => { setDraft(null); onChange(c); }} onClose={() => setOpen(false)} />}
     </div>
   );
 }

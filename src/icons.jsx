@@ -36,6 +36,7 @@ const I = {
   Minus: (p) => <SvgBase {...p}><path d="M5 12h14" /></SvgBase>,
   Link: (p) => <SvgBase {...p}><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" /><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" /></SvgBase>,
   Search: (p) => <SvgBase {...p}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></SvgBase>,
+  Menu: (p) => <SvgBase {...p}><path d="M4 7h16M4 12h16M4 17h16" /></SvgBase>,
   X: (p) => <SvgBase {...p}><path d="M18 6 6 18M6 6l12 12" /></SvgBase>,
   Eye: (p) => <SvgBase {...p}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></SvgBase>,
   EyeOff: (p) => <SvgBase {...p}><path d="m2 2 20 20" /><path d="M6.7 6.7C3.6 8.6 2 12 2 12s3.5 7 10 7c2 0 3.7-.5 5.2-1.3" /><path d="M9.9 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.7" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></SvgBase>,

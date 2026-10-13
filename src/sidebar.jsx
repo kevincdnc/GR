@@ -492,7 +492,7 @@ function ItineraryRow({
           onClick={handleRowClick}>
           
           {/* Drag handle */}
-          <div className={`opacity-0 group-hover:opacity-100 transition-opacity -ml-1 ${dark ? 'text-neutral-500' : 'text-neutral-400'} cursor-grab active:cursor-grabbing`}>
+          <div className={`opacity-0 group-hover:opacity-100 transition-opacity -ml-1 touch-hidden ${dark ? 'text-neutral-500' : 'text-neutral-400'} cursor-grab active:cursor-grabbing`}>
             <I.Drag size={14} />
           </div>
 
@@ -568,7 +568,7 @@ function ItineraryRow({
               onClick={(e) => {e.stopPropagation();setMenuOpen((o) => !o);}}
               className={`p-1 rounded transition-all ${menuOpen
                 ? (dark ? 'opacity-100 text-neutral-100 bg-neutral-700' : 'opacity-100 text-neutral-900 bg-neutral-200')
-                : (dark ? 'opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700' : 'opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200')
+                : (dark ? 'opacity-0 group-hover:opacity-100 touch-visible text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700' : 'opacity-0 group-hover:opacity-100 touch-visible text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200')
               }`}
               title="Actions"
               aria-haspopup="menu"
@@ -671,7 +671,7 @@ function SectionRow({ section, parentColor, visible, onToggle, onHover, hoveredI
       <div className="relative" ref={menuRef}>
         <button
           onClick={(e) => {e.stopPropagation();setMenuOpen((o) => !o);}}
-          className={`p-1 rounded transition-all opacity-0 group-hover:opacity-100 ${dark ? 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-700' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200'} ${menuOpen ? 'opacity-100' : ''}`}
+          className={`p-1 rounded transition-all opacity-0 group-hover:opacity-100 touch-visible ${dark ? 'text-neutral-400 hover:text-neutral-100 hover:bg-neutral-700' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200'} ${menuOpen ? 'opacity-100' : ''}`}
           title="Actions">
           
           <I.More size={13} />
@@ -931,7 +931,7 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
           onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
           className={`p-1 rounded transition-all ${menuOpen
             ? (dark ? 'opacity-100 text-neutral-100 bg-neutral-700' : 'opacity-100 text-neutral-900 bg-neutral-200')
-            : (dark ? 'opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700' : 'opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200')
+            : (dark ? 'opacity-0 group-hover:opacity-100 touch-visible text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700' : 'opacity-0 group-hover:opacity-100 touch-visible text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200')
           }`}
           title="Actions du groupe (renommer, supprimer)"
           aria-haspopup="menu"
