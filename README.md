@@ -20,7 +20,7 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 | Création / édition d'itinéraires, sections, repères, groupes, glisser-déposer | Réel, sauvegardé dans le navigateur |
 | Sélection multiple (Maj+clic, Cmd/Ctrl+clic) : couleur, fusion, duplication | **Réel** |
 | Recherche de lieu | Réel (Nominatim) |
-| Altitudes d'un tracé dessiné à la main | Simulé (pas de service d'altitude) |
+| Tracé à la main : tracé automatique sur sentiers / chemins / routes (BRouter, OpenStreetMap) et altitudes réelles (Open-Meteo, MNT Copernicus) | **Réel** (services en ligne ; ligne droite si indisponibles) |
 | Partage en story (menu ⋯ d'une activité ou d'un groupe, bouton *Partager* des stats) : 10 modèles 1080×1920, données affichées au choix, photo de fond, export PNG / copie / partage natif | **Réel** (rendu dans le navigateur) |
 | Strava / Komoot / Garmin | Simulé, comme dans le design |
 | Panneau « Réglages design » (mode sombre, accent, densité) | Visible seulement dans l'éditeur Claude Design |

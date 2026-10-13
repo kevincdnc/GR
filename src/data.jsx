@@ -112,6 +112,58 @@ function itineraryStats(it) {
   return { distance: it.distance || 0, ascent: it.ascent || 0, isComposite: false, sectionCount: 1 };
 }
 
+// --- Tracé automatique & altitudes (création d'itinéraire) ---------------
+// BRouter (OpenStreetMap) : suit les sentiers, chemins ou routes.
+const ROUTE_PROFILES = {
+  hiking: { label: 'Sentiers', brouter: 'hiking-mountain' },
+  bike: { label: 'Chemins', brouter: 'trekking' },
+  road: { label: 'Routes', brouter: 'car-fast' },
+};
+async function routeBetween(from, to, profile) {
+  const p = (ROUTE_PROFILES[profile] || ROUTE_PROFILES.hiking).brouter;
+  const url = `https://brouter.de/brouter?lonlats=${from[1].toFixed(6)},${from[0].toFixed(6)}|${to[1].toFixed(6)},${to[0].toFixed(6)}&profile=${p}&alternativeidx=0&format=geojson`;
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), 15000) : null;
+  try {
+    const res = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined);
+    if (!res.ok) throw new Error('routage ' + res.status);
+    const data = await res.json();
+    const coords = data && data.features && data.features[0] && data.features[0].geometry && data.features[0].geometry.coordinates;
+    if (!coords || coords.length < 2) throw new Error('aucun itinéraire');
+    const out = coords.map((c) => (typeof c[2] === 'number' ? [c[1], c[0], c[2]] : [c[1], c[0]]));
+    // Raccord exact aux points cliqués
+    out[0] = typeof from[2] === 'number' ? from : [from[0], from[1], out[0][2]].filter((v) => v != null);
+    const last = out[out.length - 1];
+    out[out.length - 1] = typeof last[2] === 'number' ? [to[0], to[1], last[2]] : [to[0], to[1]];
+    return out;
+  } finally { if (timer) clearTimeout(timer); }
+}
+// Ligne droite découpée tous les `stepM` mètres (pour suivre le relief)
+function densifySegment(a, b, stepM = 40) {
+  const d = (typeof L !== 'undefined') ? L.latLng(a).distanceTo(L.latLng(b)) : 0;
+  const n = Math.min(200, Math.max(1, Math.ceil(d / stepM)));
+  const out = [a];
+  for (let i = 1; i < n; i++) out.push([a[0] + (b[0] - a[0]) * i / n, a[1] + (b[1] - a[1]) * i / n]);
+  out.push([b[0], b[1]]);
+  return out;
+}
+// Altitudes (Open-Meteo, MNT Copernicus 90 m) : Map « lat,lng » -> mètres
+async function fetchElevations(pts) {
+  const found = new Map();
+  const key = (c) => c[0].toFixed(6) + ',' + c[1].toFixed(6);
+  for (let i = 0; i < pts.length; i += 100) {
+    const chunk = pts.slice(i, i + 100);
+    try {
+      const url = 'https://api.open-meteo.com/v1/elevation?latitude=' + chunk.map((c) => c[0].toFixed(6)).join(',') + '&longitude=' + chunk.map((c) => c[1].toFixed(6)).join(',');
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      (data.elevation || []).forEach((e, k) => { if (typeof e === 'number' && Number.isFinite(e)) found.set(key(chunk[k]), e); });
+    } catch (e) { /* hors ligne : altitudes inconnues */ }
+  }
+  return found;
+}
+
 // Mobile : écran étroit (< 768 px). La version bureau reste inchangée au-delà.
 const MOBILE_QUERY = '(max-width: 767px)';
 function isMobileNow() {
@@ -129,7 +181,7 @@ function useIsMobile() {
   return m;
 }
 
-Object.assign(window, { isMobileNow, useIsMobile, ROUTE_COLORS, ACTIVITIES, SEED_GROUPS, PRO_SEED_GROUPS, buildGr34Groups, GR34_SECTION_COLORS, fmtDist, fmtAscent, itineraryStats, estimateDurationMin, fmtDuration });
+Object.assign(window, { ROUTE_PROFILES, routeBetween, densifySegment, fetchElevations, isMobileNow, useIsMobile, ROUTE_COLORS, ACTIVITIES, SEED_GROUPS, PRO_SEED_GROUPS, buildGr34Groups, GR34_SECTION_COLORS, fmtDist, fmtAscent, itineraryStats, estimateDurationMin, fmtDuration });
 
 // ---- Map projection helpers ---------------------------------------------
 // The original seed routes are encoded as SVG paths in a 1200x800 viewport.

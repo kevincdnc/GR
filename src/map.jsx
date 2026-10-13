@@ -10,16 +10,25 @@ function computeElevationStats(coords) {
   if (!coords || coords.length < 2) {
     return { profile: [], minAlt: 0, maxAlt: 0, ascent: 0, descent: 0, slopeMin: 0, slopeMax: 0 };
   }
-  // Vraies altitudes (traces GPX : [lat, lng, ele]) -> profil réel, sans bruit
-  // simulé ; D+/D- avec hystérésis de 1 m, comme au calcul des étapes.
-  const hasRealEle = coords.every((c) => c.length >= 3 && typeof c[2] === 'number');
-  const baseAlt = 50 + Math.abs(Math.round(((coords[0][0] * 113) % 200)));
-  const elev = hasRealEle ? coords.map((c) => c[2]) : coords.map(([lat, lng], i) => {
-    const h = Math.sin(lat * 12.4 + lng * 7.7) * 18
-           + Math.sin(lng * 9.1 + i * 0.8) * 9
-           + Math.cos(lat * 4.3 - lng * 5.1) * 14;
-    return baseAlt + h + i * 2;
-  });
+  // Vraies altitudes seulement ([lat, lng, ele]) : plus aucune altitude
+  // simulée. Les points sans altitude (en cours de chargement) sont
+  // interpolés entre leurs voisins ; sans aucune altitude : stats vides.
+  const known = [];
+  coords.forEach((c, i) => { if (c.length >= 3 && typeof c[2] === 'number' && Number.isFinite(c[2])) known.push(i); });
+  if (!known.length) {
+    return { profile: [], minAlt: 0, maxAlt: 0, ascent: 0, descent: 0, slopeMin: 0, slopeMax: 0, noEle: true };
+  }
+  const partialEle = known.length < coords.length;
+  const hasRealEle = true;
+  const elev = new Array(coords.length);
+  let k = 0;
+  for (let i = 0; i < coords.length; i++) {
+    while (k < known.length - 1 && known[k + 1] <= i) k++;
+    const a = known[k], b = known[Math.min(k + 1, known.length - 1)];
+    if (i === a) elev[i] = coords[a][2];
+    else if (i < a || a === b) elev[i] = coords[i < a ? a : b][2];
+    else elev[i] = coords[a][2] + (coords[b][2] - coords[a][2]) * (i - a) / (b - a);
+  }
   const profile = [];
   const SAMPLES_PER_SEG = 8;
   for (let i = 0; i < coords.length - 1; i++) {
@@ -83,6 +92,7 @@ function computeElevationStats(coords) {
     descent: Math.round(desc),
     slopeMin: Math.round(slopeMin),
     slopeMax: Math.round(slopeMax),
+    partialEle,
   };
 }
 
@@ -275,6 +285,7 @@ function MapView({
   importPreview,
   locationPrompt, userLocation, onAcceptLocation, onDeclineLocation, onRequestLocation,
   onMapClick, onUndo, onClearDraft, onAddSection, onFinish, onMapReady, onAction,
+  autoRoute, onToggleAutoRoute, routeProfile, onRouteProfile, routingBusy, onDraftColor,
 }) {
   const mapEl = useRef(null);
   const mapRef = useRef(null);
@@ -523,14 +534,17 @@ function MapView({
   // Stats shown — full draft by default, filtered to a section when hovering it.
   const shownStats = useMemo(() => {
     if (!hoveredSection) {
+      // Même trace que la distance : boucle / aller-retour compris
+      const eff = computeElevationStats(composeDraftCoords(draftCoords || [], draftRouteType));
       return {
         distance: draftDistance || 0,
-        minAlt: draftElevation.minAlt,
-        maxAlt: draftElevation.maxAlt,
-        ascent: draftElevation.ascent,
-        descent: draftElevation.descent,
-        slopeMin: draftElevation.slopeMin,
-        slopeMax: draftElevation.slopeMax,
+        minAlt: eff.minAlt,
+        maxAlt: eff.maxAlt,
+        ascent: eff.ascent,
+        descent: eff.descent,
+        slopeMin: eff.slopeMin,
+        slopeMax: eff.slopeMax,
+        noEle: eff.noEle, partialEle: eff.partialEle,
       };
     }
     const s = sectionStats.find((x) => x.id === hoveredSection.id)?.stats;
@@ -555,7 +569,7 @@ function MapView({
       slopeMin: s.slopeMin,
       slopeMax: s.slopeMax,
     };
-  }, [hoveredSection, draftDistance, draftElevation, sectionStats, draftSections]);
+  }, [hoveredSection, draftDistance, draftElevation, sectionStats, draftSections, draftCoords, draftRouteType]);
 
   // For an existing single visible route OR a composite itinerary whose ALL
   // sections are currently visible, expose elevation stats at the bottom of
@@ -949,7 +963,10 @@ function MapView({
     sections.forEach((sec, sIdx) => {
       const color = ROUTE_COLORS[sec.color]?.hex || accent;
       const coords = sec.coords || [];
-      coords.forEach((c, i) => {
+      // Points posés par l'utilisateur seulement (pas chaque point du tracé suivi)
+      const idxs = sec.marks && sec.marks.length ? sec.marks.filter((i) => i < coords.length) : coords.map((_, i) => i);
+      idxs.forEach((i) => {
+        const c = coords[i];
         const isFirstOverall = sIdx === 0 && i === 0;
         const isLastOverall = sIdx === sections.length - 1 && i === coords.length - 1;
         const big = isFirstOverall || isLastOverall;
@@ -1202,13 +1219,25 @@ function MapView({
     if (!map) return;
     const handler = (e) => {
       if (!creating || !onMapClick) return;
+      // Clic sur le dernier point posé = terminer le tracé (comme Visorando)
+      const pts = draftCoordsRef.current;
+      if (!placingPoi && pts && pts.length >= 2) {
+        try {
+          const lp = map.latLngToContainerPoint(pts[pts.length - 1]);
+          if (lp.distanceTo(e.containerPoint) < 14) { setDraftHintDismissed(true); onFinish && onFinish(); return; }
+        } catch (err) {}
+      }
       onMapClick([e.latlng.lat, e.latlng.lng]);
     };
     map.on('click', handler);
     return () => map.off('click', handler);
-  }, [creating, onMapClick]);
+  }, [creating, onMapClick, onFinish, placingPoi]);
 
   // Cursor for creating + track mouse (pixel + latlng) for custom cursor & ghost line
+  const draftCoordsRef = useRef(draftCoords);
+  draftCoordsRef.current = draftCoords;
+  const [draftHintDismissed, setDraftHintDismissed] = useState(false);
+  useEffect(() => { if (creating) setDraftHintDismissed(false); }, [creating]);
   const [cursorPos, setCursorPos] = useState(null);
   const [expandedLegend, setExpandedLegend] = useState(null);
   const [legendOpen, setLegendOpen] = useState(false); // légende repliée par défaut : seulement les totaux
@@ -1314,6 +1343,7 @@ function MapView({
         // the "aimant" feel. Also compute the km along the route at the snap
         // point so we can show a "km X.XX" pill near the cursor.
         let display = { x: cursorPos.x, y: cursorPos.y, snapped: false, km: null };
+        const offX = isMobile ? 0 : -MAP_UNDERLAY_DESKTOP; // carte décalée sous la navigation
         try {
           const map = mapRef.current;
           if (map && cursorLatLng && draftCoords && draftCoords.length >= 2) {
@@ -1349,7 +1379,7 @@ function MapView({
           <div
             className="pointer-events-none absolute z-[600]"
             style={{
-              left: display.x, top: display.y,
+              left: display.x + offX, top: display.y,
               transform: 'translate(-50%, -50%)',
               transition: display.snapped ? 'left 90ms ease-out, top 90ms ease-out' : 'none',
             }}
@@ -1412,7 +1442,8 @@ function MapView({
       <div
         className="pointer-events-none absolute z-[600]"
         style={{
-          left: cursorPos.x,
+          // cursorPos est relatif à la carte, elle-même décalée sous la navigation
+          left: cursorPos.x - (isMobile ? 0 : MAP_UNDERLAY_DESKTOP),
           top: cursorPos.y,
           transform: 'translate(-13px, -13px)'
         }}>
@@ -1426,12 +1457,19 @@ function MapView({
             <path d="M13 4v18M4 13h18" stroke="white" strokeWidth="5" strokeLinecap="round" />
             <path d="M13 4v18M4 13h18" stroke={accent} strokeWidth="2.5" strokeLinecap="round" />
           </svg>
-          {(!draftCoords || draftCoords.length === 0) &&
+          {(!draftCoords || draftCoords.length === 0) ?
         <div
           className="absolute left-[28px] top-[14px] px-2.5 py-1 rounded-md shadow-lg whitespace-nowrap text-[12px] font-medium text-white"
           style={{ background: accent }}>
-          
               Posez votre point de départ
+            </div> :
+        routingBusy ?
+        <div className="absolute left-[28px] top-[14px] px-2.5 py-1 rounded-md shadow-lg whitespace-nowrap text-[12px] font-medium text-white bg-black/80 flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin"></span> Calcul du tracé…
+            </div> :
+        draftCoords.length >= 2 && !draftHintDismissed &&
+        <div className="absolute left-[28px] top-[16px] px-2.5 py-1.5 rounded-md shadow-lg text-[11.5px] leading-snug text-white bg-black/80 w-[230px]">
+              Pour terminer, cliquez sur le dernier point posé ou appuyez sur <span className="font-semibold">Entrée ↵</span>.
             </div>
         }
         </div>
@@ -1474,11 +1512,11 @@ function MapView({
                       value={(singleRouteStats.distance || 0).toFixed(2) + ' km'} />
                     <DraftStatIcon dark={dark} icon={<I.Mountains size={11} />} label="Altitude"
                       value={`${stats.minAlt} m – ${stats.maxAlt} m`} />
-                    <DraftStatIcon dark={dark} icon={<I.TrendingUp size={11} />} label="Ascent"
+                    <DraftStatIcon dark={dark} icon={<I.TrendingUp size={11} />} label="D+"
                       value={`${stats.ascent} m`} />
-                    <DraftStatIcon dark={dark} icon={<I.TrendingDown size={11} />} label="Descent"
+                    <DraftStatIcon dark={dark} icon={<I.TrendingDown size={11} />} label="D−"
                       value={`${stats.descent} m`} />
-                    <DraftStatIcon dark={dark} icon={<I.Slope size={11} />} label="Slope range"
+                    <DraftStatIcon dark={dark} icon={<I.Slope size={11} />} label="Pente"
                       value={`${stats.slopeMin}° – ${stats.slopeMax}°`} />
                     <Tooltip dark={dark} label="Durée estimée"
                       sub="Basée sur un rythme moyen pour l'activité + le dénivelé. À titre indicatif." side="top">
@@ -1596,13 +1634,13 @@ function MapView({
                     <DraftStatIcon dark={dark} icon={<I.Distance size={11} />} label="Distance"
                       value={(shownStats?.distance || 0).toFixed(2) + ' km'} highlight={!!hoveredSection} />
                     <DraftStatIcon dark={dark} icon={<I.Mountains size={11} />} label="Altitude"
-                      value={`${shownStats?.minAlt || 0} m – ${shownStats?.maxAlt || 0} m`} highlight={!!hoveredSection} />
-                    <DraftStatIcon dark={dark} icon={<I.TrendingUp size={11} />} label="Ascent"
-                      value={`${shownStats?.ascent || 0} m`} highlight={!!hoveredSection} />
-                    <DraftStatIcon dark={dark} icon={<I.TrendingDown size={11} />} label="Descent"
-                      value={`${shownStats?.descent || 0} m`} highlight={!!hoveredSection} />
-                    <DraftStatIcon dark={dark} icon={<I.Slope size={11} />} label="Slope range"
-                      value={`${shownStats?.slopeMin || 0}° – ${shownStats?.slopeMax || 0}°`} highlight={!!hoveredSection} />
+                      value={shownStats?.noEle ? '—' : `${shownStats?.minAlt || 0} m – ${shownStats?.maxAlt || 0} m${shownStats?.partialEle ? ' …' : ''}`} highlight={!!hoveredSection} />
+                    <DraftStatIcon dark={dark} icon={<I.TrendingUp size={11} />} label="D+"
+                      value={shownStats?.noEle ? '—' : `${shownStats?.ascent || 0} m${shownStats?.partialEle ? ' …' : ''}`} highlight={!!hoveredSection} />
+                    <DraftStatIcon dark={dark} icon={<I.TrendingDown size={11} />} label="D−"
+                      value={shownStats?.noEle ? '—' : `${shownStats?.descent || 0} m${shownStats?.partialEle ? ' …' : ''}`} highlight={!!hoveredSection} />
+                    <DraftStatIcon dark={dark} icon={<I.Slope size={11} />} label="Pente"
+                      value={shownStats?.noEle ? '—' : `${shownStats?.slopeMin || 0}° – ${shownStats?.slopeMax || 0}°`} highlight={!!hoveredSection} />
                     <Tooltip dark={dark} label="Durée estimée"
                       sub="Basée sur un rythme moyen pour l'activité + le dénivelé. À titre indicatif." side="top">
                       <DraftStatIcon dark={dark} icon={<I.Clock size={11} />} label="Estimé"
@@ -1611,18 +1649,6 @@ function MapView({
                     </Tooltip>
                   </div>
                   <div className="flex items-center gap-1.5">
-                                            <button
-                          onClick={onUndo}
-                          className={`flex items-center gap-1 text-[12px] font-medium px-2 py-1.5 rounded-md ${dark ? 'text-neutral-300 hover:text-white hover:bg-neutral-800' : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'}`}
-                          title="Annuler le dernier point">
-                          <I.ChevronLeft size={12} /> Retour
-                        </button>
-                        <button
-                          onClick={onClearDraft}
-                          className={`text-[12px] font-medium px-2 py-1.5 rounded-md ${dark ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-600 hover:bg-rose-50'}`}
-                          title="Effacer le tracé">
-                          Effacer
-                        </button>
                         <button
                           onClick={onAddSection}
                           className={`flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 rounded-md border border-dashed transition-colors ${dark ? 'border-neutral-700 text-neutral-300 hover:border-neutral-600 hover:bg-neutral-800/60' : 'border-neutral-300 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50'}`}
@@ -1667,6 +1693,30 @@ function MapView({
           </div>
         </div>
       }
+
+      {/* Barre d'outils du tracé (façon Visorando) */}
+      {creating && !placingPoi && (
+        <DraftToolbar
+          dark={dark}
+          isMobile={isMobile}
+          autoRoute={autoRoute}
+          onToggleAutoRoute={onToggleAutoRoute}
+          routeProfile={routeProfile}
+          onRouteProfile={onRouteProfile}
+          busy={routingBusy}
+          color={(() => { const sec = (draftSections || []).find((x) => x.id === activeSectionId) || (draftSections || [])[0]; return sec ? sec.color : 'blue'; })()}
+          onColor={onDraftColor}
+          canUndo={!!(draftCoords && draftCoords.length)}
+          onUndo={onUndo}
+          onClear={onClearDraft}
+          canCenter={!!(draftCoords && draftCoords.length)}
+          onCenter={() => {
+            const map = mapRef.current;
+            if (!map || !draftCoords || !draftCoords.length) return;
+            if (draftCoords.length === 1) map.flyTo(draftCoords[0], Math.max(map.getZoom(), 14), { duration: 0.5 });
+            else map.flyToBounds(L.latLngBounds(draftCoords.map((c) => [c[0], c[1]])), { ...mapFitPadding(60), maxZoom: 16, duration: 0.6 });
+          }} />
+      )}
 
       {/* Scale + attribution bottom-left already provided by Leaflet */}
 
@@ -1759,6 +1809,92 @@ function MapView({
       }
     </div>);
 
+}
+
+// Barre d'outils pendant le tracé : tracé automatique (sentiers / chemins /
+// routes), recentrer, couleur, retour, supprimer.
+function DraftToolbar({ dark, isMobile, autoRoute, onToggleAutoRoute, routeProfile, onRouteProfile, busy, color, onColor, canUndo, onUndo, onClear, canCenter, onCenter }) {
+  const [colorOpen, setColorOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const colorRef = useRef(null);
+  useEffect(() => {
+    if (!colorOpen) return;
+    const onDoc = (e) => { if (colorRef.current && !colorRef.current.contains(e.target)) setColorOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [colorOpen]);
+  useEffect(() => { if (!confirmClear) return; const t = setTimeout(() => setConfirmClear(false), 2500); return () => clearTimeout(t); }, [confirmClear]);
+  const hex = (ROUTE_COLORS[color] && ROUTE_COLORS[color].hex) || '#3b82f6';
+  const btn = `h-9 min-w-9 px-2 grid place-items-center rounded-md transition-colors ${dark ? 'text-neutral-200 hover:bg-white/10 disabled:text-neutral-600 disabled:hover:bg-transparent' : 'text-neutral-700 hover:bg-neutral-100 disabled:text-neutral-300'}`;
+  const sep = <span className={`w-px h-6 mx-1 ${dark ? 'bg-white/10' : 'bg-neutral-200'}`}></span>;
+  const stop = (e) => e.stopPropagation();
+  return (
+    <div onMouseDown={stop} onClick={stop} onDoubleClick={stop}
+      className={`absolute z-[650] flex items-center gap-0.5 p-1 rounded-lg glass-strong shadow-xl ${dark ? 'text-neutral-100' : 'text-neutral-900'} ${isMobile ? 'left-3 right-[60px] flex-wrap' : 'left-16 top-4'}`}
+      style={isMobile ? { top: 'calc(env(safe-area-inset-top, 0px) + 68px)' } : undefined}>
+      {/* Tracé automatique */}
+      <Tooltip dark={dark} label={autoRoute ? 'Tracé automatique activé' : 'Tracé automatique désactivé'} sub={autoRoute ? 'Le tracé suit les ' + ((ROUTE_PROFILES[routeProfile] || {}).label || '').toLowerCase() + ' de la carte' : 'Lignes droites entre les points'}>
+        <button onClick={onToggleAutoRoute} aria-pressed={autoRoute}
+          className={`h-9 flex items-center gap-2 pl-2 pr-2.5 rounded-md transition-colors whitespace-nowrap ${dark ? 'hover:bg-white/10' : 'hover:bg-neutral-100'}`}>
+          <span className="relative rounded-full transition-colors shrink-0" style={{ width: 30, height: 18, background: autoRoute ? '#3b82f6' : (dark ? '#404040' : '#d4d4d4') }}>
+            <span className="absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all grid place-items-center" style={{ left: autoRoute ? 14 : 2 }}>
+              {busy && <span className="w-2.5 h-2.5 rounded-full border-2 border-blue-200 border-t-blue-500 animate-spin"></span>}
+            </span>
+          </span>
+          <span className="text-[12.5px] font-medium">Tracé auto</span>
+        </button>
+      </Tooltip>
+      {autoRoute && (
+        <div className={`flex items-center p-0.5 rounded-md ${dark ? 'bg-black/30' : 'bg-neutral-100'}`}>
+          {Object.entries(ROUTE_PROFILES).map(([k, p]) => (
+            <button key={k} onClick={() => onRouteProfile(k)}
+              className={`h-8 px-2.5 rounded-[5px] text-[12px] font-medium transition-colors whitespace-nowrap ${routeProfile === k ? (dark ? 'bg-white/15 text-white' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900')}`}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {sep}
+      <Tooltip dark={dark} label="Recentrer sur le tracé">
+        <button className={btn} onClick={onCenter} disabled={!canCenter} aria-label="Recentrer sur le tracé">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" /><circle cx="12" cy="12" r="3" /></svg>
+        </button>
+      </Tooltip>
+      <div className="relative" ref={colorRef}>
+        <Tooltip dark={dark} label="Couleur du tracé">
+          <button className={btn} onClick={() => setColorOpen((o) => !o)} aria-label="Couleur du tracé" aria-expanded={colorOpen}>
+            <span className="w-[18px] h-[18px] rounded-full ring-2 ring-white/80" style={{ background: hex }}></span>
+          </button>
+        </Tooltip>
+        {colorOpen && (
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-40 w-[194px] p-2 rounded-md shadow-2xl animate-menu glass-strong">
+            <div className={`text-[10px] font-semibold uppercase tracking-wider px-0.5 pb-1.5 ${dark ? 'text-neutral-400' : 'text-neutral-500'}`}>Couleur du tracé</div>
+            <div className="grid grid-cols-6 gap-1.5">
+              {Object.entries(ROUTE_COLORS).map(([key, c]) => (
+                <button key={key} title={c.name} onClick={() => { onColor(key); setColorOpen(false); }}
+                  className="w-6 h-6 rounded-full grid place-items-center transition-transform hover:scale-110"
+                  style={{ background: c.hex, boxShadow: color === key ? `0 0 0 2px ${dark ? '#171717' : '#fff'}, 0 0 0 3.5px ${c.hex}` : 'none' }}>
+                  {color === key && <I.Check size={12} stroke="white" strokeWidth="3" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {sep}
+      <Tooltip dark={dark} label="Retour" sub="Annule le dernier segment (Ctrl/Cmd + Z)">
+        <button className={btn} onClick={onUndo} disabled={!canUndo} aria-label="Retour">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 14 4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-3" /></svg>
+        </button>
+      </Tooltip>
+      <Tooltip dark={dark} label={confirmClear ? 'Cliquez à nouveau pour supprimer' : 'Supprimer le tracé en cours'}>
+        <button onClick={() => { if (!canUndo) return; if (confirmClear) { setConfirmClear(false); onClear(); } else setConfirmClear(true); }} disabled={!canUndo} aria-label="Supprimer le tracé"
+          className={`${btn} ${confirmClear ? '!bg-rose-500/20 !text-rose-400 px-2.5' : ''}`}>
+          {confirmClear ? <span className="text-[12px] font-semibold whitespace-nowrap">Supprimer ?</span> : <I.Trash size={16} />}
+        </button>
+      </Tooltip>
+    </div>
+  );
 }
 
 function MapBtn({ children, dark, onClick, active, refEl }) {
@@ -2176,9 +2312,9 @@ function LegendRow({ route, dark, expanded, onToggleExpand, onHide }) {
             <div className="flex items-center gap-5 shrink-0">
               <ExpandStat dark={dark} icon={<I.Distance size={10} />} label="Distance" value={(route.distance || 0).toFixed(2) + ' km'} />
               <ExpandStat dark={dark} icon={<I.Mountains size={10} />} label="Altitude" value={`${stats.minAlt}–${stats.maxAlt} m`} />
-              <ExpandStat dark={dark} icon={<I.TrendingUp size={10} />} label="Ascent" value={`${stats.ascent} m`} />
-              <ExpandStat dark={dark} icon={<I.TrendingDown size={10} />} label="Descent" value={`${stats.descent} m`} />
-              <ExpandStat dark={dark} icon={<I.Slope size={10} />} label="Slope range" value={`${stats.slopeMin}° – ${stats.slopeMax}°`} />
+              <ExpandStat dark={dark} icon={<I.TrendingUp size={10} />} label="D+" value={`${stats.ascent} m`} />
+              <ExpandStat dark={dark} icon={<I.TrendingDown size={10} />} label="D−" value={`${stats.descent} m`} />
+              <ExpandStat dark={dark} icon={<I.Slope size={10} />} label="Pente" value={`${stats.slopeMin}° – ${stats.slopeMax}°`} />
             </div>
           </div>
           <div className={`px-3.5 pb-3 pt-2 ${dark ? 'border-t border-neutral-700/40' : 'border-t border-neutral-200/70'}`}>

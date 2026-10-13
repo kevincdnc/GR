@@ -119,7 +119,7 @@ function App() {
   const [draftActivity, setDraftActivity] = useAppState('hiking'); // mirrors create-panel activity for map duration
   // Draft is now a list of sections; one section is the default.
   const [draftSections, setDraftSections] = useAppState([
-    { id: 'sec_default', name: 'Section 1', color: 'blue', coords: [] }
+    { id: 'sec_default', name: 'Section 1', color: 'blue', coords: [], marks: [] }
   ]);
   const [draftPois, setDraftPois] = useAppState([]); // [{ id, name, color, icon, latlng, type, osmType? }]
   const [placingPoi, setPlacingPoi] = useAppState(null); // { name, color, icon } template
@@ -325,7 +325,7 @@ function App() {
       // Prefer 'blue' (brand primary), then walk the palette for unused colors.
       const palette = ['blue', ...Object.keys(ROUTE_COLORS).filter((k) => k !== 'blue')];
       const nextColor = palette.find((c) => !usedColors.has(c)) || palette[secs.length % palette.length];
-      return [...secs, { id: newId, name: `Section ${secs.length + 1}`, color: nextColor, coords: [] }];
+      return [...secs, { id: newId, name: `Section ${secs.length + 1}`, color: nextColor, coords: [], marks: [] }];
     });
     setActiveSectionId(newId);
   };
@@ -343,30 +343,111 @@ function App() {
   const updateSection = (id, patch) => {
     setDraftSections((secs) => secs.map((s) => s.id === id ? { ...s, ...patch } : s));
   };
+  // --- Tracé : ajout de points, tracé automatique, altitudes -------------
+  // Chaque section garde `coords` (polyligne dense, [lat, lng, ele?]) et
+  // `marks` (indices des points posés par l'utilisateur) : « Retour » enlève
+  // un segment entier, même s'il suit des sentiers (des centaines de points).
+  const [autoRoute, setAutoRoute] = useAppState(() => { try { return localStorage.getItem('gr34_autoroute') !== '0'; } catch (e) { return true; } });
+  const [routeProfile, setRouteProfile] = useAppState(() => { try { return localStorage.getItem('gr34_route_profile') || 'hiking'; } catch (e) { return 'hiking'; } });
+  useAppEffect(() => { try { localStorage.setItem('gr34_autoroute', autoRoute ? '1' : '0'); localStorage.setItem('gr34_route_profile', routeProfile); } catch (e) {} }, [autoRoute, routeProfile]);
+  const [routingBusy, setRoutingBusy] = useAppState(0);
+  const sectionsRef = React.useRef(draftSections);
+  sectionsRef.current = draftSections;
+  const activeSecRef = React.useRef(activeSectionId);
+  activeSecRef.current = activeSectionId;
+  const routeOptsRef = React.useRef({ autoRoute, routeProfile });
+  routeOptsRef.current = { autoRoute, routeProfile };
+  const chainRef = React.useRef(Promise.resolve());
+  const routeErrShown = React.useRef(false);
+
+  // Tracé existant (souvent des centaines de points) : ~25 points de passage
+  const autoMarks = (coords) => {
+    const n = (coords || []).length;
+    if (!n) return [];
+    const step = Math.max(1, Math.round(n / 25));
+    const out = [];
+    for (let i = 0; i < n - 1; i += step) out.push(i);
+    out.push(n - 1);
+    return out;
+  };
+  const commitSections = (next) => { sectionsRef.current = next; setDraftSections(next); };
   const addPointToActiveSection = (latlng) => {
-    setDraftSections((secs) => secs.map((s, i) => {
-      if (s.id !== activeSectionId) return s;
-      // Continuity: if active section is empty AND there's a previous section,
-      // seed with the previous section's last point so the trace stays connected.
-      if (s.coords.length === 0) {
-        const myIdx = secs.findIndex((x) => x.id === activeSectionId);
-        if (myIdx > 0) {
-          const prev = secs[myIdx - 1];
-          const lastOfPrev = prev.coords[prev.coords.length - 1];
-          if (lastOfPrev) return { ...s, coords: [lastOfPrev, latlng] };
-        }
-      }
-      return { ...s, coords: [...s.coords, latlng] };
-    }));
+    // Les clics sont traités dans l'ordre, même si un calcul d'itinéraire est en cours
+    chainRef.current = chainRef.current.then(() => addPointStep(latlng)).catch(() => {});
+  };
+  const addPointStep = async (latlng) => {
+    const secs = sectionsRef.current;
+    const sid = activeSecRef.current;
+    const myIdx = secs.findIndex((x) => x.id === sid);
+    if (myIdx < 0) return;
+    const sec = secs[myIdx];
+    const prev = myIdx > 0 ? secs[myIdx - 1] : null;
+    const from = sec.coords.length ? sec.coords[sec.coords.length - 1] : (prev && prev.coords.length ? prev.coords[prev.coords.length - 1] : null);
+    if (!from) {
+      commitSections(secs.map((x) => (x.id === sid ? { ...x, coords: [latlng], marks: [0] } : x)));
+      fillElevations([latlng]);
+      return;
+    }
+    let seg = null;
+    if (routeOptsRef.current.autoRoute) {
+      setRoutingBusy((b) => b + 1);
+      try { seg = await routeBetween(from, latlng, routeOptsRef.current.routeProfile); }
+      catch (e) {
+        if (!routeErrShown.current) { routeErrShown.current = true; showToast('Tracé automatique indisponible ici : segment tracé en ligne droite'); setTimeout(() => { routeErrShown.current = false; }, 8000); }
+      } finally { setRoutingBusy((b) => b - 1); }
+    }
+    const straight = !seg;
+    if (straight) seg = densifySegment(from, latlng, 40);
+    const cur = sectionsRef.current; // l'utilisateur a pu faire « Retour » pendant le calcul
+    const next = cur.map((x) => {
+      if (x.id !== sid) return x;
+      const base = x.coords.length ? x.coords : [from];
+      const marks = x.marks || (x.coords.length ? x.coords.map((_, i) => i) : [0]);
+      const coords = [...base, ...seg.slice(1)];
+      return { ...x, coords, marks: [...marks, coords.length - 1] };
+    });
+    commitSections(next);
+    if (straight || seg.some((c) => typeof c[2] !== 'number')) fillElevations(seg);
+  };
+  // Altitudes réelles des points sans altitude (modèle numérique de terrain)
+  const fillElevations = async (pts) => {
+    const missing = pts.filter((c) => typeof c[2] !== 'number');
+    if (!missing.length) return;
+    const found = await fetchElevations(missing);
+    if (!found.size) return;
+    const key = (c) => c[0].toFixed(6) + ',' + c[1].toFixed(6);
+    const patch = (c) => (typeof c[2] !== 'number' && found.has(key(c)) ? [c[0], c[1], found.get(key(c))] : c);
+    commitSections(sectionsRef.current.map((x) => ({ ...x, coords: x.coords.map(patch) })));
   };
   const undoLastPoint = () => {
-    setDraftSections((secs) => secs.map((s) => s.id === activeSectionId ? { ...s, coords: s.coords.slice(0, -1) } : s));
+    chainRef.current = chainRef.current.then(() => {
+      commitSections(sectionsRef.current.map((x) => {
+        if (x.id !== activeSecRef.current) return x;
+        if (!x.marks) return { ...x, coords: x.coords.slice(0, -1) };
+        if (x.marks.length <= 1) return { ...x, coords: [], marks: [] };
+        const marks = x.marks.slice(0, -1);
+        return { ...x, coords: x.coords.slice(0, marks[marks.length - 1] + 1), marks };
+      }));
+    });
   };
   const clearDraft = () => {
-    setDraftSections([{ id: 'sec_default', name: 'Section 1', color: 'blue', coords: [] }]);
+    commitSections([{ id: 'sec_default', name: 'Section 1', color: 'blue', coords: [], marks: [] }]);
     setActiveSectionId('sec_default');
     setDraftPois([]);
   };
+
+  // Raccourcis pendant le tracé : Cmd/Ctrl+Z = retour, Entrée = terminer
+  useAppEffect(() => {
+    if (!creating) return;
+    const onKey = (e) => {
+      const tag = (e.target && e.target.tagName) || '';
+      if (/INPUT|TEXTAREA|SELECT/.test(tag) || (e.target && e.target.isContentEditable)) return;
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undoLastPoint(); }
+      else if (e.key === 'Enter' && draftCoords.length >= 2) { e.preventDefault(); window.dispatchEvent(new CustomEvent('gr:finishDraft')); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [creating, draftCoords.length]);
 
   const startCreate = () => {
     setEditingItinerary(null);
@@ -717,12 +798,12 @@ function App() {
           name: s.name || ('Section ' + (i + 1)),
           color: s.color || itinerary.color || 'blue',
           coords: s.coords || (s.path ? samplePathToLatLng(s.path, 60) : []),
-        }));
+        })).map((x) => ({ ...x, marks: autoMarks(x.coords) }));
         setDraftSections(secs);
         setActiveSectionId(secs[secs.length - 1].id);
       } else {
         const coords = itinerary.coords || (itinerary.path ? samplePathToLatLng(itinerary.path, 60) : []);
-        setDraftSections([{ id: 'sec_default', name: 'Section 1', color: itinerary.color || 'blue', coords }]);
+        setDraftSections([{ id: 'sec_default', name: 'Section 1', color: itinerary.color || 'blue', coords, marks: autoMarks(coords) }]);
         setActiveSectionId('sec_default');
       }
       setDraftRouteType(itinerary.routeType || 'oneWay');
@@ -1139,6 +1220,12 @@ function App() {
           onMapClick={handleMapClick}
           onUndo={undoLastPoint}
           onClearDraft={clearDraft}
+          autoRoute={autoRoute}
+          onToggleAutoRoute={() => setAutoRoute((v) => !v)}
+          routeProfile={routeProfile}
+          onRouteProfile={setRouteProfile}
+          routingBusy={routingBusy > 0}
+          onDraftColor={(c) => updateSection(activeSectionId, { color: c })}
           onAddSection={addSection}
           onFinish={() => {
             // Trigger the same submit as the bottom CTA via a small focus dance:

@@ -182,7 +182,7 @@ function CreatePanel({
               <>
                 <div className="grid grid-cols-3 gap-1.5">
                   <TraceStat dark={dark} icon={<I.Distance size={13} />} label="Distance" value={(draftDistance || 0).toFixed(1) + ' km'} />
-                  <TraceStat dark={dark} icon={<I.TrendingUp size={13} />} label="D+" value={fmtAscent(computeElevationStats(composeDraftCoords(draftCoords || [], draftRouteType)).ascent)} />
+                  <TraceStat dark={dark} icon={<I.TrendingUp size={13} />} label="D+" value={(() => { const e = computeElevationStats(composeDraftCoords(draftCoords || [], draftRouteType)); return e.noEle ? '—' : fmtAscent(e.ascent) + (e.partialEle ? ' …' : ''); })()} />
                   <TraceStat dark={dark} icon={<I.Clock size={13} />} label="Estimé" value={fmtDuration(estimateDurationMin(draftDistance || 0, computeElevationStats(composeDraftCoords(draftCoords || [], draftRouteType)).ascent, activity))} />
                 </div>
                 {(draftSections || []).filter((s) => s.coords && s.coords.length >= 2).length > 1 && (
