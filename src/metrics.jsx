@@ -103,7 +103,7 @@ function useMetricsRows(groups, visibleIds, meta) {
   }, [groups, visibleIds, meta]);
 }
 
-function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
+function MetricsContent({ groups, visibleIds, dark, accent, onShowStage, onShare }) {
   const [localMeta, setLocalMeta] = useMetState(readGr34LocalMeta);
   useMetEffect(() => {
     try { localStorage.setItem(GR34_META_KEY, JSON.stringify(localMeta)); } catch (e) {}
@@ -213,6 +213,14 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
             ))}
           </div>
         </div>
+        <div className="flex items-center gap-2">
+        {onShare && (
+          <button
+            onClick={() => onShare(sorted.map((r) => r.id), selectedGroups.length === 1 ? selectedGroups[0].name : `${rows.length} activités`)}
+            className="flex items-center gap-1.5 text-[12px] font-semibold rounded-md px-3.5 py-1.5 text-white bg-blue-500 hover:bg-blue-600 transition-colors">
+            <I.Share size={14} /> Partager
+          </button>
+        )}
         <button
           onClick={exportJson}
           title="Télécharger gpx/etapes.json (dates et durées) pour le versionner avec les GPX"
@@ -220,6 +228,7 @@ function MetricsContent({ groups, visibleIds, dark, accent, onShowStage }) {
         >
           <I.Download size={14} /> Exporter etapes.json
         </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto sb-scroll">

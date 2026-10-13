@@ -265,6 +265,7 @@ function App() {
   const [toast, setToast] = useAppState(null);
   const [confirm, setConfirm] = useAppState(null); // { title, body, confirmLabel, onConfirm }
   const [sharingItinerary, setSharingItinerary] = useAppState(null);
+  const [storyShare, setStoryShare] = useAppState(null); // { parts, title }
 
   const dark = !!t.dark;
 
@@ -650,7 +651,18 @@ function App() {
       return;
     }
     if (action === 'share') {
-      setSharingItinerary(section ? { ...itinerary, name: itinerary.name + ' · ' + section.name } : itinerary);
+      // Partage en story : un groupe (ses tracés affichés, sinon tous), une
+      // activité (ses sections) ou une section seule.
+      const group = payload && payload.group;
+      if (group) {
+        const all = group.itineraries.flatMap(sharePartsOf);
+        const shown = all.filter((x) => visibleIds.has(x.id));
+        setStoryShare({ parts: shown.length ? shown : all, title: group.name });
+      } else if (section) {
+        setStoryShare({ parts: sharePartsOf(itinerary).filter((x) => x.id === section.id), title: section.name });
+      } else if (itinerary) {
+        setStoryShare({ parts: sharePartsOf(itinerary), title: String(itinerary.name || '').replace(/^Étape \d+ — /, '') });
+      }
       return;
     } else if (action === 'export') {
       showToast(`Export GPX : ${target}`);
@@ -1175,6 +1187,12 @@ function App() {
             <MetricsContent
               groups={groups}
               visibleIds={visibleIds}
+              onShare={(ids, title) => {
+                const parts = groups.flatMap((g) => g.itineraries.flatMap(sharePartsOf));
+                const byId = new Map(parts.map((x) => [x.id, x]));
+                const chosen = ids.map((id) => byId.get(id)).filter(Boolean);
+                if (chosen.length) setStoryShare({ parts: chosen, title });
+              }}
               dark={dark}
               accent={t.accent}
               onShowStage={(sectionId) => {
@@ -1182,6 +1200,16 @@ function App() {
                 setView('map');
               }} />
           </div>
+        )}
+
+        {storyShare && (
+          <StoryShareModal
+            parts={storyShare.parts}
+            title={storyShare.title}
+            dark={dark}
+            onClose={() => setStoryShare(null)}
+            onToast={showToast}
+          />
         )}
 
         {/* Share panel — overlays the map (blurred) instead of replacing it */}

@@ -254,6 +254,7 @@ function Sidebar({
                   setGroups((gs) => gs.map((g) => g.id === group.id ? { ...g, name: next } : g));
                 }}
                 onDelete={(g) => onAction && onAction('deleteGroup', { group: g })}
+                onShare={(g) => onAction && onAction('share', { group: g })}
                 onClearNewlyCreated={(gid) => {
                   setGroups((gs) => gs.map((g) => g.id === gid ? { ...g, __newlyCreated: false } : g));
                 }} />
@@ -737,7 +738,7 @@ const GROUP_EMOJIS = [
 '🏃', '🚴', '⛷️', '🧗', '☀️', '🌧️', '❄️', '🔥'];
 
 
-function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setDragOver, handleDrop, onToggleExpand, onToggleVisibility, onRename, onSetEmoji, onDelete, onClearNewlyCreated }) {
+function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setDragOver, handleDrop, onToggleExpand, onToggleVisibility, onRename, onSetEmoji, onDelete, onShare, onClearNewlyCreated }) {
   const [editing, setEditing] = useState(false);
   // Icône du groupe : emoji au choix (ou dossier par défaut)
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
@@ -942,6 +943,8 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
             role="menu"
             onClick={(e) => e.stopPropagation()}
             className={`absolute right-0 top-full mt-1 z-30 w-44 rounded-lg shadow-xl overflow-hidden animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}>
+            <PopItem dark={dark} icon={<I.Share size={13} />} label="Partager"
+              onClick={() => { setMenuOpen(false); onShare && onShare(group); }} />
             <PopItem dark={dark} icon={<I.Edit size={13} />} label="Renommer"
               onClick={() => { setMenuOpen(false); setEditing(true); }} />
             <div className={`h-px mx-2 ${dark ? 'bg-neutral-800' : 'bg-neutral-100'}`}></div>

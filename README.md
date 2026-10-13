@@ -20,7 +20,8 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 | Création / édition d'itinéraires, sections, repères, groupes, glisser-déposer | Réel, sauvegardé dans le navigateur |
 | Recherche de lieu | Réel (Nominatim) |
 | Altitudes d'un tracé dessiné à la main | Simulé (pas de service d'altitude) |
-| Strava / Komoot / Garmin, partage (lien, iframe) | Simulé, comme dans le design |
+| Partage en story (menu ⋯ d'une activité ou d'un groupe, bouton *Partager* des stats) : 10 modèles 1080×1920, données affichées au choix, photo de fond, export PNG / copie / partage natif | **Réel** (rendu dans le navigateur) |
+| Strava / Komoot / Garmin | Simulé, comme dans le design |
 | Panneau « Réglages design » (mode sombre, accent, densité) | Visible seulement dans l'éditeur Claude Design |
 
 ## Ajouter une étape
@@ -51,6 +52,7 @@ du design, sans dépendre de CDN.
 |---|---|
 | `index.html`, `src/*.jsx`, `tweaks-panel.jsx`, `assets/` | Interface issue du prototype (modifiée là où elle est branchée sur les vraies données) |
 | `src/metrics.jsx` | Vue Statistiques GR34 |
+| `src/story-share.jsx` | Partage en story : modèles, aperçu en direct, export PNG |
 | `lib/gpx.mjs` | Parseur GPX + métriques (build et import dans le navigateur) |
 | `scripts/build.mjs`, `scripts/dev.mjs` | Build et serveur de dev |
 
