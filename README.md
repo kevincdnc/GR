@@ -1,5 +1,7 @@
 # GPXmap
 
+> Le dossier [`printrace/`](printrace/) contient **Printrace**, un projet séparé : posters imprimables à partir d'une trace (voir son README).
+
 App perso pour suivre mon GR34 (sentier des douaniers). L'interface vient d'un prototype Claude Design
 (README d'origine dans [`docs/design-handoff.md`](docs/design-handoff.md)), renommé GPXmap et simplifié.
 Les données démo du prototype sont remplacées par mes vraies étapes. Thème sombre par défaut, navigation

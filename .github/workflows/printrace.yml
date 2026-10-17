@@ -1,0 +1,25 @@
+name: Printrace
+
+on:
+  push:
+    paths: ['printrace/**', '.github/workflows/printrace.yml']
+  pull_request:
+    paths: ['printrace/**', '.github/workflows/printrace.yml']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: printrace
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: printrace/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

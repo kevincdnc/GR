@@ -1,0 +1,22 @@
+{
+  "name": "printrace",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "dev": "npm run dev -w @printrace/api & npm run dev -w @printrace/web",
+    "build": "npm run build -w @printrace/web",
+    "start": "npm run start -w @printrace/api",
+    "typecheck": "tsc -p packages/core && tsc -p packages/poster && tsc -p packages/render && tsc -p packages/commerce && tsc -p apps/api && tsc -p apps/web",
+    "test": "vitest run",
+    "export:sample": "tsx packages/render/src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  },
+  "engines": { "node": ">=22" }
+}
