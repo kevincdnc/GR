@@ -1,4 +1,5 @@
 import { type Activity, buildActivity, parseTrack } from '@printrace/core'
+import { DEMO, demoSample } from './demo.ts'
 
 export const ACCEPT = '.gpx,.fit,.tcx,.kml,.kmz,.geojson,.json,.igc'
 
@@ -9,6 +10,10 @@ export async function activityFromFile(file: File): Promise<Activity> {
 }
 
 export async function sampleActivity(): Promise<Activity> {
+  if (DEMO) {
+    const a = await demoSample()
+    if (a) return a
+  }
   const name = 'gr34-plouhinec-pointe-du-raz.gpx'
   const data = new Uint8Array(await (await fetch(`/samples/${name}`)).arrayBuffer())
   const a = buildActivity(parseTrack(name, data), { fileName: name, source: 'sample' })

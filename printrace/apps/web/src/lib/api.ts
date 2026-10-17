@@ -1,7 +1,9 @@
 import type { Activity } from '@printrace/core'
 import type { PosterSpec } from '@printrace/poster'
+import { DEMO, DEMO_NOTE } from './demo.ts'
 
 async function json<T>(res: Response): Promise<T> {
+  if (DEMO) throw new Error(DEMO_NOTE)
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw Object.assign(new Error(body.message || body.error || `Erreur ${res.status}`), { status: res.status, body })
   return body as T
@@ -22,6 +24,7 @@ export interface ExportJob {
 
 /** Lance un export haute définition et attend le fichier. */
 export async function exportPoster(activity: Activity, spec: PosterSpec, format: ExportFormat, onStatus: (s: ExportJob['status']) => void): Promise<{ url: string; mapOk: boolean }> {
+  if (DEMO) throw new Error(DEMO_NOTE)
   let job = await json<ExportJob>(await fetch('/api/exports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ activity: compact(activity), spec, format }) }))
   while (job.status === 'queued' || job.status === 'rendering') {
     onStatus(job.status)
@@ -40,6 +43,7 @@ export class StravaAuthRequired extends Error {
 
 /** Importe une activité Strava depuis son lien (strava.com/activities/… ou strava.app.link/…). */
 export async function importStrava(url: string): Promise<Activity> {
+  if (DEMO) throw new Error(DEMO_NOTE)
   const res = await fetch('/api/strava/activity', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url }) })
   if (res.status === 401) {
     const body = await res.json()
@@ -49,5 +53,6 @@ export async function importStrava(url: string): Promise<Activity> {
 }
 
 export async function startCheckout(activity: Activity, spec: PosterSpec, productId: string): Promise<{ checkoutUrl: string }> {
+  if (DEMO) throw new Error(DEMO_NOTE)
   return json(await fetch('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ activity: compact(activity), spec, productId }) }))
 }

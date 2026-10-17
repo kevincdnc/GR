@@ -1,6 +1,7 @@
 import type { Activity } from '@printrace/core'
 import { getTemplate, MAP_BACKGROUND, PAPER_SIZES, type PaperSizeId, type PosterSpec, STAT_KEYS, STAT_LABELS, type StatKey } from '@printrace/poster'
 import type { ReactNode } from 'react'
+import { DEMO } from '../lib/demo.ts'
 
 const MAP_STYLES = [
   { id: 'auto', name: 'Du modèle' },
@@ -113,6 +114,7 @@ export function Options({ activity, spec, onSpec }: { activity: Activity; spec: 
             </button>
           ))}
         </div>
+        {DEMO && <p className="hint">Les fonds de carte ne se chargent pas dans cet aperçu : la couleur de fond les remplace.</p>}
         <Segmented
           value={String(spec.map.detail) as '-1' | '0' | '1'}
           options={[{ id: '-1', name: 'Épuré' }, { id: '0', name: 'Normal' }, { id: '1', name: 'Détaillé' }] as const}

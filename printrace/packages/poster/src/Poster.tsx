@@ -30,6 +30,8 @@ export interface PosterProps {
   dpi?: number
   /** Inclure le fond perdu (export PDF) */
   withBleed?: boolean
+  /** Garde la mise en page avec carte mais n'affiche que sa couleur de fond (aperçus hors ligne) */
+  noMap?: boolean
   onReady?: (info: { mapOk: boolean }) => void
 }
 
@@ -47,7 +49,7 @@ function artRect(spec: PosterSpec, W: number, H: number): Box {
   return { x: m, y: m, w: W - 2 * m, h: H - m - m * (spec.border === 'none' || spec.border === 'fine' ? 1 : 1.25) }
 }
 
-export function Poster({ activity, spec, mode, displayWidth = 400, dpi = 300, withBleed = false, onReady }: PosterProps) {
+export function Poster({ activity, spec, mode, displayWidth = 400, dpi = 300, withBleed = false, noMap = false, onReady }: PosterProps) {
   const [fontsReady, setFontsReady] = useState(false)
   const uid = useId().replace(/[^a-z0-9]/gi, '')
   useEffect(() => {
@@ -65,7 +67,7 @@ export function Poster({ activity, spec, mode, displayWidth = 400, dpi = 300, wi
   const art = artRect(spec, g.W, g.H)
   const s = art.w / 1000
   const mapStyle = resolveMapStyle(spec, template)
-  const showMap = mode !== 'thumb' && mapStyle !== 'none'
+  const showMap = mode !== 'thumb' && !noMap && mapStyle !== 'none'
 
   const built = useMemo(() => {
     if (!fontsReady) return null
@@ -115,7 +117,7 @@ export function Poster({ activity, spec, mode, displayWidth = 400, dpi = 300, wi
 
   const page = (
     <div style={{ position: 'relative', width: pageCss.w, height: pageCss.h, background: pageBg, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', left: css(art.x - artBleed), top: css(art.y - artBleed), width: (art.w + 2 * artBleed) * cssPerUnit, height: (art.h + 2 * artBleed) * cssPerUnit, background: mode === 'thumb' && mapStyle !== 'none' ? MAP_BACKGROUND[mapStyle] : template.background }} />
+      <div style={{ position: 'absolute', left: css(art.x - artBleed), top: css(art.y - artBleed), width: (art.w + 2 * artBleed) * cssPerUnit, height: (art.h + 2 * artBleed) * cssPerUnit, background: (mode === 'thumb' || noMap) && mapStyle !== 'none' ? MAP_BACKGROUND[mapStyle] : template.background }} />
       {map && (
         <MapLayer
           styleId={mapStyle as Exclude<MapStyleId, 'none'>}

@@ -2,6 +2,8 @@ import type { Activity } from '@printrace/core'
 import { PAPER_SIZES, type PosterSpec } from '@printrace/poster'
 import { useEffect, useState } from 'react'
 import { startCheckout } from '../lib/api.ts'
+import { DEMO } from '../lib/demo.ts'
+import { CATALOG } from '@printrace/commerce/catalog'
 
 interface Product {
   id: string
@@ -32,6 +34,7 @@ export function OrderSheet({ activity, spec, onClose }: { activity: Activity; sp
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (DEMO) return setCatalog(CATALOG)
     fetch('/api/catalog')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Catalogue indisponible'))))
       .then(setCatalog)

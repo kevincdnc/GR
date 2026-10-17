@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:demo": "tsx scripts/build-demo.ts",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@printrace/commerce": "*",
     "@printrace/core": "*",
     "@printrace/poster": "*",
     "react": "^19.3.1",

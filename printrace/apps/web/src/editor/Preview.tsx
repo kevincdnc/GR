@@ -1,6 +1,7 @@
 import type { Activity } from '@printrace/core'
 import { pageGeometry, Poster, type PosterSpec } from '@printrace/poster'
 import { useLayoutEffect, useRef, useState } from 'react'
+import { DEMO } from '../lib/demo.ts'
 
 export const FRAMES = [
   { id: 'none', name: 'Sans' },
@@ -33,7 +34,7 @@ export function Preview({ activity, spec, frame, onFrame }: { activity: Activity
     <div className="preview">
       <div className="wall" ref={host}>
         <div className={`frame frame-${frame}`} style={{ padding: w * framePad }}>
-          <Poster activity={activity} spec={spec} mode="preview" displayWidth={w} />
+          <Poster activity={activity} spec={spec} mode="preview" displayWidth={w} noMap={DEMO} />
         </div>
       </div>
       <div className="preview-bar">
