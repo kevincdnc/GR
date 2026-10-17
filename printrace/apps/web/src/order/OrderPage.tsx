@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Logo } from '../landing/Landing.tsx'
+import { LogoMark } from '../brand.tsx'
 
 interface OrderView {
   id: string
@@ -52,14 +52,14 @@ export function OrderPage({ id }: { id: string }) {
   const reached = (s: string) => order && ORDER.indexOf(order.status) >= ORDER.indexOf(s)
   const steps = order?.download ? STEPS.slice(0, 2) : STEPS
   return (
-    <main className="landing">
-      <header className="landing-top">
-        <a href="/" className="logo-link"><Logo /></a>
+    <main className="order">
+      <header>
+        <a href="/" className="logo-link"><LogoMark height={22} /></a>
       </header>
       {error && <p className="status is-error">{error}</p>}
       {!order && !error && <p className="status">Chargement…</p>}
       {order && (
-        <section className="import-card">
+        <section className="card">
           <h1 className="order-title">{order.status === 'awaiting_payment' ? 'Confirmation du paiement…' : 'Merci pour votre commande'}</h1>
           <p className="status">
             {order.product} · « {order.title} » · {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: order.currency }).format(order.amountTotal / 100)}

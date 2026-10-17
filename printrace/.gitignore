@@ -4,5 +4,4 @@ dist
 *.local
 .env
 .DS_Store
-apps/web/src/demo/
 apps/web/dist-demo/

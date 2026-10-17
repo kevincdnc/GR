@@ -2,6 +2,7 @@ import type { Activity } from '@printrace/core'
 import { getTemplate, MAP_BACKGROUND, PAPER_SIZES, type PaperSizeId, type PosterSpec, STAT_KEYS, STAT_LABELS, type StatKey } from '@printrace/poster'
 import type { ReactNode } from 'react'
 import { DEMO } from '../lib/demo.ts'
+import { FRAMES, type FrameId } from './Preview.tsx'
 
 const MAP_STYLES = [
   { id: 'auto', name: 'Du modèle' },
@@ -12,7 +13,7 @@ const MAP_STYLES = [
   { id: 'encre', name: 'Encre' },
   { id: 'satellite', name: 'Satellite' },
 ] as const
-const TRACK_COLORS = ['#ffb648', '#ff5a36', '#e2261c', '#ffd23f', '#3ddc84', '#3b82f6', '#ffffff', '#111111']
+const TRACK_COLORS = ['#ffb648', '#ff5a36', '#e2261c', '#ffd23f', '#3ddc84', '#2f7df6', '#ffffff', '#111111']
 const BORDERS = [
   { id: 'none', name: 'Aucune' },
   { id: 'fine', name: 'Liseré' },
@@ -51,7 +52,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
   )
 }
 
-export function Options({ activity, spec, onSpec }: { activity: Activity; spec: PosterSpec; onSpec: (s: PosterSpec) => void }) {
+export function Options({ activity, spec, onSpec, frame, onFrame }: { activity: Activity; spec: PosterSpec; onSpec: (s: PosterSpec) => void; frame: FrameId; onFrame: (f: FrameId) => void }) {
   const set = <K extends keyof PosterSpec>(k: K, v: Partial<PosterSpec[K]> | PosterSpec[K]) =>
     onSpec({ ...spec, [k]: typeof v === 'object' && !Array.isArray(v) ? { ...(spec[k] as object), ...v } : v })
   const t = getTemplate(spec.template)
@@ -74,6 +75,21 @@ export function Options({ activity, spec, onSpec }: { activity: Activity; spec: 
         />
       </Section>
 
+      <Section title="Bordure imprimée">
+        <Segmented value={spec.border} options={BORDERS} onChange={(border) => set('border', border)} />
+      </Section>
+
+      <Section title="Cadre (aperçu au mur)">
+        <div className="frames" role="radiogroup" aria-label="Cadre de l’aperçu">
+          {FRAMES.map((f) => (
+            <button key={f.id} role="radio" aria-checked={frame === f.id} className={`frame-pick${frame === f.id ? ' is-on' : ''}`} onClick={() => onFrame(f.id)}>
+              <i className={`swatch swatch-${f.id}`} />
+              {f.name}
+            </button>
+          ))}
+        </div>
+      </Section>
+
       <Section title="Textes">
         <label className="field">
           <span>Titre</span>
@@ -88,20 +104,16 @@ export function Options({ activity, spec, onSpec }: { activity: Activity; spec: 
       </Section>
 
       <Section title="Statistiques">
-        <div className="chips">
-          {STAT_KEYS.filter((k) => k !== 'pace' || activity.sport === 'run' || spec.stats.includes('pace')).map((k) => (
-            <button key={k} className={`chip${spec.stats.includes(k) ? ' is-on' : ''}`} onClick={() => toggleStat(k)}>
-              {STAT_LABELS[k]}
-            </button>
-          ))}
-        </div>
+        {STAT_KEYS.filter((k) => k !== 'pace' || activity.sport === 'run' || spec.stats.includes('pace')).map((k) => (
+          <Toggle key={k} label={STAT_LABELS[k]} on={spec.stats.includes(k)} onChange={() => toggleStat(k)} />
+        ))}
         {spec.stats.includes('duration') && (
           <label className="field">
             <span>Durée affichée {activity.stats.movingTimeS ? '' : '(estimée)'}</span>
             <input value={spec.overrides.duration ?? ''} maxLength={20} placeholder="Automatique — ex. 3 h 12 min 05" onChange={(e) => set('overrides', { duration: e.target.value || undefined })} />
           </label>
         )}
-        <Toggle label="Profil altimétrique" on={spec.profile} onChange={(profile) => set('profile', profile)} />
+        <Toggle label="Profil altimétrique"  on={spec.profile} onChange={(profile) => set('profile', profile)} />
         <Segmented value={spec.units} options={[{ id: 'metric', name: 'km · m' }, { id: 'imperial', name: 'mi · ft' }] as const} onChange={(units) => set('units', units)} />
       </Section>
 
@@ -142,9 +154,6 @@ export function Options({ activity, spec, onSpec }: { activity: Activity; spec: 
         <Toggle label="Départ et arrivée" on={spec.track.markers} onChange={(markers) => set('track', { markers })} />
       </Section>
 
-      <Section title="Bordure imprimée">
-        <Segmented value={spec.border} options={BORDERS} onChange={(border) => set('border', border)} />
-      </Section>
     </>
   )
 }

@@ -1,5 +1,5 @@
 import type { Activity } from '@printrace/core'
-import { exportPixels, pageGeometry, type PosterSpec } from '@printrace/poster'
+import type { PosterSpec } from '@printrace/poster'
 import { useState } from 'react'
 import { type ExportFormat, exportPoster } from '../lib/api.ts'
 import { OrderSheet } from './OrderSheet.tsx'
@@ -8,7 +8,6 @@ export function ExportPanel({ activity, spec }: { activity: Activity; spec: Post
   const [state, setState] = useState<{ format: ExportFormat; label: string } | null>(null)
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null)
   const [order, setOrder] = useState(false)
-  const px = exportPixels(pageGeometry(spec.format.size, spec.format.orientation), 300)
 
   const run = async (format: ExportFormat) => {
     setMessage(null)
@@ -27,16 +26,20 @@ export function ExportPanel({ activity, spec }: { activity: Activity; spec: Post
   return (
     <div className="export">
       <button className="btn btn-primary" onClick={() => setOrder(true)}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <rect x="4" y="3" width="16" height="18" rx="1.5" />
+          <path d="M7 15l3-3 2 2 2.5-3L17 14" />
+        </svg>
         Commander le tirage
       </button>
       <div className="export-row">
         <button className="btn" disabled={!!state} onClick={() => run('png')}>
           {state?.format === 'png' ? state.label : 'PNG HD'}
-          <small>{px.w} × {px.h} px · 300 dpi</small>
+          <small>300 dpi</small>
         </button>
         <button className="btn" disabled={!!state} onClick={() => run('pdf')}>
           {state?.format === 'pdf' ? state.label : 'PDF imprimeur'}
-          <small>vectoriel · fonds perdus {spec.print.bleedMm} mm</small>
+          <small>vectoriel, fonds perdus</small>
         </button>
       </div>
       {message && <p className={`status${message.error ? ' is-error' : ''}`}>{message.text}</p>}

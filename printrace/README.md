@@ -36,6 +36,6 @@ Variables : voir [`.env.example`](.env.example). Strava, Stripe et Gelato s'acti
 | Aperçu au mur avec cadres | ✅ |
 | Export PDF imprimeur (vectoriel, TrimBox/BleedBox, traits de coupe) et PNG 300 dpi | ✅ testé |
 | Fonds de carte vectoriels (Nuit, Papier, Relief ombré, Encre) et satellite | ✅ code prêt — non vérifiable dans l'environnement de dev (tuiles bloquées) |
-| Import par lien Strava (OAuth) | ✅ code prêt — à tester avec une app Strava |
+| Import par lien Strava : page publique sans connexion, OAuth pour les activités privées | ✅ extraction testée sur des pages types — à valider sur de vraies pages Strava (inaccessibles depuis l'environnement de dev) |
 | Commande : catalogue, Stripe Checkout, webhooks signés, machine à états, envoi Gelato | ✅ logique testée — Gelato à valider avec un compte de test |
 | Comptes, base PostgreSQL, back-office, e-mails | 📐 conçu (docs), à implémenter |

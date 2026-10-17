@@ -9,7 +9,7 @@ import { renderPoster } from './renderPoster.ts'
 import { serveStatic } from './staticServer.ts'
 
 const root = resolve(import.meta.dirname, '../../..')
-const [templateId = 'epure', size = 'a3', file = join(root, 'apps/web/public/samples/gr34-plouhinec-pointe-du-raz.gpx')] = process.argv.slice(2)
+const [templateId = 'epure', size = 'a3', file = join(root, 'packages/core/test/fixtures/sample.gpx')] = process.argv.slice(2)
 const activity = buildActivity(parseTrack(file, readFileSync(file)), { fileName: file.split('/').pop() })
 const spec = createSpec(activity, templateId)
 spec.format.size = size as typeof spec.format.size

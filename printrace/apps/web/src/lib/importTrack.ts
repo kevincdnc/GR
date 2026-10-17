@@ -1,5 +1,5 @@
 import { type Activity, buildActivity, parseTrack } from '@printrace/core'
-import { DEMO, demoSample } from './demo.ts'
+import sample from './sample-activity.json'
 
 export const ACCEPT = '.gpx,.fit,.tcx,.kml,.kmz,.geojson,.json,.igc'
 
@@ -9,13 +9,9 @@ export async function activityFromFile(file: File): Promise<Activity> {
   return buildActivity(parseTrack(file.name, data), { fileName: file.name, source: 'file' })
 }
 
+/** Étape GR34 Plouhinec → Pointe du Raz, précalculée (scripts/make-sample.ts) */
+export const SAMPLE_ACTIVITY = sample as unknown as Activity
+
 export async function sampleActivity(): Promise<Activity> {
-  if (DEMO) {
-    const a = await demoSample()
-    if (a) return a
-  }
-  const name = 'gr34-plouhinec-pointe-du-raz.gpx'
-  const data = new Uint8Array(await (await fetch(`/samples/${name}`)).arrayBuffer())
-  const a = buildActivity(parseTrack(name, data), { fileName: name, source: 'sample' })
-  return { ...a, name: 'GR34 · Pointe du Raz' }
+  return SAMPLE_ACTIVITY
 }

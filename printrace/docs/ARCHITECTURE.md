@@ -102,10 +102,22 @@ POST /api/exports {activity, spec, format}
 
 - **Fichier** : lu **dans le navigateur** (`@printrace/core`), sans envoi au serveur. Altitudes rééchantillonnées et
   lissées, D+ avec hystérésis, temps en mouvement, sport deviné si absent.
-- **Lien Strava** : OAuth (`activity:read_all`), puis `GET /activities/{id}` + `/streams`. Les liens courts
-  `strava.app.link` sont suivis. Les chiffres officiels de Strava (distance, D+, temps) remplacent les nôtres.
-  ⚠️ L'API Strava ne donne accès qu'aux activités **de l'athlète connecté**. Ses conditions d'utilisation encadrent l'usage
-  des données : à relire avant le lancement commercial.
+- **Lien Strava** (`apps/api/src/strava/`), dans l'ordre :
+  1. **Activité publique, sans connexion** (`public.ts`) : le serveur télécharge la page de l'activité comme un visiteur
+     non connecté et extrait la trace de la carte. Il cherche dans toutes les données JSON de la page (Next.js,
+     `data-react-props`, anciennes pages) les polylignes encodées et les tableaux de coordonnées, puis les chiffres
+     (distance, D+, temps) par nom de champ, ce qui résiste aux changements de mise en page de Strava. Il complète les
+     altitudes absentes avec le modèle de terrain Copernicus via Open-Meteo (`elevation.ts`). Les chiffres affichés par
+     Strava remplacent les nôtres.
+  2. **Activité privée** : OAuth (`activity:read_all`), puis `GET /activities/{id}` + `/streams` (trace complète,
+     altitudes et temps du GPS).
+  3. Sinon, un message explique comment rendre l'activité publique ou exporter le GPX.
+
+  ⚠️ Le bouton « Exporter le GPX » de Strava exige d'être connecté en tant que l'athlète : un serveur ne peut pas le
+  déclencher. La trace de la page publique est celle de la carte : complète mais simplifiée (largement suffisante pour
+  un poster), et sans les zones de confidentialité de l'athlète. Les liens courts `strava.app.link` sont suivis.
+  Les conditions d'utilisation de Strava encadrent la collecte automatisée de ses pages : **à faire valider avant le
+  lancement commercial**. L'OAuth reste la voie officielle.
 - Pistes : Garmin Connect, Komoot, Coros, Suunto (OAuth), import d'une URL de GPX.
 
 ## 5. Commerce : paiement, fabrication, commandes

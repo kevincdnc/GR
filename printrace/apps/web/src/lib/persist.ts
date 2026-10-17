@@ -1,7 +1,7 @@
 import type { Activity } from '@printrace/core'
 import { type PosterSpec, PosterSpecSchema } from '@printrace/poster'
 
-const KEY = 'printrace:draft:v1'
+const KEY = 'printrace:draft:v2'
 
 export interface Draft {
   activity: Activity

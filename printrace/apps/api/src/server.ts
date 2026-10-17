@@ -20,7 +20,8 @@ app.setErrorHandler((err, _req, reply) => {
   const e = err as Error & { statusCode?: number }
   const status = e.statusCode ?? 500
   if (status >= 500) app.log.error(e)
-  return reply.code(status).send({ message: status >= 500 ? 'Erreur serveur' : e.message })
+  // un statut posé volontairement (ex. 502 « Strava ne répond pas ») garde son message
+  return reply.code(status).send({ message: e.statusCode && status !== 500 ? e.message : 'Erreur serveur' })
 })
 
 // --- Stockage et exports

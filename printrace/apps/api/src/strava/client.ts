@@ -42,7 +42,9 @@ export async function resolveActivityId(link: string): Promise<string> {
     const m = url.match(/strava\.com\/activities\/(\d+)/)
     if (m) return m[1]
     if (!/^https:\/\/([a-z0-9-]+\.)*(strava\.app\.link|strava\.com)\//i.test(url)) break
-    const res = await fetch(url, { redirect: 'manual' })
+    const res = await fetch(url, { redirect: 'manual' }).catch(() => {
+      throw Object.assign(new Error('Strava ne répond pas. Réessayez dans un instant, ou déposez le fichier GPX.'), { statusCode: 502 })
+    })
     const next = res.headers.get('location')
     if (!next) {
       // certains liens courts renvoient une page HTML contenant l'URL finale
@@ -53,7 +55,7 @@ export async function resolveActivityId(link: string): Promise<string> {
     }
     url = new URL(next, url).toString()
   }
-  throw new Error('Lien Strava non reconnu. Copiez le lien d’une activité (strava.com/activities/…).')
+  throw Object.assign(new Error('Lien Strava non reconnu. Copiez le lien d’une activité (strava.com/activities/…).'), { statusCode: 400 })
 }
 
 const SPORTS: Record<string, Sport> = {

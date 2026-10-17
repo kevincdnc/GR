@@ -2,20 +2,12 @@
 //   npm run build:demo -w @printrace/web  →  apps/web/dist-demo/printrace-demo.html
 // Le fichier ne contient pas de squelette <html>/<head>/<body> : il est publié
 // tel quel comme page (le squelette est ajouté à la publication).
-import { buildActivity, parseTrack, simplify } from '@printrace/core'
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { build } from 'vite'
 
 const web = resolve(import.meta.dirname, '..')
 const out = join(web, 'dist-demo')
-
-// 1. Activité d'exemple précalculée et allégée
-const gpx = join(web, 'public/samples/gr34-plouhinec-pointe-du-raz.gpx')
-const a = buildActivity(parseTrack(gpx, readFileSync(gpx)), { fileName: 'gr34.gpx', source: 'sample' })
-const pts = simplify(a.coords.map((c) => ({ lat: c[0], lon: c[1], c })), 3).map((p) => p.c)
-mkdirSync(join(web, 'src/demo'), { recursive: true })
-writeFileSync(join(web, 'src/demo/sample-activity.json'), JSON.stringify({ ...a, id: 'sample', name: 'GR34 · Pointe du Raz', coords: pts }))
 
 // 2. Build Vite en un seul paquet JS
 await build({
