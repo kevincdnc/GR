@@ -264,9 +264,11 @@ async function poDrawLogo(ctx, x, y, h, color = '#ffffff', align = 'left') {
 
 // Carte vectorielle (poster-map.jsx) aux couleurs du modèle
 async function poMap(ctx, d, proj, rect, pal, o = {}) {
-  if (!d.showMap || typeof pmDrawMap !== 'function') return false;
+  // Carte et noms de villes s'affichent indépendamment l'une de l'autre
+  if ((!d.showMap && !d.mapLabels) || typeof pmDrawMap !== 'function') return false;
   try {
-    return await pmDrawMap(ctx, { proj, rect, pal, style: d.mapStyle || 'epure', opacity: d.mapOpacity == null ? 1 : d.mapOpacity, labels: d.mapLabels !== false, routes: d.routes, ...o });
+    return await pmDrawMap(ctx, { proj, rect, pal, style: d.mapStyle || 'epure', opacity: d.mapOpacity == null ? 1 : d.mapOpacity,
+      geometry: !!d.showMap, labels: !!d.mapLabels, routes: d.routes, ...o });
   } catch (e) { console.warn('carte vectorielle', e); return false; }
 }
 // Mélange de deux couleurs hex (t = part de b)
@@ -290,41 +292,28 @@ const PO_DARK_BGS = [
   { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu plan' }, { hex: '#0f1d33', name: 'Bleu nuit' }, { hex: '#1e2a33', name: 'Ardoise' },
   { hex: '#15362b', name: 'Vert forêt' }, { hex: '#3a1420', name: 'Bordeaux' }, { hex: '#2b2140', name: 'Aubergine' },
 ];
-// Rose des vents technique : 8 directions, graduations fines, branches bicolores
+// Boussole moderne et épurée : anneau fin, 8 repères, aiguille losange, 8 directions
 function poCompass(ctx, x, y, R, u, color, bg) {
-  const fillBg = bg || '#000000';
-  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
-  // Couronne : deux cercles + graduations (5° / 15° / 45°)
-  ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.arc(x, y, R * 0.82, 0, Math.PI * 2); ctx.stroke();
-  for (let a = 0; a < 360; a += 5) {
-    const r = a * Math.PI / 180;
-    const len = a % 45 === 0 ? 0.18 : a % 15 === 0 ? 0.11 : 0.06;
-    ctx.lineWidth = (a % 45 === 0 ? 1.3 : 0.7) * u;
-    ctx.beginPath(); ctx.moveTo(x + Math.sin(r) * R, y - Math.cos(r) * R); ctx.lineTo(x + Math.sin(r) * R * (1 - len), y - Math.cos(r) * R * (1 - len)); ctx.stroke();
+  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round';
+  ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
+  for (let k = 0; k < 8; k++) {
+    const r = k * Math.PI / 4, l = k % 2 ? 0.1 : 0.17;
+    ctx.lineWidth = (k % 2 ? 1 : 1.6) * u;
+    ctx.beginPath(); ctx.moveTo(x + Math.sin(r) * R, y - Math.cos(r) * R); ctx.lineTo(x + Math.sin(r) * R * (1 - l), y - Math.cos(r) * R * (1 - l)); ctx.stroke();
   }
-  // Étoile : branches intercardinales (fines) puis cardinales (longues), moitié pleine / moitié fond
-  [[1, 0.56, 0.07], [0, 0.95, 0.12]].forEach(([odd, len, wid]) => {
-    for (let k = odd; k < 8; k += 2) {
-      const r = k * Math.PI / 4;
-      const tip = [x + Math.sin(r) * R * len, y - Math.cos(r) * R * len];
-      const sd = (sgn) => [x + Math.sin(r + sgn * Math.PI / 2) * R * wid, y - Math.cos(r + sgn * Math.PI / 2) * R * wid];
-      const L = sd(-1), Rr = sd(1);
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(L[0], L[1]); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(Rr[0], Rr[1]); ctx.closePath(); ctx.fillStyle = fillBg; ctx.fill();
-      ctx.lineWidth = 0.8 * u; ctx.strokeStyle = color; ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(Rr[0], Rr[1]); ctx.lineTo(x, y); ctx.closePath(); ctx.stroke();
-    }
-  });
-  ctx.fillStyle = fillBg; ctx.beginPath(); ctx.arc(x, y, 3.2 * u, 0, Math.PI * 2); ctx.fill();
-  ctx.lineWidth = 1 * u; ctx.stroke();
-  // Directions
-  ctx.fillStyle = color;
+  // Aiguille : nord plein, sud au trait
+  const nl = R * 0.62, wd = R * 0.16;
+  ctx.beginPath(); ctx.moveTo(x, y - nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = bg || '#000000'; ctx.lineWidth = 1.1 * u; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(x, y + nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 2.4 * u, 0, Math.PI * 2); ctx.fill();
   ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'].forEach((t, k) => {
     const r = k * Math.PI / 4, card = k % 2 === 0;
-    const sz = t === 'N' ? 17 * u : card ? 13 * u : 9.5 * u;
-    const d = R + (card ? 15 : 13) * u + (t === 'N' ? 2 * u : 0);
-    ctx.font = stFont(t === 'N' ? 700 : 600, sz, ST_TXT); ctx.textAlign = 'center';
-    stSpaced(ctx, t, x + Math.sin(r) * d, y - Math.cos(r) * d + sz * 0.36, card ? 0 : sz * 0.08, 'center');
+    const sz = t === 'N' ? 15 * u : card ? 12 * u : 9 * u;
+    const dd = R + (card ? 13 : 12) * u;
+    ctx.globalAlpha = card ? 1 : 0.7;
+    ctx.font = stFont(t === 'N' ? 700 : 500, sz, ST_TXT); ctx.textAlign = 'center';
+    ctx.fillText(t, x + Math.sin(r) * dd, y - Math.cos(r) * dd + sz * 0.36);
   });
   ctx.restore();
 }
@@ -377,7 +366,7 @@ const POSTER_TEMPLATES = [
     // Plan technique : grille, cartouche, échelle, nord
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 100, map: true, bg: '#141414' },
+    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#141414' },
     bgs: PO_DARK_BGS, photoSlot: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200, bg = d.bg || '#141414', line = 'rgba(255,255,255,0.85)';
@@ -420,7 +409,7 @@ const POSTER_TEMPLATES = [
       // Photos punaisées à gauche du cartouche
       const leftX = M + 50 * u, leftW = cx - 40 * u - leftX;
       if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), leftX, cy + 70 * u, leftW, ch - 110 * u, { gap: 18 * u, border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'left', tape: true, u });
-      else if (d.preview) poPhotoPlaceholder(ctx, leftX + 6 * u, cy + 76 * u, leftW, ch - 120 * u, u, bg);
+      else if (d.preview && d.photoSlot !== false) poPhotoPlaceholder(ctx, leftX + 6 * u, cy + 76 * u, leftW, ch - 120 * u, u, bg);
       // Tracé
       ctx.save(); ctx.setLineDash([2 * u, 10 * u]);
       stDrawRoutes(ctx, d.routes, proj, { color: 'rgba(255,255,255,0.35)', width: 18 * u, markers: false });
@@ -489,13 +478,13 @@ const POSTER_TEMPLATES = [
       const photosTop = titleTop - 50 * u - ph;
       const proj = stFit(d.routes, { x: 130 * u, y: 160 * u, w: w - 260 * u, h: (ph ? photosTop : titleTop) - 130 * u - 160 * u }, 16);
       if (d.showMap) {
-        // Imagerie satellite (photo aérienne, forcément en image) + noms de lieux vectoriels
+        // Imagerie satellite (photo aérienne, forcément en image)
         ctx.save(); ctx.globalAlpha = d.mapOpacity == null ? 1 : d.mapOpacity;
         await stDrawTiles(ctx, 'satellite', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
         ctx.restore();
-        await poMap(ctx, d, proj, { x: 0, y: 0, w, h }, PO_PAL.satellite,
-          { u, opacity: 1, labelRect: { x: 70 * u, y: 170 * u, w: w - 140 * u, h: (ph ? photosTop : titleTop) - 260 * u } });
       }
+      await poMap(ctx, { ...d, showMap: false }, proj, { x: 0, y: 0, w, h }, PO_PAL.satellite,
+        { u, labelRect: { x: 70 * u, y: 170 * u, w: w - 140 * u, h: (ph ? photosTop : titleTop) - 260 * u } });
       const fadeTop = (ph ? photosTop : titleTop) - 300 * u;
       let g = ctx.createLinearGradient(0, fadeTop, 0, h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.4, 'rgba(0,0,0,0.6)'); g.addColorStop(1, 'rgba(0,0,0,0.9)');
       ctx.fillStyle = g; ctx.fillRect(0, fadeTop, w, h);
@@ -865,8 +854,9 @@ function RecStar() {
 }
 
 // Liste des infos : interrupteur, valeur, réordonnable au glisser (souris et tactile)
-function MetricsList({ order, setOrder, enabled, onToggle, values }) {
+function MetricsList({ order, setOrder, enabled, onToggle, values, overrides = {}, onEdit }) {
   const listRef = usePoRef(null);
+  const [editKey, setEditKey] = usePoState(null);
   const [dragKey, setDragKey] = usePoState(null);
   usePoEffect(() => {
     if (!dragKey) return;
@@ -898,11 +888,24 @@ function MetricsList({ order, setOrder, enabled, onToggle, values }) {
               className="w-8 h-full grid place-items-center text-neutral-500 hover:text-neutral-200 cursor-grab active:cursor-grabbing" style={{ touchAction: 'none' }}>
               <I.Drag size={14} />
             </span>
-            <button onClick={() => onToggle(k)} className="flex-1 min-w-0 h-full flex items-center gap-3 text-left">
-              <span className={`flex-1 min-w-0 truncate text-[13px] ${on ? 'text-white' : 'text-neutral-500'}`}>{PO_METRICS[k]}</span>
-              <span className={`text-[12px] tabular-nums whitespace-nowrap ${on ? 'text-neutral-300' : 'text-neutral-600'}`}>{values[k] || '—'}</span>
-              <StorySwitch on={on} />
+            <button onClick={() => onToggle(k)} className="flex-1 min-w-0 h-full text-left">
+              <span className={`block truncate text-[13px] ${on ? 'text-white' : 'text-neutral-500'}`}>{PO_METRICS[k]}</span>
             </button>
+            {editKey === k ? (
+              <input autoFocus defaultValue={overrides[k] || values[k] || ''}
+                onBlur={(e) => { onEdit && onEdit(k, e.target.value === values[k] ? '' : e.target.value); setEditKey(null); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setEditKey(null); }}
+                className="w-[96px] h-7 rounded-md bg-white/10 px-2 text-right text-[12px] tabular-nums text-white outline-none ring-1 ring-white/30 focus:ring-white/60" />
+            ) : (
+              <span onDoubleClick={() => setEditKey(k)} title="Double-clic pour modifier"
+                className={`text-[12px] tabular-nums whitespace-nowrap cursor-text rounded px-1 -mx-1 hover:bg-white/[0.08] ${overrides[k] ? 'text-amber-300' : on ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                {overrides[k] || values[k] || '—'}
+              </span>
+            )}
+            {overrides[k] && editKey !== k && (
+              <button onClick={() => onEdit && onEdit(k, '')} title="Revenir à la valeur calculée" className="w-5 h-5 grid place-items-center rounded text-neutral-500 hover:text-white"><I.X size={11} /></button>
+            )}
+            <button onClick={() => onToggle(k)} aria-label={on ? 'Masquer' : 'Afficher'} className="shrink-0 pl-1"><StorySwitch on={on} /></button>
           </div>
         );
       })}
@@ -941,7 +944,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
     return () => clearTimeout(t);
   }, [cfgs, tplId, fmtId, actId, versions, storeKey]);
   const defaultsFor = (t) => ({
-    color: 'auto', customColor: '#ff6b35', coords: true, mapLabels: true,
+    color: 'auto', customColor: '#ff6b35', coords: true, mapLabels: !!t.mapDefault, photoSlot: true, values: {},
     map: !!t.mapDefault, mapStyle: (t.rec && t.rec.mapStyle) || 'epure', mapOpacity: (t.rec && t.rec.mapOpacity) || 100, bg: (t.rec && t.rec.bg) || null,
     showTitle: true, showSub: true, subtitle: null, title: null, act: null, order: null, enabled: null, border: 'none', mock: 'noir',
   });
@@ -1000,7 +1003,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
       routes, agg, color: c.color, coords: c.coords, activityLabel: act.label,
       title: c.showTitle ? (ttl.trim() || initialTitle || 'Mon aventure') : '',
       subtitle: c.showSub ? (c.subtitle == null ? defaultSub : c.subtitle) : '',
-      stats: poStats(agg, ord.filter((k) => en.has(k))),
+      stats: poStats(agg, ord.filter((k) => en.has(k))).map((st) => (c.values && c.values[st.key] ? { ...st, value: c.values[st.key], unit: '' } : st)),
+      photoSlot: c.photoSlot,
       photos, bgPhoto: bgPhoto && bgPhoto.img, showMap: c.map, mapStyle: c.mapStyle, mapOpacity: c.mapOpacity / 100,
       mapLabels: c.mapLabels, bg: c.bg, preview: true,
     };
@@ -1119,6 +1123,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const metricValues = usePoMemo(() => {
     const m = {}; poStats(agg, order).forEach((st) => { m[st.key] = st.value + (st.unit ? ' ' + st.unit : ''); }); return m;
   }, [agg, order]);
+  // Valeur saisie à la main (double-clic dans la liste) ; vide = valeur calculée
+  const setMetricValue = (k, v) => setCfg((c) => { const vals = { ...(c.values || {}) }; if (v && v.trim()) vals[k] = v.trim(); else delete vals[k]; return { values: vals }; });
 
   return (
     <div className={`flex-1 min-h-0 flex ${isMobile ? 'flex-col overflow-y-auto sb-scroll' : ''}`}>
@@ -1160,7 +1166,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
               <div className="relative w-full h-full overflow-hidden" style={ms ? { boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' } : undefined}>
                 <canvas ref={previewRef} width={1000} height={1414} className="block w-full h-full" />
                 {!ready && <div className="absolute inset-0 grid place-items-center text-[12px] text-neutral-400 bg-neutral-900">Préparation…</div>}
-                {tpl.photoSlot && !photos.length && ready && (
+                {tpl.photoSlot && cfg.photoSlot !== false && !photos.length && ready && (
                   <button onClick={() => photosRef.current && photosRef.current.click()}
                     className="absolute left-[7%] bottom-[5%] flex items-center gap-2 rounded-full pl-3 pr-3.5 h-9 text-[12.5px] font-semibold bg-white text-neutral-900 shadow-xl hover:scale-[1.03] transition-transform">
                     <I.ImagePlus size={15} /> Ajouter une photo
@@ -1290,11 +1296,12 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                   <span className="text-amber-400">★</span> Recommandé : {rec.mapOpacity} %
                   {mapOpacity !== rec.mapOpacity && <button onClick={() => setMapOpacity(rec.mapOpacity)} className="ml-1 text-neutral-300 hover:text-white underline underline-offset-2">rétablir</button>}
                 </div>
-                <div className="-mx-2 mt-2">
-                  <ShareFieldRow dark label="Noms de lieux (hors tracé)" on={mapLabels} onToggle={() => setMapLabels((v) => !v)} />
-                </div>
               </>
             )}
+            {/* Indépendant de la carte : les villes peuvent s'afficher seules */}
+            <div className="-mx-2 mt-2">
+              <ShareFieldRow dark label="Noms des villes (hors tracé)" on={mapLabels} onToggle={() => setMapLabels((v) => !v)} />
+            </div>
           </StudioSection>
 
           <StudioSection title="Textes">
@@ -1308,8 +1315,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
           </StudioSection>
 
           <StudioSection title="Infos affichées" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
-            <div className="text-[11px] text-neutral-500 mb-2">Glisse pour réordonner, active ce que tu veux afficher.</div>
-            <MetricsList order={order} setOrder={setOrder} enabled={enabled} onToggle={toggleMetric} values={metricValues} />
+            <div className="text-[11px] text-neutral-500 mb-2">Glisse pour réordonner, double-clique une valeur pour la modifier.</div>
+            <MetricsList order={order} setOrder={setOrder} enabled={enabled} onToggle={toggleMetric} values={metricValues} overrides={cfg.values || {}} onEdit={setMetricValue} />
             <p className="mt-2.5 text-[11px] text-neutral-500 leading-snug">Proposées selon l'activité. Les durées sans GPS sont estimées pour {act.label.toLowerCase()}.</p>
           </StudioSection>
 
@@ -1333,6 +1340,11 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
               </button>
             )}
             </>)}
+            {tpl.photoSlot && !photos.length && (
+              <div className="-mx-2 mb-2">
+                <ShareFieldRow dark label="Emplacement photo par défaut" on={cfg.photoSlot !== false} onToggle={() => setCfg((c) => ({ photoSlot: c.photoSlot === false }))} />
+              </div>
+            )}
             <div className={`text-[12.5px] font-medium text-neutral-200 mb-2 ${tpl.photoBg ? 'mt-4' : ''}`}>Photos du voyage</div>
             <div className="grid grid-cols-4 gap-2">
               {photos.map((p, i) => (

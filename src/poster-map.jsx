@@ -195,6 +195,8 @@ async function pmDrawMap(ctx, o) {
   if (!tiles.length) return false;
   const tsz = (256 / n) * proj.k; // taille d'une tuile en unités de dessin
 
+  // Géométrie (eau, côtes, routes…) et noms de lieux sont indépendants
+  if (o.geometry !== false) {
   // Dessin dans un calque : opacité de groupe (pas de surimpression aux croisements)
   const op = o.opacity == null ? 1 : o.opacity;
   let target = ctx, layer = null;
@@ -276,9 +278,15 @@ async function pmDrawMap(ctx, o) {
     });
     if (dashed && g.setLineDash) g.setLineDash([]);
   }));
+  g.restore();
+  if (layer) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = op; ctx.drawImage(layer, 0, 0); ctx.restore(); }
+  else ctx.restore();
+  }
 
-  // 5. Noms de lieux : jamais sur le tracé, sans chevauchement
+  // 5. Noms de lieux (pleine opacité) : jamais sur le tracé, sans chevauchement
   if (o.labels !== false && pal.label) {
+    const g = ctx;
+    g.save(); g.beginPath(); g.rect(rect.x, rect.y, rect.w, rect.h); g.clip();
     const lr = o.labelRect || rect;
     const segs = pmRouteSegments(o.routes || [], proj, 2 * u);
     const cands = [];
@@ -354,11 +362,8 @@ async function pmDrawMap(ctx, o) {
       if (lab.halo) { g.strokeStyle = lab.halo; g.lineWidth = (lab.haloWidth || 3) * u; g.lineJoin = 'round'; drawText(true); }
       g.fillStyle = lab.color; drawText(false);
     }
+    g.restore();
   }
-  g.restore();
-
-  if (layer) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = op; ctx.drawImage(layer, 0, 0); ctx.restore(); }
-  else ctx.restore();
   return true;
 }
 
