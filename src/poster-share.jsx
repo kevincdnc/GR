@@ -103,6 +103,8 @@ function poStats(agg, keys) {
 }
 
 // ---------------------------------------------------------------- utilitaires de dessin
+// Colonnes de chiffres : une seule ligne jusqu'à 5, puis grille de 3
+function poCols(n) { return n <= 5 ? Math.max(1, n) : 3; }
 function poCol(d, native) { return d.color === 'auto' ? native : d.color; }
 function poOne(d, native) {
   if (d.color === 'auto') return native;
@@ -309,7 +311,7 @@ const POSTER_TEMPLATES = [
     async draw(ctx, d, w, h) {
       const u = w / 1200;
       ctx.fillStyle = '#161616'; ctx.fillRect(0, 0, w, h);
-      const L = stStatsLayout(ctx, d.stats, w - 220 * u, { maxSize: 70 * u, labelSize: 20 * u, cols: Math.min(4, d.stats.length || 1) });
+      const L = stStatsLayout(ctx, d.stats, w - 220 * u, { maxSize: 70 * u, labelSize: 20 * u, cols: poCols(d.stats.length) });
       const statsTop = h - 130 * u - L.height;
       const titleY = statsTop - 90 * u;
       const ph = d.photos.length ? 190 * u : 0;
@@ -340,7 +342,7 @@ const POSTER_TEMPLATES = [
       const u = w / 1200, M = 100 * u;
       if (d.showMap) { ctx.fillStyle = '#26301f'; ctx.fillRect(0, 0, w, h); }
       else { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#13202c'); bg.addColorStop(1, '#05080b'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
-      const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 70 * u, labelSize: 20 * u, cols: Math.min(4, d.stats.length || 1) });
+      const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 70 * u, labelSize: 20 * u, cols: poCols(d.stats.length) });
       const statsTop = h - 110 * u - L.height;
       const th = poLinesHeight(ctx, d.title, w - 2 * M, 96 * u, { maxLines: 2 });
       const titleTop = statsTop - 70 * u - (d.subtitle ? 44 * u : 0) - th;
@@ -496,7 +498,7 @@ const POSTER_TEMPLATES = [
       ctx.fillStyle = '#f3f0ea'; ctx.fillRect(0, 0, w, h);
       await stDrawLogo(ctx, M, M - 26 * u, 26 * u, ink);
       if (d.coords) stLabel(ctx, poCoords(d), w - M, M - 6 * u, 15 * u, mute, 'right');
-      const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 62 * u, labelSize: 18 * u, cols: Math.min(4, d.stats.length || 1) });
+      const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 62 * u, labelSize: 18 * u, cols: poCols(d.stats.length) });
       const statsTop = h - M - L.height;
       const ruleY = statsTop - 46 * u;
       const subH = d.subtitle ? 50 * u : 0;
@@ -535,7 +537,7 @@ const POSTER_TEMPLATES = [
       y += 44 * u;
       if (d.title) y += poLines(ctx, d.title, w / 2, y, w - 2 * M, 96 * u, ink, { family: PO_SERIF, maxLines: 2, align: 'center', lh: 1.04 });
       y += 40 * u;
-      const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 56 * u, labelSize: 17 * u, cols: Math.min(4, d.stats.length || 1) });
+      const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 56 * u, labelSize: 17 * u, cols: poCols(d.stats.length) });
       const footTop = h - M - 60 * u - L.height;
       const n = d.photos.length;
       const phH = n ? (n === 4 ? (footTop - 40 * u - y) * 0.48 : (footTop - 40 * u - y) * 0.34) : 0;
@@ -565,7 +567,7 @@ const POSTER_TEMPLATES = [
       ctx.fillStyle = g; ctx.fillRect(0, h * 0.42, w, h * 0.58);
       await stDrawLogo(ctx, M, 80 * u, 32 * u, '#ffffff');
       if (d.coords) stLabel(ctx, poCoords(d), w - M, 104 * u, 16 * u, 'rgba(255,255,255,0.8)', 'right');
-      const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 72 * u, labelSize: 20 * u, cols: Math.min(4, d.stats.length || 1) });
+      const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 72 * u, labelSize: 20 * u, cols: poCols(d.stats.length) });
       const statsTop = h - 110 * u - L.height;
       const th = poLinesHeight(ctx, d.title, w - 2 * M, 120 * u, { family: PO_SERIF, maxLines: 2, lh: 1.0 });
       const titleTop = statsTop - 70 * u - (d.subtitle ? 50 * u : 0) - th;

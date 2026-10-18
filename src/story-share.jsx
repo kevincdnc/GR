@@ -310,11 +310,14 @@ function stStatsLayout(ctx, stats, w, o = {}) {
   const cols = Math.max(1, Math.min(o.cols || (n === 4 ? 2 : 3), n || 1));
   const rows = Math.max(1, Math.ceil(n / cols));
   const cw = w / cols;
-  const inner = cw - (o.cellPad != null ? o.cellPad : 36);
-  let size = o.maxSize || 96;
+  // Marge intérieure proportionnelle à la colonne (jamais collé aux séparateurs)
+  // et compteurs plus petits dès 4 colonnes : la mise en page reste aérée.
+  const inner = cw - (o.cellPad != null ? o.cellPad : Math.max(36, cw * 0.22));
+  let size = (o.maxSize || 96) * (cols >= 5 ? 0.72 : cols === 4 ? 0.84 : 1);
   stats.forEach((s) => { const vw = stValueWidth(ctx, s, size); if (vw > inner) size = size * inner / vw; });
   size = Math.max(36, size);
-  const labelSize = Math.max(22, Math.min(o.labelSize || 28, size * 0.34));
+  let labelSize = Math.max(Math.min(22, o.labelSize || 22), Math.min(o.labelSize || 28, size * 0.34));
+  stats.forEach((s) => { const lw = stLabelWidth(ctx, s.label, labelSize); if (lw > inner) labelSize = Math.max(12, labelSize * inner / lw); });
   const gapLV = labelSize * 0.75;
   const cellH = labelSize + gapLV + size * 0.78;
   const rowGap = o.rowGap != null ? o.rowGap : size * 0.55;
