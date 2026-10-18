@@ -8,7 +8,7 @@ const { useState, useRef, useEffect } = React;
 function Sidebar({
   groups, setGroups, visibleIds, setVisibleIds, hoveredId, setHoveredId,
   selectedId, setSelectedId, multiSel, setMultiSel, dark, accent, density,
-  onCreate, onImport, onSuggest, onCreateGroup, onDrawZone, onAction, forceCreateMenu,
+  onCreate, onImport, onPoster, onSuggest, onCreateGroup, onDrawZone, onAction, forceCreateMenu,
   view, onViewChange
 }) {
   const [drag, setDrag] = useState(null); // {itineraryId, fromGroupId}
@@ -455,6 +455,13 @@ function Sidebar({
             title="Importer un tracé"
             desc="GPX, FIT, TCX, KML, GeoJSON…"
             onClick={pick(onImport)} />
+            {onPoster && <MenuDivider dark={dark} />}
+            {onPoster && <MenuItem
+            dark={dark} accent={accent}
+            icon={<I.Poster size={16} />}
+            title="Créer un poster"
+            desc="Imprime ton trek, run ou road trip"
+            onClick={pick(onPoster)} />}
 
           
           </div>

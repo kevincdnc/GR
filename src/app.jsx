@@ -1141,6 +1141,11 @@ function App() {
           density={t.density}
           onCreate={() => { endTour(); setView('map'); startCreate(); }}
           onImport={() => { endTour(); setView('map'); setImporting(true); }}
+          onPoster={() => {
+            // Studio poster : tracés affichés (ou rien → import / choix dans le studio)
+            const shown = groups.flatMap((g) => g.itineraries.flatMap(sharePartsOf)).filter((p) => visibleIds.has(p.id));
+            setStoryShare({ parts: shown, title: '', mode: 'poster' });
+          }}
           onSuggest={() => { endTour(); showToast('Suggestion d’itinéraire — bientôt disponible.'); }}
           onCreateGroup={handleCreateGroup}
           onAction={handleAction}
@@ -1463,6 +1468,8 @@ function App() {
           <StoryShareModal
             parts={storyShare.parts}
             title={storyShare.title}
+            groups={groups}
+            initialMode={storyShare.mode}
             dark={dark}
             onClose={() => setStoryShare(null)}
             onToast={showToast}

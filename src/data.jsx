@@ -84,7 +84,7 @@ function fmtAscent(m) {
 // penalty (Naismith-style: ~+1 min per 10 m of ascent). Returns minutes.
 const ACTIVITY_SPEED = {
   running: 9.5, trail: 7.5, hiking: 4.2, walking: 4.5,
-  roadBike: 22, gravel: 16, mtb: 12,
+  roadBike: 22, cycling: 22, gravel: 16, mtb: 12, moto: 55,
   skiTouring: 4, skiNordic: 10, snowshoe: 3.5,
   default: 6,
 };

@@ -50,14 +50,18 @@ function resolveShareRoutes(parts) {
     const distance = x.distance || 0, ascent = x.ascent || 0;
     let descent = x.descent != null ? x.descent : st.elevationLoss;
     if (descent == null && typeof computeElevationStats === 'function') descent = Math.round(computeElevationStats(x.coords).descent);
-    const durationMin = manual != null ? manual : (st.gpxMovingMin || x.movingMin || estimateDurationMin(distance, ascent, x.activity || 'hiking'));
+    const realMin = manual != null ? manual : (st.gpxMovingMin || x.movingMin || null);
+    const durationMin = realMin != null ? realMin : estimateDurationMin(distance, ascent, x.activity || 'hiking');
+    let altMax = null;
+    x.coords.forEach((c) => { if (typeof c[2] === 'number' && (altMax == null || c[2] > altMax)) altMax = c[2]; });
     const dateIso = m.date || st.gpxDate || x.gpxDate || '';
     return {
       id: x.id,
       name: String(x.name || '').replace(/^Étape \d+ — /, ''),
       color: (ROUTE_COLORS[x.color] || ROUTE_COLORS.blue || { hex: '#3b82f6' }).hex,
       coords: x.coords,
-      distance, ascent, descent: descent || 0, durationMin,
+      distance, ascent, descent: descent || 0, durationMin, durationReal: realMin != null, altMax,
+      activity: x.activity || 'hiking',
       date: dateIso ? dateIso.slice(0, 10) : '',
     };
   });
@@ -153,6 +157,9 @@ const ST_TILES = {
   dark: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', max: 16,
     labels: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}' },
   satellite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', max: 18 },
+  light: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', max: 16,
+    labels: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}' },
+  hillshade: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', max: 16 },
   topo: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', max: 18 },
 };
 
@@ -737,6 +744,8 @@ async function storyFontsReady() {
     await Promise.all([
       document.fonts.load(`700 40px "Barlow Semi Condensed"`), document.fonts.load(`600 40px "Barlow Semi Condensed"`),
       document.fonts.load(`700 40px Barlow`), document.fonts.load(`500 40px Barlow`), document.fonts.load(`800 40px Unbounded`),
+      document.fonts.load(`700 40px "Playfair Display"`), document.fonts.load(`italic 400 40px "Playfair Display"`), document.fonts.load(`400 40px "Playfair Display"`),
+      document.fonts.load(`400 40px "IM Fell English"`), document.fonts.load(`italic 400 40px "IM Fell English"`),
     ]);
   } catch (e) {}
 }
@@ -803,44 +812,158 @@ function ShareRoutesPicker({ allRoutes, included, setIncluded, dark, sectionTitl
 }
 
 const SHARE_MODES = [
-  { id: 'story', name: 'Story', icon: 'Story' },
   { id: 'poster', name: 'Poster', icon: 'Poster' },
+  { id: 'story', name: 'Story', icon: 'Story' },
   { id: 'embed', name: 'Embed', icon: 'Code' },
 ];
-const SHARE_MODE_KEY = 'gr34_share_mode';
+const SHARE_MODE_KEY = 'gr34_share_mode_v2';
+const isTrackFile = (f) => {
+  const exts = (window.GpxLib && window.GpxLib.TRACK_EXTENSIONS) || ['gpx', 'fit', 'tcx', 'kml', 'kmz', 'geojson', 'json', 'igc'];
+  return exts.some((e) => f.name.toLowerCase().endsWith('.' + e));
+};
 
-// Modale de partage : Story (réseaux sociaux) · Poster (impression) · Embed
-// (carte intégrable), plus l'envoi du lien à un ami.
-function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast }) {
-  const allRoutes = useStMemo(() => resolveShareRoutes(parts), [parts]);
+// Choix d'un tracé parmi « Mes tracés » (groupes > itinéraires)
+function StudioRoutePicker({ groups, onPick, onClose }) {
+  const ref = useStRef(null);
+  useStEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [onClose]);
+  const clean = (n) => String(n || '').replace(/^Étape \d+ — /, '');
+  return (
+    <div ref={ref} className="absolute left-0 right-0 top-full mt-2 z-30 rounded-xl bg-neutral-900 ring-1 ring-white/10 shadow-2xl max-h-[360px] overflow-y-auto sb-scroll p-1.5 animate-menu">
+      {groups.filter((g) => g.itineraries.length).map((g) => (
+        <div key={g.id} className="mb-1">
+          <button onClick={() => onPick(g.itineraries.flatMap(sharePartsOf), g.name)}
+            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left hover:bg-white/[0.06]">
+            <span className="text-[12.5px] font-semibold truncate">{g.name}</span>
+            <span className="text-[11px] text-neutral-500 shrink-0">Tout · {g.itineraries.length}</span>
+          </button>
+          {g.itineraries.map((it) => (
+            <button key={it.id} onClick={() => onPick(sharePartsOf(it), clean(it.name))}
+              className="w-full flex items-center gap-2.5 pl-5 pr-2.5 py-1.5 rounded-lg text-left hover:bg-white/[0.06]">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: (ROUTE_COLORS[it.color] || ROUTE_COLORS.blue).hex }}></span>
+              <span className="flex-1 min-w-0 truncate text-[12.5px] text-neutral-300">{clean(it.name)}</span>
+              <span className="text-[11px] text-neutral-500 tabular-nums">{stNum(it.distance || 0)} km</span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Studio de partage plein écran : Poster (impression) · Story (réseaux
+// sociaux) · Embed (carte intégrable) + envoi du lien à un ami. On peut y
+// importer directement un tracé (glisser-déposer) ou choisir un de ses tracés.
+function StoryShareModal({ parts, title: initialTitle, groups, dark: appDark, onClose, onToast, initialMode }) {
+  const dark = true; // le studio est toujours sombre : les visuels ressortent
+  const [srcParts, setSrcParts] = useStState(parts || []);
+  const [extraParts, setExtraParts] = useStState([]);
+  const allParts = useStMemo(() => [...srcParts, ...extraParts], [srcParts, extraParts]);
+  const allRoutes = useStMemo(() => resolveShareRoutes(allParts), [allParts]);
   const [included, setIncluded] = useStState(() => new Set(allRoutes.map((r) => r.id)));
+  const idsKey = allRoutes.map((r) => r.id).join('|');
+  useStEffect(() => { setIncluded(new Set(allRoutes.map((r) => r.id))); }, [idsKey]);
   const routes = useStMemo(() => allRoutes.filter((r) => included.has(r.id)), [allRoutes, included]);
   const agg = useStMemo(() => aggregateShare(routes), [routes]);
   const [title, setTitle] = useStState(initialTitle || '');
-  const [mode, setModeState] = useStState(() => { try { const m = localStorage.getItem(SHARE_MODE_KEY); return SHARE_MODES.some((x) => x.id === m) ? m : 'story'; } catch (e) { return 'story'; } });
+  const [mode, setModeState] = useStState(() => {
+    if (initialMode) return initialMode;
+    try { const m = localStorage.getItem(SHARE_MODE_KEY); return SHARE_MODES.some((x) => x.id === m) ? m : 'poster'; } catch (e) { return 'poster'; }
+  });
   const setMode = (m) => { setModeState(m); try { localStorage.setItem(SHARE_MODE_KEY, m); } catch (e) {} };
   const isMobile = useIsMobile();
+  const [pickerOpen, setPickerOpen] = useStState(false);
+  const [dropping, setDropping] = useStState(false);
+  const [importing, setImporting] = useStState(false);
+  const fileRef = useStRef(null);
 
-  // Échap pour fermer
   useStEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape' && !pickerOpen) onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, pickerOpen]);
 
-  const label = dark ? 'text-neutral-400' : 'text-neutral-500';
-  const strong = dark ? 'text-white' : 'text-neutral-900';
+  // Import direct d'un ou plusieurs fichiers de tracé
+  const importFiles = async (fileList) => {
+    const files = [...(fileList || [])].filter(isTrackFile);
+    if (!files.length) { onToast && onToast('Formats acceptés : GPX, FIT, TCX, KML, KMZ, GeoJSON, IGC'); return; }
+    setImporting(true);
+    const palette = window.GR34_SECTION_COLORS || Object.keys(ROUTE_COLORS);
+    const res = await Promise.all(files.map((f) => readTrackFile(f).then((st) => ({ f, st })).catch(() => ({ f, st: null }))));
+    const ok = res.filter((r) => r.st && r.st.coords && r.st.coords.length > 1);
+    setImporting(false);
+    if (!ok.length) { onToast && onToast('Impossible de lire ce fichier.'); return; }
+    const stamp = Date.now();
+    const newParts = ok.map((r, i) => ({
+      id: 'studio_' + stamp + '_' + i,
+      name: r.st.to ? r.st.from + ' → ' + r.st.to : (r.st.from || r.f.name.replace(/\.[^.]+$/, '')),
+      color: palette[(extraParts.length + i) % palette.length],
+      distance: r.st.distanceKm, ascent: r.st.elevationGain, descent: r.st.elevationLoss,
+      movingMin: r.st.gpxMovingMin || null, gpxDate: r.st.gpxDate || null, coords: r.st.coords, activity: 'hiking',
+    }));
+    setExtraParts((p) => [...p, ...newParts]);
+    if (!allParts.length && !title.trim()) setTitle(newParts.length > 1 ? 'Mon aventure' : newParts[0].name);
+    onToast && onToast(ok.length > 1 ? `${ok.length} tracés importés` : `« ${newParts[0].name} » importé`);
+  };
+  const pickRoutes = (ps, name) => { setSrcParts(ps); setExtraParts([]); setTitle(name || ''); setPickerOpen(false); };
+
   const common = { allRoutes, routes, included, setIncluded, agg, title, setTitle, initialTitle, dark, isMobile, onToast };
   const linkTitle = title.trim() || initialTitle || '';
+  const hasGroups = (groups || []).some((g) => g.itineraries.length);
 
-  const toggle = (
-    <div className={`flex p-0.5 rounded-lg ${dark ? 'bg-white/[0.06] ring-1 ring-white/[0.06]' : 'bg-neutral-100'}`}>
+  // Section « Tracé » de l'inspecteur poster : liste + import + mes tracés
+  const routeTools = (
+    <StudioSection title="Tracé" aside={<span className="text-[11px] text-neutral-500">{routes.length}/{allRoutes.length}</span>}>
+      {allRoutes.length > 1 && (
+        <div className="flex flex-col gap-0.5 max-h-[168px] overflow-y-auto sb-scroll -mx-1.5 px-1.5 mb-2.5">
+          {allRoutes.map((r) => {
+            const on = included.has(r.id);
+            return (
+              <button key={r.id} onClick={() => setIncluded((s) => { const n = new Set(s); if (n.has(r.id)) { if (n.size > 1) n.delete(r.id); } else n.add(r.id); return n; })}
+                className="flex items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left hover:bg-white/[0.05]">
+                <span className={`w-4 h-4 shrink-0 rounded grid place-items-center border ${on ? 'bg-blue-500 border-blue-500' : 'border-neutral-600'}`}>
+                  {on && <I.Check size={11} stroke="white" strokeWidth="3" />}
+                </span>
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: r.color }}></span>
+                <span className={`flex-1 min-w-0 truncate text-[12.5px] ${on ? 'text-neutral-100' : 'text-neutral-500'}`}>{r.name}</span>
+                <span className="text-[11px] tabular-nums text-neutral-500">{stNum(r.distance)} km</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {allRoutes.length === 1 && (
+        <div className="flex items-center gap-2.5 rounded-lg bg-white/[0.04] px-3 py-2.5 mb-2.5">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: allRoutes[0].color }}></span>
+          <span className="flex-1 min-w-0 truncate text-[12.5px]">{allRoutes[0].name}</span>
+          <span className="text-[11px] tabular-nums text-neutral-400">{stNum(allRoutes[0].distance)} km</span>
+        </div>
+      )}
+      <div className="relative grid grid-cols-2 gap-1.5">
+        <button onClick={() => fileRef.current && fileRef.current.click()}
+          className="h-9 flex items-center justify-center gap-1.5 rounded-lg text-[12.5px] font-medium bg-white/[0.06] hover:bg-white/[0.1]">
+          <I.Upload size={14} /> Importer
+        </button>
+        <button onClick={() => setPickerOpen((v) => !v)} disabled={!hasGroups}
+          className={`h-9 flex items-center justify-center gap-1.5 rounded-lg text-[12.5px] font-medium disabled:opacity-40 ${pickerOpen ? 'bg-white text-neutral-900' : 'bg-white/[0.06] hover:bg-white/[0.1]'}`}>
+          <I.Folder size={14} /> Mes tracés
+        </button>
+        {pickerOpen && <StudioRoutePicker groups={groups || []} onPick={pickRoutes} onClose={() => setPickerOpen(false)} />}
+      </div>
+    </StudioSection>
+  );
+
+  const tabs = (
+    <div className="flex p-1 rounded-xl bg-white/[0.06] ring-1 ring-white/[0.06]">
       {SHARE_MODES.map((m) => {
         const Ico = I[m.icon];
         const on = m.id === mode;
         return (
           <button key={m.id} onClick={() => setMode(m.id)}
-            className={`h-8 flex items-center gap-1.5 rounded-md text-[12.5px] font-semibold transition-colors ${isMobile ? 'flex-1 justify-center px-2' : 'px-3.5'} ${on ? (dark ? 'bg-white/[0.14] text-white shadow-sm' : 'bg-white text-neutral-900 shadow-sm') : (dark ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900')}`}>
+            className={`h-8 flex items-center gap-1.5 rounded-lg text-[13px] font-semibold transition-all ${isMobile ? 'flex-1 justify-center px-2' : 'px-4'} ${on ? 'bg-white text-neutral-900 shadow' : 'text-neutral-400 hover:text-white'}`}>
             <Ico size={15} /> {m.name}
           </button>
         );
@@ -848,34 +971,89 @@ function StoryShareModal({ parts, title: initialTitle, dark, onClose, onToast })
     </div>
   );
 
-  return (
-    <div className={`fixed inset-0 z-[3000] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-menu ${isMobile ? '' : 'p-4'}`} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={`glass-strong shadow-2xl flex flex-col overflow-hidden ${isMobile ? '' : 'rounded-xl'} ${strong}`}
-        style={isMobile ? { width: '100vw', height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' } : { width: 'min(1240px, 98vw)', height: 'min(860px, 96vh)' }}>
-        {/* En-tête : titre · toggle des modes + lien · fermer */}
-        <div className={`relative z-30 flex items-center justify-between gap-3 px-5 py-3 border-b ${dark ? 'border-white/10' : 'border-neutral-200'} ${isMobile ? 'flex-wrap px-3' : ''}`}>
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="w-8 h-8 grid place-items-center rounded-lg bg-blue-500/15 text-blue-400"><I.Share size={16} /></span>
-            <div className="min-w-0">
-              <div className="text-[15px] font-semibold leading-tight">Partager</div>
-              <div className={`text-[12px] truncate ${label}`}>
-                {routes.length} tracé{routes.length > 1 ? 's' : ''} · {stNum(agg.distance)} km · {stNum(agg.ascent, 0)} m D+
-              </div>
-            </div>
-          </div>
-          <div className={isMobile ? 'order-3 w-full flex items-center gap-2' : 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2'}>
-            <div className={isMobile ? 'flex-1' : ''}>{toggle}</div>
-            <ShareLinkButton title={linkTitle} routes={routes} dark={dark} onToast={onToast} compact={isMobile} />
-          </div>
-          <button onClick={onClose} aria-label="Fermer" className={`w-8 h-8 grid place-items-center rounded-md transition-colors ${dark ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-neutral-500 hover:bg-neutral-100'}`}>
-            <I.X size={16} />
-          </button>
-        </div>
+  const empty = !allRoutes.length;
 
-        {mode === 'story' && <StoryPane {...common} />}
-        {mode === 'poster' && <PosterPane {...common} />}
-        {mode === 'embed' && <EmbedPane {...common} />}
-      </div>
+  return (
+    <div className="fixed inset-0 z-[3000] flex flex-col bg-neutral-950 text-white animate-menu"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDropping(true); } }}
+      onDragLeave={(e) => { if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget)) setDropping(false); }}
+      onDrop={(e) => { setDropping(false); const fs = [...e.dataTransfer.files]; if (fs.some(isTrackFile)) { e.preventDefault(); importFiles(fs); } }}>
+      <input ref={fileRef} type="file" multiple accept={typeof TRACK_ACCEPT !== 'undefined' ? TRACK_ACCEPT : '.gpx,.fit,.tcx,.kml,.kmz,.geojson,.json,.igc'} className="hidden"
+        onChange={(e) => { importFiles(e.target.files); e.target.value = ''; }} />
+
+      {/* Barre du haut */}
+      <header className={`relative z-30 shrink-0 border-b border-white/[0.07] ${isMobile ? 'px-3 pt-2.5 pb-3 flex flex-col gap-2.5' : 'h-16 px-4 flex items-center justify-between'}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={onClose} aria-label="Retour"
+            className="h-9 pl-2.5 pr-3.5 flex items-center gap-1.5 rounded-lg text-[13px] font-medium text-neutral-300 hover:text-white hover:bg-white/[0.07] transition-colors">
+            <I.ChevronLeft size={17} /> {isMobile ? '' : 'Retour'}
+          </button>
+          <span className="w-px h-6 bg-white/10"></span>
+          <div className="min-w-0">
+            <div className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Studio</div>
+            <div className="text-[14px] font-semibold leading-tight truncate max-w-[280px]">{linkTitle || (empty ? 'Nouveau poster' : 'Mon aventure')}</div>
+          </div>
+          {isMobile && !empty && <div className="ml-auto"><ShareLinkButton title={linkTitle} routes={routes} dark onToast={onToast} compact /></div>}
+        </div>
+        {!empty && <div className={isMobile ? '' : 'absolute left-1/2 -translate-x-1/2'}>{tabs}</div>}
+        {!isMobile && !empty && (
+          <div className="flex items-center gap-3">
+            <span className="text-[12px] text-neutral-500 tabular-nums hidden xl:inline">{routes.length} tracé{routes.length > 1 ? 's' : ''} · {stNum(agg.distance)} km · {stNum(agg.ascent, 0)} m D+</span>
+            <ShareLinkButton title={linkTitle} routes={routes} dark onToast={onToast} />
+          </div>
+        )}
+      </header>
+
+      {empty ? (
+        <div className="flex-1 min-h-0 overflow-y-auto sb-scroll grid place-items-center px-5 py-10" style={{ background: 'radial-gradient(ellipse at 50% 30%, #1c1c1f 0%, #0a0a0b 70%)' }}>
+          <div className="w-full max-w-[560px] text-center">
+            <div className="mx-auto w-14 h-14 rounded-2xl grid place-items-center bg-white/[0.06] ring-1 ring-white/10 mb-5"><I.Poster size={26} /></div>
+            <h1 className="text-[28px] font-semibold tracking-tight">Imprime ton aventure</h1>
+            <p className="mt-2 text-[14px] text-neutral-400 leading-relaxed">Trek, marathon, road trip moto, tour à vélo… importe ton tracé et transforme-le en poster prêt à encadrer.</p>
+            <button onClick={() => fileRef.current && fileRef.current.click()}
+              className="mt-7 w-full rounded-2xl border border-dashed border-white/20 hover:border-white/45 hover:bg-white/[0.03] transition-colors px-6 py-9 flex flex-col items-center gap-2">
+              <span className="w-11 h-11 rounded-full grid place-items-center bg-white text-neutral-900"><I.Upload size={19} /></span>
+              <span className="text-[15px] font-semibold mt-1">{importing ? 'Lecture du fichier…' : 'Importer un tracé'}</span>
+              <span className="text-[12.5px] text-neutral-500">Glisse ton fichier ici · GPX, FIT, TCX, KML, GeoJSON, IGC</span>
+            </button>
+            {hasGroups && (
+              <div className="mt-8 text-left">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-500 mb-2.5">Ou choisis un de tes tracés</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {groups.filter((g) => g.itineraries.length).slice(0, 6).map((g) => (
+                    <button key={g.id} onClick={() => pickRoutes(g.itineraries.flatMap(sharePartsOf), g.name)}
+                      className="flex items-center gap-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] ring-1 ring-white/[0.06] px-3.5 py-3 text-left transition-colors">
+                      <span className="w-9 h-9 rounded-lg grid place-items-center bg-white/[0.06]"><I.Route size={16} /></span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-semibold truncate">{g.name}</span>
+                        <span className="block text-[11.5px] text-neutral-500">{g.itineraries.length} tracé{g.itineraries.length > 1 ? 's' : ''}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {mode === 'poster' && <PosterPane {...common} routeTools={routeTools} />}
+          {mode === 'story' && <StoryPane {...common} />}
+          {mode === 'embed' && <EmbedPane {...common} />}
+        </>
+      )}
+
+      {/* Dépôt d'un fichier n'importe où */}
+      {dropping && (
+        <div className="absolute inset-0 z-40 grid place-items-center bg-neutral-950/80 backdrop-blur-sm pointer-events-none">
+          <div className="rounded-3xl border-2 border-dashed border-white/40 px-14 py-12 text-center">
+            <div className="mx-auto w-12 h-12 rounded-full grid place-items-center bg-white text-neutral-900 mb-3"><I.Upload size={20} /></div>
+            <div className="text-[17px] font-semibold">Dépose ton tracé</div>
+            <div className="text-[12.5px] text-neutral-400 mt-1">GPX, FIT, TCX, KML, GeoJSON, IGC</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1124,4 +1302,4 @@ function StoryPane({ allRoutes, routes, included, setIncluded, agg, title, setTi
 }
 
 
-Object.assign(window, { StoryShareModal, StoryPane, ShareFieldRow, ShareRoutesPicker, sharePartsOf, STORY_TEMPLATES, renderStory, resolveShareRoutes, aggregateShare, shareStats });
+Object.assign(window, { StoryShareModal, StudioRoutePicker, StoryPane, ShareFieldRow, ShareRoutesPicker, sharePartsOf, STORY_TEMPLATES, renderStory, resolveShareRoutes, aggregateShare, shareStats });

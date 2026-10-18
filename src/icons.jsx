@@ -121,6 +121,8 @@ const I = {
   ShareUp: (p) => <SvgBase {...p}><path d="M12 15V3M8.5 6.5 12 3l3.5 3.5" /><path d="M6 12v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6" /></SvgBase>,
   Story: (p) => <SvgBase {...p}><rect x="6.5" y="2.5" width="11" height="19" rx="2.5" /><path d="M10.5 18.5h3" /></SvgBase>,
   Poster: (p) => <SvgBase {...p}><rect x="4" y="2.5" width="16" height="19" rx="1.5" /><rect x="7" y="5.5" width="10" height="9.5" rx=".5" /><path d="M7.5 13.5l3-3.5 2.2 2.4 1.6-1.6 2.2 2.7" /><path d="M8 18h8" /></SvgBase>,
+  Moto: (p) => <SvgBase {...p}><circle cx="5.5" cy="16.5" r="3.5" /><circle cx="18.5" cy="16.5" r="3.5" /><path d="M5.5 16.5 9 11h5l3 5.5" /><path d="M14 11l-1.5-4H15" /><path d="M9 11 7.5 8H5" /></SvgBase>,
+  ImagePlus: (p) => <SvgBase {...p}><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7" /><path d="m3 17 5-5 4 4 3-3 6 6" /><circle cx="9" cy="8.5" r="1.5" /><path d="M19 2v6M16 5h6" /></SvgBase>,
   Code: (p) => <SvgBase {...p}><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16" /></SvgBase>,
   Embed: (p) => <SvgBase {...p}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></SvgBase>,
   Download: (p) => <SvgBase {...p}><path d="M12 3v13M7 11l5 5 5-5M5 21h14" /></SvgBase>,

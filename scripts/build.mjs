@@ -99,6 +99,9 @@ export function build({ single = false } = {}) {
     // Logotype « GPXmap »
     { name: 'unbounded-latin-400-normal.woff2', path: nm('@fontsource/unbounded/files/unbounded-latin-400-normal.woff2') },
     { name: 'unbounded-latin-800-normal.woff2', path: nm('@fontsource/unbounded/files/unbounded-latin-800-normal.woff2') },
+    // Posters : titres éditoriaux (Playfair Display) et style « ancienne carte » (IM Fell English)
+    ...['400-normal', '400-italic', '700-normal'].map((v) => ({ name: `playfair-display-latin-${v}.woff2`, path: nm(`@fontsource/playfair-display/files/playfair-display-latin-${v}.woff2`) })),
+    ...['400-normal', '400-italic'].map((v) => ({ name: `im-fell-english-latin-${v}.woff2`, path: nm(`@fontsource/im-fell-english/files/im-fell-english-latin-${v}.woff2`) })),
   ])
   const vendor = {
     'vendor/react.js': nm('react/umd/react.production.min.js'),
