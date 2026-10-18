@@ -241,7 +241,7 @@ function poUnproj(proj, x, y) {
 const POSTER_TEMPLATES = [
   {
     // Plan technique : grille, cartouche, échelle, nord
-    id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true,
+    id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3,
     async draw(ctx, d, w, h) {
       const u = w / 1200, bg = '#103c6b', line = 'rgba(255,255,255,0.85)';
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
@@ -297,7 +297,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Carte de nuit : fond sombre, tracé lumineux
-    id: 'nuit', name: 'Nuit', kind: 'Carte', dark: true,
+    id: 'nuit', name: 'Nuit', kind: 'Carte', dark: true, maxPhotos: 3, hasMap: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200;
       ctx.fillStyle = '#161616'; ctx.fillRect(0, 0, w, h);
@@ -308,8 +308,8 @@ const POSTER_TEMPLATES = [
       const photosTop = titleY - 120 * u - ph;
       const mapBottom = ph ? photosTop - 50 * u : titleY - 160 * u;
       const proj = stFit(d.routes, { x: 140 * u, y: 230 * u, w: w - 280 * u, h: mapBottom - 230 * u }, 15);
-      await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
-      await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'labels', d.pr);
+      if (d.showMap) await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
+      if (d.showMap) await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'labels', d.pr);
       let g = ctx.createRadialGradient(w / 2, h * 0.42, w * 0.2, w / 2, h * 0.5, w * 0.95);
       g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
@@ -327,10 +327,11 @@ const POSTER_TEMPLATES = [
   },
   {
     // Satellite plein cadre
-    id: 'satellite', name: 'Satellite', kind: 'Carte', dark: true,
+    id: 'satellite', name: 'Satellite', kind: 'Carte', dark: true, maxPhotos: 4, hasMap: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200, M = 100 * u;
-      ctx.fillStyle = '#26301f'; ctx.fillRect(0, 0, w, h);
+      if (d.showMap) { ctx.fillStyle = '#26301f'; ctx.fillRect(0, 0, w, h); }
+      else { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#13202c'); bg.addColorStop(1, '#05080b'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
       const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 70 * u, labelSize: 20 * u, cols: Math.min(4, d.stats.length || 1) });
       const statsTop = h - 110 * u - L.height;
       const th = poLinesHeight(ctx, d.title, w - 2 * M, 96 * u, { maxLines: 2 });
@@ -338,7 +339,7 @@ const POSTER_TEMPLATES = [
       const ph = d.photos.length ? 170 * u : 0;
       const photosTop = titleTop - 50 * u - ph;
       const proj = stFit(d.routes, { x: 130 * u, y: 160 * u, w: w - 260 * u, h: (ph ? photosTop : titleTop) - 130 * u - 160 * u }, 16);
-      await stDrawTiles(ctx, 'satellite', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
+      if (d.showMap) await stDrawTiles(ctx, 'satellite', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
       const fadeTop = (ph ? photosTop : titleTop) - 300 * u;
       let g = ctx.createLinearGradient(0, fadeTop, 0, h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.4, 'rgba(0,0,0,0.6)'); g.addColorStop(1, 'rgba(0,0,0,0.9)');
       ctx.fillStyle = g; ctx.fillRect(0, fadeTop, w, h);
@@ -355,7 +356,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Ancienne carte : papier vieilli, rose des vents, cartouche
-    id: 'ancienne', name: 'Ancienne carte', kind: 'Vintage',
+    id: 'ancienne', name: 'Ancienne carte', kind: 'Vintage', maxPhotos: 3, hasMap: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#3a2817', red = '#8e2a1b', paper = '#ead9b5';
       // Papier vieilli
@@ -385,7 +386,7 @@ const POSTER_TEMPLATES = [
       const mh = h * (d.photos.length ? 0.42 : 0.52);
       const proj = stFit(d.routes, { x: mx + 70 * u, y: my + 70 * u, w: mw - 140 * u, h: mh - 140 * u }, 15);
       ctx.save(); ctx.beginPath(); ctx.rect(mx, my, mw, mh); ctx.clip();
-      await stDrawTiles(ctx, 'topo', proj, { x: mx, y: my, w: mw, h: mh }, 'url', d.pr);
+      if (d.showMap) await stDrawTiles(ctx, 'topo', proj, { x: mx, y: my, w: mw, h: mh }, 'url', d.pr);
       ctx.globalCompositeOperation = 'color'; ctx.fillStyle = '#9a7646'; ctx.fillRect(mx, my, mw, mh);
       ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = 'rgba(234,217,181,0.85)'; ctx.fillRect(mx, my, mw, mh);
       ctx.globalCompositeOperation = 'source-over';
@@ -481,7 +482,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Relief : ombrage du terrain sur papier, typographie éditoriale
-    id: 'relief', name: 'Relief', kind: 'Éditorial',
+    id: 'relief', name: 'Relief', kind: 'Éditorial', maxPhotos: 4, hasMap: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#1c1a17', mute = '#7d776c', M = 90 * u;
       ctx.fillStyle = '#f3f0ea'; ctx.fillRect(0, 0, w, h);
@@ -498,10 +499,10 @@ const POSTER_TEMPLATES = [
       const mapH = mapBottom - mapTop;
       const proj = stFit(d.routes, { x: M + 80 * u, y: mapTop + 80 * u, w: w - 2 * M - 160 * u, h: mapH - 160 * u }, 15);
       ctx.save(); ctx.beginPath(); ctx.rect(M, mapTop, w - 2 * M, mapH); ctx.clip();
-      ctx.fillStyle = '#e6e2d9'; ctx.fillRect(M, mapTop, w - 2 * M, mapH);
-      await stDrawTiles(ctx, 'light', proj, { x: M, y: mapTop, w: w - 2 * M, h: mapH }, 'url', d.pr);
+      if (d.showMap) { ctx.fillStyle = '#e6e2d9'; ctx.fillRect(M, mapTop, w - 2 * M, mapH); }
+      if (d.showMap) await stDrawTiles(ctx, 'light', proj, { x: M, y: mapTop, w: w - 2 * M, h: mapH }, 'url', d.pr);
       ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.75;
-      await stDrawTiles(ctx, 'hillshade', proj, { x: M, y: mapTop, w: w - 2 * M, h: mapH }, 'url', d.pr);
+      if (d.showMap) await stDrawTiles(ctx, 'hillshade', proj, { x: M, y: mapTop, w: w - 2 * M, h: mapH }, 'url', d.pr);
       ctx.globalAlpha = 1;
       ctx.fillStyle = 'rgba(243,240,234,0.18)'; ctx.fillRect(M, mapTop, w - 2 * M, mapH);
       ctx.globalCompositeOperation = 'source-over';
@@ -517,7 +518,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Galerie : carte claire + photos du voyage, façon carnet
-    id: 'galerie', name: 'Galerie', kind: 'Carnet',
+    id: 'galerie', name: 'Galerie', kind: 'Carnet', maxPhotos: 4, hasMap: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#161616', mute = '#8a857c', M = 80 * u;
       ctx.fillStyle = '#fbfaf7'; ctx.fillRect(0, 0, w, h);
@@ -534,7 +535,7 @@ const POSTER_TEMPLATES = [
       const proj = stFit(d.routes, { x: M + 60 * u, y: y + 60 * u, w: w - 2 * M - 120 * u, h: mapH - 120 * u }, 16);
       ctx.save(); stRoundRect(ctx, M, y, w - 2 * M, mapH, 20 * u); ctx.clip();
       ctx.fillStyle = '#eceae5'; ctx.fillRect(M, y, w - 2 * M, mapH);
-      await stDrawTiles(ctx, 'light', proj, { x: M, y, w: w - 2 * M, h: mapH }, 'url', d.pr);
+      if (d.showMap) await stDrawTiles(ctx, 'light', proj, { x: M, y, w: w - 2 * M, h: mapH }, 'url', d.pr);
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, 'routes'), width: 7 * u, casing: '#ffffff', casingWidth: 3 * u });
       ctx.restore();
       if (n) poPhotos(ctx, d.photos, M, y + mapH + 22 * u, w - 2 * M, phH, { gap: 22 * u, radius: 20 * u, grid: true });
@@ -546,7 +547,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Photo plein cadre : ta photo en fond, tracé et chiffres par-dessus
-    id: 'photo', name: 'Photo', kind: 'Ta photo', photoBg: true, dark: true,
+    id: 'photo', name: 'Photo', kind: 'Ta photo', photoBg: true, dark: true, maxPhotos: 3,
     async draw(ctx, d, w, h) {
       const u = w / 1200, M = 100 * u;
       poPhotoBg(ctx, d, 0, 0, w, h);
@@ -573,7 +574,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Photo + carte : photo en haut, carte et chiffres en bas
-    id: 'photocarte', name: 'Photo & carte', kind: 'Ta photo', photoBg: true,
+    id: 'photocarte', name: 'Photo & carte', kind: 'Ta photo', photoBg: true, maxPhotos: 3, hasMap: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#171614', mute = '#7f796f', M = 80 * u;
       const pH = Math.round(h * 0.54);
@@ -596,7 +597,7 @@ const POSTER_TEMPLATES = [
       const proj = stFit(d.routes, { x: M + 40 * u, y: by + 40 * u, w: mapW - 80 * u, h: bh - 80 * u }, 16);
       ctx.save(); stRoundRect(ctx, M, by, mapW, bh, 16 * u); ctx.clip();
       ctx.fillStyle = '#e7e3da'; ctx.fillRect(M, by, mapW, bh);
-      await stDrawTiles(ctx, 'topo', proj, { x: M, y: by, w: mapW, h: bh }, 'url', d.pr);
+      if (d.showMap) await stDrawTiles(ctx, 'topo', proj, { x: M, y: by, w: mapW, h: bh }, 'url', d.pr);
       ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = 'rgba(128,128,128,0.75)'; ctx.fillRect(M, by, mapW, bh);
       ctx.globalCompositeOperation = 'source-over';
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#e5482d'), width: 6 * u, casing: '#ffffff', casingWidth: 3 * u });
@@ -620,7 +621,7 @@ async function renderPoster(canvas, tpl, d, fmt, border, scale) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   if (!d.routes.length) return;
-  const dd = { ...d, pr: scale };
+  const dd = { ...d, pr: scale, photos: (d.photos || []).slice(0, tpl.maxPhotos || 4), showMap: d.showMap !== false };
   try {
     if (border === 'marge' || border === 'passe') {
       const m = border === 'passe' ? W * 0.085 : W * 0.035;
@@ -677,6 +678,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const [mock, setMock] = usePoState('noir');
   const [color, setColor] = usePoState('auto');
   const [coords, setCoords] = usePoState(true);
+  const [showMap, setShowMap] = usePoState(true);
+  const [actOpen, setActOpen] = usePoState(false);
   const [actId, setActId] = usePoState(() => poActivityOf(allRoutes));
   const act = poActivity(actId);
   const [metrics, setMetrics] = usePoState(() => poActivity(poActivityOf(allRoutes)).metrics);
@@ -710,8 +713,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
     title: showTitle ? (title.trim() || initialTitle || 'Mon aventure') : '',
     subtitle: showSub ? (subtitle == null ? defaultSub : subtitle) : '',
     stats: poStats(agg, metrics),
-    photos, bgPhoto: bgPhoto && bgPhoto.img,
-  }), [routes, agg, color, coords, title, subtitle, defaultSub, showTitle, showSub, metrics, photos, bgPhoto, actId]);
+    photos, bgPhoto: bgPhoto && bgPhoto.img, showMap,
+  }), [routes, agg, color, coords, title, subtitle, defaultSub, showTitle, showSub, metrics, photos, bgPhoto, actId, showMap]);
 
   const token = usePoRef(0);
   usePoEffect(() => {
@@ -806,7 +809,10 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 <div className={`relative rounded-[6px] overflow-hidden transition-all bg-neutral-800 ${sel ? 'ring-2 ring-white ring-offset-[3px] ring-offset-neutral-950' : 'ring-1 ring-white/10 group-hover:ring-white/40 group-hover:-translate-y-0.5'}`}
                   style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, boxShadow: sel ? '0 10px 30px -10px rgba(0,0,0,0.8)' : undefined }}>
                   <canvas ref={(el) => { thumbRefs.current[t.id] = el; }} width={240} height={340} className="block w-full h-full" />
-                  {t.photoBg && <span className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full grid place-items-center bg-black/55 text-white backdrop-blur"><I.Camera size={11} /></span>}
+                  {t.photoBg && <span title="Photo de fond" className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full grid place-items-center bg-black/60 text-white backdrop-blur"><I.ImagePlus size={11} /></span>}
+                  <span title={`Jusqu'à ${t.maxPhotos} photos du voyage`} className="absolute top-1.5 left-1.5 h-5 px-1.5 rounded-full flex items-center gap-1 bg-black/60 text-white text-[10px] font-semibold tabular-nums backdrop-blur">
+                    <I.Camera size={10} /> {t.maxPhotos}
+                  </span>
                 </div>
                 <div className="mt-2 px-0.5 leading-tight">
                   <div className={`text-[12.5px] font-medium truncate ${sel ? 'text-white' : 'text-neutral-300'}`}>{t.name}</div>
@@ -850,22 +856,31 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
         <div className={isMobile ? '' : 'flex-1 overflow-y-auto sb-scroll'}>
           {routeTools}
 
-          <StudioSection title="Activité">
-            <div className="grid grid-cols-2 gap-1.5">
-              {PO_ACTIVITIES.map((a) => {
-                const Ico = I[a.icon] || I.Route;
-                const on = a.id === actId;
-                return (
-                  <button key={a.id} onClick={() => setActId(a.id)}
-                    className={`h-10 flex items-center gap-2 rounded-lg px-2.5 text-[12.5px] font-medium transition-all ${on ? 'bg-white text-neutral-900' : 'bg-white/[0.05] text-neutral-300 hover:bg-white/[0.1] hover:text-white'}`}>
-                    <Ico size={15} /> <span className="truncate">{a.label}</span>
-                  </button>
-                );
-              })}
+          <StudioSection title="Activité & chiffres" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
+            <div className="relative mb-3">
+              <button onClick={() => setActOpen((v) => !v)}
+                className={`w-full h-10 flex items-center gap-2.5 rounded-lg px-3 text-[13px] font-medium transition-colors ${actOpen ? 'bg-white/[0.12]' : 'bg-white/[0.06] hover:bg-white/[0.1]'}`}>
+                {(() => { const Ico = I[act.icon] || I.Route; return <Ico size={16} />; })()}
+                <span className="flex-1 text-left truncate">{act.label}</span>
+                <span className="text-neutral-400 transition-transform" style={{ transform: actOpen ? 'rotate(180deg)' : 'none' }}><I.ChevronDown size={14} /></span>
+              </button>
+              {actOpen && <div className="fixed inset-0 z-10" onClick={() => setActOpen(false)}></div>}
+              {actOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-20 rounded-xl bg-neutral-900 ring-1 ring-white/10 shadow-2xl p-1 animate-menu">
+                  {PO_ACTIVITIES.map((a) => {
+                    const Ico = I[a.icon] || I.Route;
+                    const on = a.id === actId;
+                    return (
+                      <button key={a.id} onClick={() => { setActId(a.id); setActOpen(false); }}
+                        className={`w-full h-9 flex items-center gap-2.5 rounded-lg px-2.5 text-[12.5px] text-left ${on ? 'bg-white/[0.1] text-white' : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'}`}>
+                        <Ico size={15} /> <span className="flex-1">{a.label}</span>
+                        {on && <I.Check size={13} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </StudioSection>
-
-          <StudioSection title="Chiffres affichés" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
             <div className="flex flex-wrap gap-1.5">
               {act.avail.map((k) => {
                 const on = metrics.includes(k);
@@ -890,7 +905,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             </div>
           </StudioSection>
 
-          <StudioSection title="Photos" aside={<span className="text-[11px] text-neutral-500">{photos.length}/4</span>}>
+          <StudioSection title="Photos" aside={<span className="text-[11px] text-neutral-500">{Math.min(photos.length, tpl.maxPhotos)}/{tpl.maxPhotos}</span>}>
             <input ref={bgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { setBg(e.target.files[0]); e.target.value = ''; }} />
             <input ref={photosRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} />
             <div className="text-[12.5px] font-medium text-neutral-200 mb-2">Photo de fond</div>
@@ -925,7 +940,10 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 </button>
               )}
             </div>
-            <p className="mt-2 text-[11px] text-neutral-500">Jusqu'à 4 photos, intégrées à tous les modèles.</p>
+            <p className="mt-2 text-[11px] text-neutral-500 leading-snug">
+              Le modèle <span className="text-neutral-300">{tpl.name}</span> affiche jusqu'à {tpl.maxPhotos} photo{tpl.maxPhotos > 1 ? 's' : ''}.
+              {photos.length > tpl.maxPhotos && <span className="text-amber-400"> {photos.length - tpl.maxPhotos} non affichée{photos.length - tpl.maxPhotos > 1 ? 's' : ''} ici.</span>}
+            </p>
           </StudioSection>
 
           <StudioSection title="Format">
@@ -939,6 +957,9 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
           </StudioSection>
 
           <StudioSection title="Style">
+            <div className={`-mx-2 mb-3 ${tpl.hasMap ? '' : 'opacity-40 pointer-events-none'}`}>
+              <ShareFieldRow dark label={tpl.hasMap ? 'Fond de carte' : 'Fond de carte (sans objet pour ce modèle)'} on={tpl.hasMap && showMap} onToggle={() => setShowMap((v) => !v)} />
+            </div>
             <div className="text-[12.5px] font-medium text-neutral-200 mb-2">Couleur du tracé</div>
             <div className="flex flex-wrap gap-2">
               <button title="Couleur du modèle" onClick={() => setColor('auto')}
