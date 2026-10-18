@@ -308,11 +308,12 @@ async function pmDrawMap(ctx, o) {
       if (def.peaks) take(t.mountain_peak, 'peak');
     });
     cands.sort((a, b) => a.score - b.score);
-    const placed = [];
+    const avoid = o.avoid || [];
+    const placed = [...avoid];
     const lab = pal.label;
     const sizeOf = (c) => (c.cls === 'city' ? 19 : c.cls === 'town' ? 15.5 : c.cls === 'peak' ? 12.5 : 12.5) * u * (lab.scale || 1);
     for (const c of cands) {
-      if (placed.length >= def.maxLabels) break;
+      if (placed.length - avoid.length >= def.maxLabels) break;
       const size = sizeOf(c);
       const text = lab.upper && c.cls !== 'peak' ? c.name.toUpperCase() : c.name + (c.cls === 'peak' && c.ele ? ` ${Math.round(c.ele)} m` : '');
       g.font = poFont(lab.weight || 600, size, lab.family || ST_TXT, lab.italic || c.cls === 'peak');
