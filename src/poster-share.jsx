@@ -1,5 +1,5 @@
 // Studio poster : affiches imprimables de tes tracés (trek, marathon, road trip
-// moto, tour à vélo…). 8 modèles, formats papier (A4 → 50×70), cadres, photos
+// moto, tour à vélo…). 6 modèles, formats papier (A4 → 50×70), cadres, photos
 // du voyage, métriques adaptées à l'activité.
 // Même moteur canvas que les stories (story-share.jsx) : un modèle dessine dans
 // une zone w×h en unités de dessin (largeur 1200) ; l'export rééchantillonne à
@@ -345,19 +345,19 @@ const PO_PAL = {
   nuit: { land: '#1e1e1f', water: '#111112', coast: '#3b3b3d', road: '#2f2f31', roadMajor: '#434346', path: '#36363a', waterway: '#1c2630', wood: '#202421', park: '#202421',
     label: { color: 'rgba(255,255,255,0.6)', halo: '#18181a', upper: true, spacing: 0.16, weight: 600, dot: 'rgba(255,255,255,0.7)' } },
   satellite: { label: { color: '#ffffff', halo: 'rgba(0,0,0,0.6)', haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: '#ffffff' } },
-  ancienne: { water: '#d2c096', coast: '#5b4326', coastWidth: 1.4, road: '#b39a72', roadMajor: '#8e6f48', path: '#a68c64', waterway: '#8c9a8a', wood: '#dccb9b', park: '#dccb9b',
-    label: { color: '#3a2817', halo: 'rgba(234,217,181,0.95)', haloWidth: 3.5, family: PO_FELL, weight: 400, scale: 1.2, dot: '#3a2817' } },
   relief: { land: '#ebe7df', water: '#cfd9dd', coast: '#a9b8bd', coastWidth: 0.9, road: '#d6cfc2', roadMajor: '#bdb3a2', path: '#cbc3b5', waterway: '#b6c6cc', wood: '#dfe2d2', park: '#dfe2d2',
     label: { color: '#6a645a', halo: '#ebe7df', family: PO_SERIF, weight: 400, italic: true, scale: 1.1, dot: '#6a645a' } },
   galerie: { land: '#ecebe6', water: '#d5dee2', coast: '#bac7cc', coastWidth: 0.9, road: '#ffffff', roadMajor: '#ffffff', roadScale: 1.35, path: '#d8d5cd', waterway: '#c3d0d5', wood: '#e1e5d8', park: '#e1e5d8',
     label: { color: '#77736b', halo: '#ecebe6', upper: true, spacing: 0.12, weight: 600, dot: '#8a857c' } },
   photo: { water: 'rgba(10,20,30,0.22)', coast: 'rgba(255,255,255,0.55)', road: 'rgba(255,255,255,0.26)', roadMajor: 'rgba(255,255,255,0.45)', path: 'rgba(255,255,255,0.32)', waterway: 'rgba(255,255,255,0.3)',
     label: { color: '#ffffff', halo: 'rgba(0,0,0,0.5)', haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: '#ffffff' } },
-  photocarte: { land: '#e7e3da', water: '#cfd9dd', coast: '#b0bec3', coastWidth: 0.9, road: '#f8f6f1', roadMajor: '#ffffff', roadScale: 1.3, path: '#d4cec2', waterway: '#bccbd0', wood: '#dde1d1', park: '#dde1d1',
-    label: { color: '#7f796f', halo: '#e7e3da', upper: true, spacing: 0.12, weight: 600, dot: '#8a8378' } },
 };
 
-// ---------------------------------------------------------------- les 8 modèles
+// ---------------------------------------------------------------- les modèles
+// Modèles ouverts pour l'instant ; les autres sont affichés verrouillés
+const PO_OPEN_TEMPLATES = ['blueprint'];
+const poOpen = (id) => PO_OPEN_TEMPLATES.includes(id);
+
 const POSTER_TEMPLATES = [
   {
     // Plan technique : grille, cartouche, échelle, nord
@@ -512,131 +512,6 @@ const POSTER_TEMPLATES = [
     },
   },
   {
-    // Ancienne carte : papier vieilli, rose des vents, cartouche
-    id: 'ancienne', name: 'Ancienne carte', kind: 'Vintage', maxPhotos: 3,
-    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: [], mapStyle: 'nature', mapOpacity: 100, map: true },
-    async draw(ctx, d, w, h) {
-      const u = w / 1200, ink = '#3a2817', red = '#8e2a1b', paper = '#ead9b5';
-      // Papier vieilli
-      ctx.fillStyle = paper; ctx.fillRect(0, 0, w, h);
-      let g = ctx.createRadialGradient(w / 2, h / 2, w * 0.25, w / 2, h / 2, Math.max(w, h) * 0.75);
-      g.addColorStop(0, 'rgba(255,248,230,0.35)'); g.addColorStop(1, 'rgba(120,80,30,0.38)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-      poSpeckle(ctx, 0, 0, w, h, 2600, '#6b4a22', 11);
-      [[0.18, 0.22, 0.16], [0.78, 0.7, 0.2], [0.35, 0.86, 0.12]].forEach(([fx, fy, fr]) => {
-        const sg = ctx.createRadialGradient(w * fx, h * fy, 0, w * fx, h * fy, w * fr);
-        sg.addColorStop(0, 'rgba(140,95,40,0.10)'); sg.addColorStop(1, 'rgba(140,95,40,0)');
-        ctx.fillStyle = sg; ctx.fillRect(0, 0, w, h);
-      });
-      // Pliures
-      ctx.fillStyle = 'rgba(255,250,235,0.35)'; ctx.fillRect(w / 2 - 1.5 * u, 0, 1.5 * u, h); ctx.fillRect(0, h / 2 - 1.5 * u, w, 1.5 * u);
-      ctx.fillStyle = 'rgba(90,60,25,0.12)'; ctx.fillRect(w / 2, 0, 2 * u, h); ctx.fillRect(0, h / 2, w, 2 * u);
-      // Cadre double + coins
-      const M = 48 * u;
-      ctx.strokeStyle = ink; ctx.lineWidth = 6 * u; ctx.strokeRect(M, M, w - 2 * M, h - 2 * M);
-      ctx.lineWidth = 1.5 * u; ctx.strokeRect(M + 14 * u, M + 14 * u, w - 2 * M - 28 * u, h - 2 * M - 28 * u);
-      [[M, M], [w - M, M], [M, h - M], [w - M, h - M]].forEach(([x, y]) => {
-        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4); ctx.fillStyle = ink; ctx.fillRect(-11 * u, -11 * u, 22 * u, 22 * u);
-        ctx.fillStyle = paper; ctx.fillRect(-5 * u, -5 * u, 10 * u, 10 * u); ctx.restore();
-      });
-      // Carte
-      const mx = M + 44 * u, my = M + 44 * u, mw = w - 2 * mx;
-      const mh = h * (d.photos.length ? 0.42 : 0.52);
-      const proj = stFit(d.routes, { x: mx + 70 * u, y: my + 70 * u, w: mw - 140 * u, h: mh - 140 * u }, 15);
-      await poMap(ctx, d, proj, { x: mx, y: my, w: mw, h: mh }, PO_PAL.ancienne,
-        { u, labelRect: { x: mx + 20 * u, y: my + 40 * u, w: mw - 220 * u, h: mh - 60 * u } });
-      ctx.save(); ctx.beginPath(); ctx.rect(mx, my, mw, mh); ctx.clip();
-      poSpeckle(ctx, mx, my, mw, mh, 700, '#5b3b16', 3);
-      // Graticule réel (lat/lng)
-      const tl = poUnproj(proj, mx, my), br = poUnproj(proj, mx + mw, my + mh);
-      const span = Math.max(br[1] - tl[1], tl[0] - br[0]);
-      const step = [0.01, 0.02, 0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10].find((s) => span / s <= 6) || 10;
-      ctx.strokeStyle = 'rgba(58,40,23,0.35)'; ctx.lineWidth = 1.2 * u; ctx.setLineDash([6 * u, 6 * u]);
-      ctx.font = poFont(400, 15 * u, PO_FELL, true); ctx.fillStyle = 'rgba(58,40,23,0.8)';
-      for (let lng = Math.ceil(tl[1] / step) * step; lng < br[1]; lng += step) {
-        const [x] = proj.px(tl[0], lng); ctx.beginPath(); ctx.moveTo(x, my); ctx.lineTo(x, my + mh); ctx.stroke();
-        ctx.textAlign = 'center'; ctx.fillText(`${Math.abs(lng).toFixed(step < 0.1 ? 2 : 1)}°${lng >= 0 ? 'E' : 'O'}`, x, my + 22 * u);
-      }
-      for (let lat = Math.ceil(br[0] / step) * step; lat < tl[0]; lat += step) {
-        const [, y] = proj.px(lat, tl[1]); ctx.beginPath(); ctx.moveTo(mx, y); ctx.lineTo(mx + mw, y); ctx.stroke();
-        ctx.textAlign = 'left'; ctx.fillText(`${Math.abs(lat).toFixed(step < 0.1 ? 2 : 1)}°${lat >= 0 ? 'N' : 'S'}`, mx + 10 * u, y - 6 * u);
-      }
-      ctx.setLineDash([]);
-      // Tracé en pointillés + croix d'arrivée
-      ctx.save(); ctx.setLineDash([16 * u, 10 * u]);
-      stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, red), width: 6 * u, markers: false });
-      ctx.restore();
-      if (d.routes.length) {
-        const a = d.routes[0].coords[0], lr = d.routes[d.routes.length - 1], b = lr.coords[lr.coords.length - 1];
-        let [x, y] = proj.px(a[0], a[1]);
-        ctx.beginPath(); ctx.arc(x, y, 12 * u, 0, Math.PI * 2); ctx.fillStyle = paper; ctx.fill(); ctx.lineWidth = 4 * u; ctx.strokeStyle = ink; ctx.stroke();
-        [x, y] = proj.px(b[0], b[1]);
-        ctx.strokeStyle = poCol(d, red); ctx.lineWidth = 7 * u; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(x - 16 * u, y - 16 * u); ctx.lineTo(x + 16 * u, y + 16 * u); ctx.moveTo(x + 16 * u, y - 16 * u); ctx.lineTo(x - 16 * u, y + 16 * u); ctx.stroke();
-      }
-      // Rose des vents
-      const rx = mx + mw - 110 * u, ry = my + 120 * u, R = 74 * u;
-      ctx.strokeStyle = ink; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.arc(rx, ry, R * 0.78, 0, Math.PI * 2); ctx.stroke();
-      ctx.lineWidth = 1 * u; ctx.beginPath(); ctx.arc(rx, ry, R * 0.7, 0, Math.PI * 2); ctx.stroke();
-      for (let k = 0; k < 8; k++) {
-        const ang = k * Math.PI / 4 - Math.PI / 2, len = k % 2 ? R * 0.62 : R, wid = k % 2 ? R * 0.1 : R * 0.16;
-        [-1, 1].forEach((side) => {
-          ctx.beginPath(); ctx.moveTo(rx, ry);
-          ctx.lineTo(rx + Math.cos(ang) * len, ry + Math.sin(ang) * len);
-          ctx.lineTo(rx + Math.cos(ang + side * Math.PI / 2) * wid, ry + Math.sin(ang + side * Math.PI / 2) * wid);
-          ctx.closePath(); ctx.fillStyle = side < 0 ? ink : paper; ctx.fill(); ctx.lineWidth = 1 * u; ctx.strokeStyle = ink; ctx.stroke();
-        });
-      }
-      ctx.font = poFont(400, 30 * u, PO_FELL); ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.fillText('N', rx, ry - R - 10 * u);
-      ctx.restore();
-      ctx.strokeStyle = ink; ctx.lineWidth = 3 * u; ctx.strokeRect(mx, my, mw, mh);
-      ctx.lineWidth = 1 * u; ctx.strokeRect(mx + 7 * u, my + 7 * u, mw - 14 * u, mh - 14 * u);
-      // Cartouche
-      let y = my + mh + 70 * u;
-      const cx = w / 2, iw = w - 2 * mx;
-      if (d.title) y += poLines(ctx, d.title, cx, y, iw - 60 * u, 96 * u, ink, { family: PO_FELL, weight: 400, maxLines: 2, align: 'center', lh: 1.0 });
-      // Ornement
-      y += 26 * u;
-      ctx.fillStyle = ink; ctx.fillRect(cx - 220 * u, y, 180 * u, 1.5 * u); ctx.fillRect(cx + 40 * u, y, 180 * u, 1.5 * u);
-      ctx.save(); ctx.translate(cx, y); ctx.rotate(Math.PI / 4); ctx.fillRect(-8 * u, -8 * u, 16 * u, 16 * u); ctx.restore();
-      y += 30 * u;
-      const sub = [d.activityLabel, d.subtitle].filter(Boolean).join(' · ');
-      if (sub) { poLine(ctx, sub, cx, y + 26 * u, iw, 32 * u, '#5a4126', { family: PO_FELL, weight: 400, italic: true, align: 'center' }); y += 50 * u; }
-      // Statistiques : bloc fixe au-dessus de l'échelle ; photos entre les deux
-      const stats = d.stats, n = stats.length;
-      const by = h - M - 60 * u;
-      const sy = by - 170 * u;
-      if (d.photos.length) {
-        const phh = Math.min(200 * u, sy - 30 * u - (y + 16 * u));
-        if (phh > 70 * u) poPhotos(ctx, d.photos, mx + 40 * u, y + 16 * u, iw - 80 * u, phh, { gap: 22 * u, border: 9 * u, borderColor: '#f3e7cc', sepia: true, shadow: 10 * u, rotate: 1.5, maxRatio: 1.35 });
-      }
-      if (n) {
-        const colW = iw / n;
-        stats.forEach((s, i) => {
-          const x = mx + colW * i + colW / 2;
-          poLine(ctx, s.label, x, sy + 20 * u, colW - 20 * u, 24 * u, '#6b4e2e', { family: PO_FELL, weight: 400, italic: true, align: 'center' });
-          let sz = 62 * u; ctx.font = poFont(400, sz, PO_FELL);
-          const txt = s.value + (s.unit ? ' ' + s.unit : '');
-          const tw = ctx.measureText(txt).width; if (tw > colW - 24 * u) sz *= (colW - 24 * u) / tw;
-          ctx.font = poFont(400, sz, PO_FELL); ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.fillText(txt, x, sy + 20 * u + sz * 1.05);
-          if (i) { ctx.save(); ctx.translate(mx + colW * i, sy + 40 * u); ctx.rotate(Math.PI / 4); ctx.fillStyle = ink; ctx.fillRect(-5 * u, -5 * u, 10 * u, 10 * u); ctx.restore(); }
-        });
-      }
-      // Échelle façon carte ancienne + signature
-      const s = poScale(d, proj, 260 * u);
-      if (s) {
-        const seg = s.len / 4;
-        for (let k = 0; k < 4; k++) { ctx.fillStyle = k % 2 ? paper : ink; ctx.fillRect(mx + 20 * u + k * seg, by, seg, 9 * u); }
-        ctx.strokeStyle = ink; ctx.lineWidth = 1.5 * u; ctx.strokeRect(mx + 20 * u, by, s.len, 9 * u);
-        ctx.font = poFont(400, 20 * u, PO_FELL, true); ctx.fillStyle = ink; ctx.textAlign = 'left';
-        ctx.fillText('Échelle · ' + s.label, mx + 20 * u, by - 12 * u);
-      }
-      if (d.coords) { ctx.font = poFont(400, 18 * u, PO_FELL, true); ctx.fillStyle = '#5a4126'; ctx.textAlign = 'center'; ctx.fillText(poCoords(d), cx, by + 6 * u); }
-      await poDrawLogo(ctx, w - mx - 20 * u, by - 18 * u, 26 * u, ink, 'right');
-    },
-  },
-  {
     // Relief : ombrage du terrain sur papier, typographie éditoriale
     id: 'relief', name: 'Éditorial', kind: 'Magazine', maxPhotos: 4,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
@@ -729,45 +604,6 @@ const POSTER_TEMPLATES = [
       if (d.subtitle) poLine(ctx, d.subtitle, M, titleTop + th + 40 * u, w - 2 * M, 34 * u, 'rgba(255,255,255,0.85)', { family: PO_SERIF, weight: 400, italic: true });
       ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(M, statsTop - 34 * u, w - 2 * M, 1.5 * u);
       if (d.stats.length) stDrawStats(ctx, d.stats, M, statsTop, w - 2 * M, { layout: L, align: 'left', labelColor: 'rgba(255,255,255,0.7)' });
-    },
-  },
-  {
-    // Photo + carte : photo en haut, carte et chiffres en bas
-    id: 'photocarte', name: 'Photo & carte', kind: 'Ta photo', photoBg: true, maxPhotos: 3,
-    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#fc5200'], mapStyle: 'epure', mapOpacity: 100, map: true },
-    async draw(ctx, d, w, h) {
-      const u = w / 1200, ink = '#171614', mute = '#7f796f', M = 80 * u;
-      const pH = Math.round(h * 0.54);
-      ctx.fillStyle = '#f4f1ea'; ctx.fillRect(0, 0, w, h);
-      poPhotoBg(ctx, d, 0, 0, w, pH);
-      let g = ctx.createLinearGradient(0, pH * 0.45, 0, pH); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.7)');
-      ctx.fillStyle = g; ctx.fillRect(0, pH * 0.45, w, pH * 0.55);
-      g = ctx.createLinearGradient(0, 0, 0, 220 * u); g.addColorStop(0, 'rgba(0,0,0,0.45)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, w, 220 * u);
-      await poDrawLogo(ctx, M, 66 * u, 30 * u, '#ffffff');
-      const tw = d.photos.length ? w * 0.5 - M : w - 2 * M; // les tirages occupent la droite
-      const tsz = d.photos.length ? 88 * u : 104 * u;
-      const th = poLinesHeight(ctx, d.title, tw, tsz, { family: PO_SERIF, maxLines: 3, lh: 1.0 });
-      const titleTop = pH - 60 * u - (d.subtitle ? 46 * u : 0) - th;
-      if (d.title) poLines(ctx, d.title, M, titleTop, tw, tsz, '#ffffff', { family: PO_SERIF, maxLines: 3, lh: 1.0 });
-      if (d.subtitle) poLine(ctx, d.subtitle, M, titleTop + th + 34 * u, tw, 30 * u, 'rgba(255,255,255,0.88)', { family: PO_SERIF, weight: 400, italic: true });
-      // Bas : carte + chiffres empilés
-      const by = pH + 60 * u, bh = h - by - M;
-      const mapW = (w - 2 * M) * 0.58;
-      const proj = stFit(d.routes, { x: M + 40 * u, y: by + 40 * u, w: mapW - 80 * u, h: bh - 80 * u }, 16);
-      ctx.save(); stRoundRect(ctx, M, by, mapW, bh, 16 * u); ctx.fillStyle = '#e7e3da'; ctx.fill(); ctx.restore();
-      await poMap(ctx, d, proj, { x: M, y: by, w: mapW, h: bh }, PO_PAL.photocarte, { u, clip: (g) => stRoundRect(g, M, by, mapW, bh, 16 * u) });
-      ctx.save(); stRoundRect(ctx, M, by, mapW, bh, 16 * u); ctx.clip();
-      stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#e5482d'), width: 6 * u, casing: '#ffffff', casingWidth: 3 * u });
-      ctx.restore();
-      const sx = M + mapW + 50 * u, sw = w - M - sx;
-      const top = by + 6 * u;
-      stLabel(ctx, d.activityLabel, sx, top + 16 * u, 17 * u, mute);
-      poStack(ctx, d.stats, sx, top + 40 * u, sw, bh - 40 * u - (d.coords ? 50 * u : 0), { u, rule: 'rgba(23,22,20,0.85)', labelColor: mute, color: ink, maxSize: 84 * u, labelSize: 17 * u });
-      if (d.coords) stLabel(ctx, poCoords(d), sx, by + bh - 4 * u, 13 * u, mute);
-      // Photos du voyage : tirages posés à cheval sur la photo
-      if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), w * 0.52, pH - 170 * u, w * 0.48 - M, 200 * u, { gap: 16 * u, border: 9 * u, rotate: 3, shadow: 24 * u, maxRatio: 1.0, align: 'right' });
     },
   },
 ];
@@ -931,7 +767,7 @@ function MetricsList({ order, setOrder, enabled, onToggle, values, overrides = {
 }
 
 function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle, initialTitle, dark, isMobile, onToast, routeTools }) {
-  const [tplId, setTplId] = usePoState('nuit');
+  const [tplId, setTplId] = usePoState('blueprint');
   const [fmtId, setFmtId] = usePoState('a3');
   // Parcours : 1 = design, 2 = « Imprimez votre tracé » (fichier ou tirage encadré)
   const [step, setStep] = usePoState(1);
@@ -959,7 +795,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
     if (c._shared || !saved || !saved.tplId || !c[saved.tplId]) return c;
     return { ...c, _shared: poPick(c[saved.tplId], PO_SHARED_KEYS) };
   });
-  usePoEffect(() => { if (saved && saved.tplId) setTplId(saved.tplId); if (saved && saved.fmtId) setFmtId(saved.fmtId); if (saved && saved.actId) setActId(saved.actId); }, []);
+  usePoEffect(() => { if (saved && saved.tplId && poOpen(saved.tplId)) setTplId(saved.tplId); if (saved && saved.fmtId) setFmtId(saved.fmtId); if (saved && saved.actId) setActId(saved.actId); }, []);
   const [versions, setVersions] = usePoState(() => (saved && saved.versions) || []);
   usePoEffect(() => {
     const t = setTimeout(() => { try { localStorage.setItem(storeKey, JSON.stringify({ cfgs, tplId, fmtId, actId, versions })); } catch (e) {} }, 300);
@@ -971,7 +807,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
     showTitle: true, showSub: true, subtitle: null, title: null, act: null, order: null, enabled: null, border: 'none', mock: 'noir',
   });
   const cfgOf = (t, all = cfgs) => ({ ...defaultsFor(t), ...poOmit(all[t.id], PO_SHARED_KEYS), ...(all._shared || {}) });
-  const tpl = POSTER_TEMPLATES.find((t) => t.id === tplId) || POSTER_TEMPLATES[0];
+  const tpl = POSTER_TEMPLATES.find((t) => t.id === tplId && poOpen(t.id)) || POSTER_TEMPLATES[0];
   const cfg = cfgOf(tpl);
   const setCfg = (patch) => setCfgs((all) => {
     const cur = cfgOf(tpl, all);
@@ -1069,7 +905,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   };
   const setBg = async (file) => {
     const p = await readImageFile(file);
-    if (p) { setBgPhoto(p); if (!tpl.photoBg) setTplId('photo'); }
+    if (p) { setBgPhoto(p); if (!tpl.photoBg && poOpen('photo')) setTplId('photo'); }
   };
 
   const exportCanvas = async () => {
@@ -1104,7 +940,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   };
   const openVersion = (v) => {
     setCfgs((all) => ({ ...all, [v.tplId]: poOmit(v.cfg, PO_SHARED_KEYS), _shared: { ...(all._shared || {}), ...poPick(v.cfg, PO_SHARED_KEYS) } }));
-    setTplId(v.tplId); setFmtId(v.fmtId); if (v.actId) setActId(v.actId);
+    if (poOpen(v.tplId)) setTplId(v.tplId); setFmtId(v.fmtId); if (v.actId) setActId(v.actId);
     onToast && onToast('Version restaurée');
   };
   const saveBlob = (blob, name) => {
@@ -1159,20 +995,26 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
         <div className={`text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-400 mb-3 ${isMobile ? 'px-4' : ''}`}>Modèles</div>
         <div className={isMobile ? 'flex gap-3 overflow-x-auto sb-scroll pb-2 px-4 snap-x' : 'grid grid-cols-2 gap-x-3 gap-y-4'}>
           {POSTER_TEMPLATES.map((t) => {
-            const sel = t.id === tplId;
+            const sel = t.id === tpl.id, locked = !poOpen(t.id);
             return (
-              <button key={t.id} onClick={() => setTplId(t.id)} className={`text-left group ${isMobile ? 'w-[92px] shrink-0 snap-start' : ''}`}>
-                <div className={`relative rounded-[6px] overflow-hidden transition-all bg-neutral-800 ${sel ? 'ring-2 ring-white ring-offset-[3px] ring-offset-neutral-950' : 'ring-1 ring-white/10 group-hover:ring-white/40 group-hover:-translate-y-0.5'}`}
+              <button key={t.id} onClick={() => !locked && setTplId(t.id)} disabled={locked} title={locked ? 'Bientôt disponible' : undefined}
+                className={`text-left group ${locked ? 'cursor-not-allowed' : ''} ${isMobile ? 'w-[92px] shrink-0 snap-start' : ''}`}>
+                <div className={`relative rounded-[6px] overflow-hidden transition-all bg-neutral-800 ${sel ? 'ring-2 ring-white ring-offset-[3px] ring-offset-neutral-950' : locked ? 'ring-1 ring-white/[0.06]' : 'ring-1 ring-white/10 group-hover:ring-white/40 group-hover:-translate-y-0.5'}`}
                   style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, boxShadow: sel ? '0 10px 30px -10px rgba(0,0,0,0.8)' : undefined }}>
-                  <canvas ref={(el) => { thumbRefs.current[t.id] = el; }} width={240} height={340} className="block w-full h-full" />
-                  {t.photoBg && <span title="Photo de fond" className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full grid place-items-center bg-black/60 text-white backdrop-blur"><I.ImagePlus size={11} /></span>}
-                  <span title={`Jusqu'à ${t.maxPhotos} photos du voyage`} className="absolute top-1.5 left-1.5 h-5 px-1.5 rounded-full flex items-center gap-1 bg-black/60 text-white text-[10px] font-semibold tabular-nums backdrop-blur">
+                  <canvas ref={(el) => { thumbRefs.current[t.id] = el; }} width={240} height={340} className={`block w-full h-full ${locked ? 'opacity-30 grayscale' : ''}`} />
+                  {locked && (
+                    <span className="absolute inset-0 grid place-items-center">
+                      <span className="w-8 h-8 rounded-full grid place-items-center bg-black/70 text-white/80 ring-1 ring-white/15 backdrop-blur"><I.Lock size={14} /></span>
+                    </span>
+                  )}
+                  {t.photoBg && !locked && <span title="Photo de fond" className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full grid place-items-center bg-black/60 text-white backdrop-blur"><I.ImagePlus size={11} /></span>}
+                  {!locked && <span title={`Jusqu'à ${t.maxPhotos} photos du voyage`} className="absolute top-1.5 left-1.5 h-5 px-1.5 rounded-full flex items-center gap-1 bg-black/60 text-white text-[10px] font-semibold tabular-nums backdrop-blur">
                     <I.Camera size={10} /> {t.maxPhotos}
-                  </span>
+                  </span>}
                 </div>
                 <div className="mt-2 px-0.5 leading-tight">
-                  <div className={`text-[12.5px] font-medium truncate ${sel ? 'text-white' : 'text-neutral-300'}`}>{t.name}</div>
-                  {!isMobile && <div className="text-[10.5px] text-neutral-500">{t.kind}</div>}
+                  <div className={`text-[12.5px] font-medium truncate ${sel ? 'text-white' : locked ? 'text-neutral-500' : 'text-neutral-300'}`}>{t.name}</div>
+                  {!isMobile && <div className="text-[10.5px] text-neutral-500">{locked ? 'Bientôt' : t.kind}</div>}
                 </div>
               </button>
             );
