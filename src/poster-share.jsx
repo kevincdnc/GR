@@ -383,6 +383,14 @@ const POSTER_TEMPLATES = [
       await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, poBlueprintPal(bg),
         { u, labelRect: { x: M + 30 * u, y: M + 150 * u, w: w - 2 * M - 60 * u, h: cy - M - 170 * u },
           avoid: [{ x0: rx - R - 40 * u, x1: rx + R + 40 * u, y0: ry - R - 40 * u, y1: ry + R + 40 * u }] });
+      // Fondu linéaire en haut de la carte : logo, coordonnées et boussole restent lisibles
+      {
+        const fy = M + 12 * u, fh = 230 * u;
+        const fg = ctx.createLinearGradient(0, fy, 0, fy + fh);
+        const rgba = (a) => `rgba(${[1, 3, 5].map((i) => parseInt(bg.slice(i, i + 2), 16)).join(',')},${a})`;
+        fg.addColorStop(0, rgba(1)); fg.addColorStop(0.45, rgba(0.85)); fg.addColorStop(1, rgba(0));
+        ctx.fillStyle = fg; ctx.fillRect(M + 12 * u, fy, w - 2 * M - 24 * u, fh);
+      }
       // Quadrillage : normal autour du cadre, atténué à l'intérieur de la carte
       const gs = w / 48;
       const grid = (r, a1, a2) => {
