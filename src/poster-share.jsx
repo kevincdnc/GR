@@ -1204,15 +1204,6 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             </p>
           </StudioSection>
 
-          <StudioSection title="Format">
-            <div className="grid grid-cols-3 gap-1.5">
-              {POSTER_FORMATS.map((f) => (
-                <button key={f.id} onClick={() => setFmtId(f.id)} className={`${chip(f.id === fmtId)} h-auto py-2 flex flex-col items-center leading-tight`}>
-                  <span>{f.name}</span><span className="text-[10px] opacity-60 mt-0.5">{f.sub}</span>
-                </button>
-              ))}
-            </div>
-          </StudioSection>
 
           <div className="p-5 pt-4" style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' } : undefined}>
             <button onClick={() => { setStep(2); if (mock === 'none') setMock('noir'); }} disabled={!routes.length}
@@ -1230,6 +1221,16 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
               </button>
               <div className="mt-3 text-[18px] font-semibold tracking-tight">Imprimez votre tracé</div>
               <div className="text-[12.5px] text-neutral-400 mt-0.5">{tpl.name} · {fmt.name}{fmt.sub !== 'cm' ? ` (${fmt.sub})` : ' cm'}</div>
+            </div>
+            <div className="px-5 pb-5">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-400 mb-2.5">Format</div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {POSTER_FORMATS.map((f) => (
+                  <button key={f.id} onClick={() => setFmtId(f.id)} className={`${chip(f.id === fmtId)} h-auto py-2 flex flex-col items-center leading-tight`}>
+                    <span>{f.name}</span><span className="text-[10px] opacity-60 mt-0.5">{f.sub}</span>
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="px-5 flex flex-col gap-2.5">
               {[
