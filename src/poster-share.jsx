@@ -292,29 +292,43 @@ const PO_DARK_BGS = [
   { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu plan' }, { hex: '#0f1d33', name: 'Bleu nuit' }, { hex: '#1e2a33', name: 'Ardoise' },
   { hex: '#15362b', name: 'Vert forêt' }, { hex: '#3a1420', name: 'Bordeaux' }, { hex: '#2b2140', name: 'Aubergine' },
 ];
-// Boussole moderne et épurée : anneau fin, 8 repères, aiguille losange, 8 directions
+// Boussole minimale : anneau fin, aiguille losange, points cardinaux
 function poCompass(ctx, x, y, R, u, color, bg) {
-  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round';
-  ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
-  for (let k = 0; k < 8; k++) {
-    const r = k * Math.PI / 4, l = k % 2 ? 0.1 : 0.17;
-    ctx.lineWidth = (k % 2 ? 1 : 1.6) * u;
-    ctx.beginPath(); ctx.moveTo(x + Math.sin(r) * R, y - Math.cos(r) * R); ctx.lineTo(x + Math.sin(r) * R * (1 - l), y - Math.cos(r) * R * (1 - l)); ctx.stroke();
-  }
+  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.lineWidth = 1.1 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
   // Aiguille : nord plein, sud au trait
-  const nl = R * 0.62, wd = R * 0.16;
+  const nl = R * 0.7, wd = R * 0.17;
   ctx.beginPath(); ctx.moveTo(x, y - nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = bg || '#000000'; ctx.lineWidth = 1.1 * u; ctx.lineJoin = 'round';
+  ctx.fillStyle = bg || '#000000'; ctx.lineWidth = 1 * u;
   ctx.beginPath(); ctx.moveTo(x, y + nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 2.4 * u, 0, Math.PI * 2); ctx.fill();
-  ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'].forEach((t, k) => {
-    const r = k * Math.PI / 4, card = k % 2 === 0;
-    const sz = t === 'N' ? 15 * u : card ? 12 * u : 9 * u;
-    const dd = R + (card ? 13 : 12) * u;
-    ctx.globalAlpha = card ? 1 : 0.7;
-    ctx.font = stFont(t === 'N' ? 700 : 500, sz, ST_TXT); ctx.textAlign = 'center';
+  ctx.fillStyle = color;
+  [['N', 0], ['E', 1], ['S', 2], ['O', 3]].forEach(([t, k]) => {
+    const r = k * Math.PI / 2, sz = t === 'N' ? 13 * u : 10.5 * u, dd = R + 11 * u;
+    ctx.globalAlpha = t === 'N' ? 1 : 0.75;
+    ctx.font = stFont(t === 'N' ? 700 : 600, sz, ST_TXT); ctx.textAlign = 'center';
     ctx.fillText(t, x + Math.sin(r) * dd, y - Math.cos(r) * dd + sz * 0.36);
   });
+  ctx.restore();
+}
+// Marqueurs départ / arrivée (sans lettre) : départ = cible, arrivée = drapeau à damier
+function poStartEnd(ctx, d, proj, u, color, bg) {
+  if (!d.routes.length) return;
+  const a = d.routes[0].coords[0], lr = d.routes[d.routes.length - 1], b = lr.coords[lr.coords.length - 1];
+  let [x, y] = proj.px(a[0], a[1]);
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, 11 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill();
+  ctx.lineWidth = 3 * u; ctx.strokeStyle = color; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, 4 * u, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+  [x, y] = proj.px(b[0], b[1]);
+  ctx.beginPath(); ctx.arc(x, y, 5 * u, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+  const ph = 34 * u, fw = 24 * u, fh = 16 * u, cs = fw / 4;
+  ctx.lineWidth = 2.4 * u; ctx.strokeStyle = color; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - ph); ctx.stroke();
+  const fx = x + 1 * u, fy = y - ph;
+  ctx.fillStyle = color; ctx.fillRect(fx, fy, fw, fh);
+  ctx.fillStyle = bg;
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) if ((i + j) % 2) ctx.fillRect(fx + i * cs, fy + j * (fh / 2), cs, fh / 2);
+  ctx.lineWidth = 1.2 * u; ctx.strokeRect(fx, fy, fw, fh);
   ctx.restore();
 }
 // Photo factice (aperçu seulement) : tirage scotché avec un croquis au trait
@@ -379,7 +393,7 @@ const POSTER_TEMPLATES = [
       const proj = stFit(d.routes, { x: M + 110 * u, y: M + 130 * u, w: w - 2 * M - 220 * u, h: cy - M - 230 * u });
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       // Carte vectorielle dans le cadre, sous la grille
-      const rx = w - M - 100 * u, ry = M + 108 * u, R = 46 * u; // rose des vents
+      const R = 30 * u, rx = w - M - 50 * u - R - 12 * u, ry = M + 78 * u; // boussole alignée sur le logo
       await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, poBlueprintPal(bg),
         { u, labelRect: { x: M + 30 * u, y: M + 150 * u, w: w - 2 * M - 60 * u, h: cy - M - 170 * u },
           avoid: [{ x0: rx - R - 40 * u, x1: rx + R + 40 * u, y0: ry - R - 40 * u, y1: ry + R + 40 * u }] });
@@ -408,21 +422,17 @@ const POSTER_TEMPLATES = [
       ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(cx + cw * 0.36, cy + hh, 1.5 * u, ch - hh);
       // Photos punaisées à gauche du cartouche
       const leftX = M + 50 * u, leftW = cx - 40 * u - leftX;
-      if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), leftX, cy + 70 * u, leftW, ch - 110 * u, { gap: 18 * u, border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'left', tape: true, u });
-      else if (d.preview && d.photoSlot !== false) poPhotoPlaceholder(ctx, leftX + 6 * u, cy + 76 * u, leftW, ch - 120 * u, u, bg);
+      // Zone photos : entre le bord gauche du cadre et le cartouche, sous l'échelle
+      const zx = M + 12 * u, zw = cx - zx, zy = cy + 64 * u, zh = ch - 100 * u;
+      if (d.photos.length === 1) poPhotos(ctx, d.photos, zx + 30 * u, zy, zw - 60 * u, zh, { border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'center', tape: true, u });
+      else if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), leftX, zy + 6 * u, leftW, zh - 6 * u, { gap: 18 * u, border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'left', tape: true, u });
+      else if (d.preview && d.photoSlot !== false) { const pw = Math.min(zw - 60 * u, zh * 1.25); poPhotoPlaceholder(ctx, zx + (zw - pw) / 2, zy + 6 * u, pw, zh - 10 * u, u, bg); }
       // Tracé
       ctx.save(); ctx.setLineDash([2 * u, 10 * u]);
       stDrawRoutes(ctx, d.routes, proj, { color: 'rgba(255,255,255,0.35)', width: 18 * u, markers: false });
       ctx.restore();
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffffff'), width: 4 * u, markers: false });
-      const ends = d.routes.length ? [d.routes[0].coords[0], d.routes[d.routes.length - 1].coords.slice(-1)[0]] : [];
-      ends.forEach((c, i) => {
-        const [x, y] = proj.px(c[0], c[1]);
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * u;
-        ctx.beginPath(); ctx.arc(x, y, 16 * u, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x - 28 * u, y); ctx.lineTo(x + 28 * u, y); ctx.moveTo(x, y - 28 * u); ctx.lineTo(x, y + 28 * u); ctx.stroke();
-        stLabel(ctx, i ? 'B' : 'A', x + 30 * u, y - 22 * u, 18 * u, '#fff');
-      });
+      poStartEnd(ctx, d, proj, u, '#ffffff', bg);
       // Nord + échelle
       poCompass(ctx, rx, ry, R, u, '#ffffff', bg);
       poScaleBar(ctx, d, proj, leftX, cy + 14 * u, Math.min(leftW, w * 0.22), '#fff', u);
@@ -1262,7 +1272,18 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             </StudioSection>
           )}
 
+          <StudioSection title="Bordure">
+            <div className="grid grid-cols-2 gap-1.5">
+              {POSTER_BORDERS.map((b) => <button key={b.id} onClick={() => setBorder(b.id)} className={chip(b.id === border)}>{b.name}</button>)}
+            </div>
+            <p className="mt-2 text-[11px] text-neutral-500 leading-snug">Imprimée avec le poster (fichier et tirage).</p>
+          </StudioSection>
+
           <StudioSection title="Carte">
+            {/* Indépendant de la carte : les villes peuvent s'afficher seules */}
+            <div className="-mx-2">
+              <ShareFieldRow dark label="Nom des villes" on={mapLabels} onToggle={() => setMapLabels((v) => !v)} />
+            </div>
             <div className="-mx-2">
               <ShareFieldRow dark label="Carte derrière le tracé" on={showMap} onToggle={() => setShowMap((v) => !v)} />
             </div>
@@ -1298,10 +1319,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 </div>
               </>
             )}
-            {/* Indépendant de la carte : les villes peuvent s'afficher seules */}
-            <div className="-mx-2 mt-2">
-              <ShareFieldRow dark label="Noms des villes (hors tracé)" on={mapLabels} onToggle={() => setMapLabels((v) => !v)} />
-            </div>
+
           </StudioSection>
 
           <StudioSection title="Textes">
@@ -1399,7 +1417,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             <div className="px-5 flex flex-col gap-2.5">
               {[
                 { id: 'file', icon: 'Download', title: 'Fichier numérique HD', desc: 'PNG 300 dpi + SVG vectoriel, à imprimer où tu veux', price: '3,99 €' },
-                { id: 'print', icon: 'Poster', title: 'Tirage encadré', desc: 'Papier d’art, bordure et cadre au choix', price: 'Bientôt' },
+                { id: 'print', icon: 'Poster', title: 'Tirage encadré', desc: 'Papier d’art, livré avec le cadre de ton choix', price: 'Bientôt' },
               ].map((o) => {
                 const on = offer === o.id; const Ico = I[o.icon];
                 return (
@@ -1436,11 +1454,6 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
 
             {offer === 'print' && (
               <div className="mt-2">
-                <StudioSection title="Bordure imprimée">
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {POSTER_BORDERS.map((b) => <button key={b.id} onClick={() => setBorder(b.id)} className={chip(b.id === border)}>{b.name}</button>)}
-                  </div>
-                </StudioSection>
                 <StudioSection title="Cadre">
                   <div className="flex gap-2.5">
                     {POSTER_MOCKUPS.map((m) => (
