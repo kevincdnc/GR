@@ -293,7 +293,7 @@ function poBlueprintPal(bg) {
 }
 // Fonds sombres proposés (rendu sûr à l'impression : blanc et tracé clair ressortent)
 const PO_DARK_BGS = [
-  { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu plan' }, { hex: '#0f1d33', name: 'Bleu nuit' }, { hex: '#1e2a33', name: 'Ardoise' },
+  { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu marine' }, { hex: '#0f1d33', name: 'Bleu nuit' }, { hex: '#1e2a33', name: 'Ardoise' },
   { hex: '#15362b', name: 'Vert forêt' }, { hex: '#3a1420', name: 'Bordeaux' }, { hex: '#2b2140', name: 'Aubergine' },
 ];
 // Boussole minimale : anneau fin, aiguille losange, points cardinaux
@@ -369,10 +369,10 @@ const POSTER_TEMPLATES = [
     // Plan technique : grille, cartouche, échelle, nord
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#141414' },
+    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#103c6b' },
     bgs: PO_DARK_BGS, photoSlot: true, infos: ['activity', 'start'],
     async draw(ctx, d, w, h) {
-      const u = w / 1200, bg = d.bg || '#141414', line = 'rgba(255,255,255,0.85)';
+      const u = w / 1200, bg = d.bg || '#103c6b', line = 'rgba(255,255,255,0.85)';
       const M = 50 * u;
       const items = d.stats.map((s) => [s.short || s.label, s.value + (s.unit ? ' ' + s.unit : '')]);
       const cw = w * 0.5, rh = 50 * u, hh = d.subtitle ? 124 * u : 104 * u, ch = hh + items.length * rh;
@@ -701,6 +701,29 @@ function StudioSection({ title, aside, children, defaultOpen = true }) {
 function poHash(str) { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
 
 // Petite étoile « recommandé » posée sur une pastille
+// Étapes du panneau : contenu → personnalisation de la carte → cadrage et impression
+const PO_STEPS = ['Contenu', 'Carte', 'Cadre'];
+function PoStepper({ step, setStep }) {
+  return (
+    <div className="shrink-0 flex items-center gap-1 px-4 h-12 border-b border-white/[0.06]">
+      {PO_STEPS.map((name, i) => {
+        const n = i + 1, on = n === step, done = n < step;
+        return (
+          <React.Fragment key={n}>
+            {i > 0 && <span className={`flex-1 h-px ${n <= step ? 'bg-white/30' : 'bg-white/10'}`} />}
+            <button onClick={() => setStep(n)} className={`flex items-center gap-1.5 h-8 px-1.5 rounded-lg text-[12px] font-medium transition-colors ${on ? 'text-white' : done ? 'text-neutral-300 hover:text-white' : 'text-neutral-500 hover:text-neutral-300'}`}>
+              <span className={`w-5 h-5 rounded-full grid place-items-center text-[10.5px] font-semibold tabular-nums ${on ? 'bg-white text-neutral-900' : done ? 'bg-white/15 text-white' : 'ring-1 ring-white/20'}`}>
+                {done ? <I.Check size={11} /> : n}
+              </span>
+              {name}
+            </button>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
 // Recommandé : simple point vert, discret
 function RecStar() {
   return <span className="pointer-events-none absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-neutral-950" />;
@@ -845,6 +868,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   // Accès « à plat » pour l'interface
   const { color, customColor, coords, mapLabels, mapStyle, mapOpacity, showTitle, showSub, subtitle, border, mock } = cfg;
   const showMap = cfg.map, bgColor = cfg.bg;
+  const photoOn = !tpl.photoSlot || cfg.photoSlot !== false;
   const order = orderOf(cfg), enabled = enabledOf(cfg);
   const metrics = order.filter((k) => enabled.has(k));
   const customOn = color !== 'auto' && !SHARE_COLORS.some((c) => c.value === color);
@@ -889,12 +913,12 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
       subtitle: c.showSub ? (c.subtitle == null ? defaultSub : c.subtitle) : '',
       stats: poStats(agg, ord.filter((k) => en.has(k)), infoX).map((st) => (c.values && c.values[st.key] ? { ...st, value: c.values[st.key], unit: '' } : st)),
       photoSlot: c.photoSlot,
-      photos, bgPhoto: bgPhoto && bgPhoto.img, showMap: c.map, mapStyle: c.mapStyle, mapOpacity: c.mapOpacity / 100,
+      photos: t.photoSlot && c.photoSlot === false ? [] : photos, bgPhoto: bgPhoto && bgPhoto.img, showMap: c.map, mapStyle: c.mapStyle, mapOpacity: c.mapOpacity / 100,
       mapLabels: c.mapLabels, bg: c.bg, preview: true,
     };
   };
   const data = usePoMemo(() => dataFor(tpl), [cfgs, tplId, routes, agg, title, defaultSub, photos, bgPhoto, actId]);
-  const stageMock = step === 2 && offer === 'print' ? mock : 'none';
+  const stageMock = step === 3 ? mock : 'none'; // aperçu en direct du cadre
 
   const token = usePoRef(0);
   usePoEffect(() => {
@@ -1058,7 +1082,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
               <div className="relative w-full h-full overflow-hidden" style={ms ? { boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' } : undefined}>
                 <canvas ref={previewRef} width={1000} height={1414} className="block w-full h-full" />
                 {!ready && <div className="absolute inset-0 grid place-items-center text-[12px] text-neutral-400 bg-neutral-900">Préparation…</div>}
-                {tpl.photoSlot && cfg.photoSlot !== false && !photos.length && ready && slot && (
+                {step === 1 && tpl.photoSlot && cfg.photoSlot !== false && !photos.length && ready && slot && (
                   <button onClick={() => photosRef.current && photosRef.current.click()}
                     style={{ left: `${(slot.l + slot.w / 2) * 100}%`, top: `${(slot.t + slot.h * 0.82) * 100}%`, transform: 'translate(-50%, -50%)' }}
                     className="absolute whitespace-nowrap flex items-center gap-1.5 rounded-full pl-2.5 pr-3 h-7 text-[11.5px] font-medium bg-black/55 text-white/90 ring-1 ring-white/20 backdrop-blur hover:bg-black/70 transition-colors">
@@ -1082,7 +1106,10 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
 
       {/* Inspecteur */}
       <div className={isMobile ? 'order-3 flex flex-col border-t border-white/[0.06]' : 'w-[340px] shrink-0 flex flex-col border-l border-white/[0.06] bg-white/[0.015]'}>
+        <PoStepper step={step} setStep={setStep} />
         <div className={isMobile ? '' : 'flex-1 overflow-y-auto sb-scroll'}>
+          <input ref={bgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { setBg(e.target.files[0]); e.target.value = ''; }} />
+          <input ref={photosRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} />
           {step === 1 && (<>
           {routeTools}
 
@@ -1113,6 +1140,81 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             </div>
           </StudioSection>
 
+          <StudioSection title="Textes">
+            <div className="flex flex-col gap-2">
+              <ShareFieldRow dark label="Titre" on={showTitle} onToggle={() => setShowTitle((v) => !v)} />
+              {showTitle && <input value={tplTitle} onChange={(e) => setTplTitle(e.target.value)} placeholder={initialTitle || 'Titre du poster'} maxLength={80} className={inputCls} />}
+              <ShareFieldRow dark label="Sous-titre" on={showSub} onToggle={() => setShowSub((v) => !v)} />
+              {showSub && <input value={subtitle == null ? defaultSub : subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="Ex. Bretagne · été 2026" maxLength={80} className={inputCls} />}
+              <ShareFieldRow dark label="Coordonnées GPS" on={coords} onToggle={() => setCoords((v) => !v)} />
+            </div>
+          </StudioSection>
+
+          <StudioSection title="Infos affichées" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
+            <div className="text-[11px] text-neutral-500 mb-2">Glisse pour réordonner, double-clique une valeur pour la modifier.</div>
+            <MetricsList order={order} setOrder={setOrder} enabled={enabled} onToggle={toggleMetric} values={metricValues} overrides={cfg.values || {}} onEdit={setMetricValue} />
+            <p className="mt-2.5 text-[11px] text-neutral-500 leading-snug">Proposées selon l'activité. Les durées sans GPS sont estimées pour {act.label.toLowerCase()}.</p>
+          </StudioSection>
+
+          <StudioSection title="Photo" aside={photoOn ? <span className="text-[11px] text-neutral-500">{Math.min(photos.length, tpl.maxPhotos)}/{tpl.maxPhotos}</span> : <span className="text-[11px] text-neutral-500">Non</span>}>
+            {tpl.photoBg && (<>
+            <div className="text-[12.5px] font-medium text-neutral-200 mb-2">Photo de fond</div>
+            {bgPhoto ? (
+              <div className="flex items-center gap-3 rounded-lg p-2 bg-white/[0.04]">
+                <img src={bgPhoto.url} alt="" className="w-12 h-12 rounded-md object-cover" />
+                <div className="flex-1 min-w-0 text-[12px] text-neutral-400">Photo de fond du poster</div>
+                <button onClick={() => bgRef.current.click()} className="text-[12px] font-medium text-blue-400 hover:text-blue-300 px-1">Changer</button>
+                <button onClick={() => setBgPhoto(null)} aria-label="Retirer" className="w-8 h-8 grid place-items-center rounded-md text-neutral-400 hover:text-white hover:bg-white/10"><I.Trash size={14} /></button>
+              </div>
+            ) : (
+              <button onClick={() => bgRef.current.click()}
+                onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setBg(e.dataTransfer.files[0]); }}
+                className="w-full h-16 rounded-lg border border-dashed border-white/15 text-[12.5px] text-neutral-300 flex items-center justify-center gap-2 hover:border-white/35 hover:bg-white/[0.03] transition-colors">
+                <I.ImagePlus size={16} /> Choisir ou glisser une photo
+              </button>
+            )}
+            </>)}
+            {tpl.photoSlot && (
+              <div className="-mx-2 mb-1">
+                <ShareFieldRow dark label="Photo sur le poster" on={photoOn} onToggle={() => setCfg((c) => ({ photoSlot: c.photoSlot === false }))} />
+              </div>
+            )}
+            {photoOn && (<>
+            {tpl.photoSlot && !photos.length && <p className="mb-3 text-[11px] text-neutral-500 leading-snug">Un emplacement photo est réservé sur le poster : ajoute ta photo ou désactive-le.</p>}
+            <div className={`text-[12.5px] font-medium text-neutral-200 mb-2 ${tpl.photoBg ? 'mt-4' : ''}`}>Photos du voyage</div>
+            <div className="grid grid-cols-4 gap-2">
+              {photos.map((p, i) => (
+                <div key={i} className="relative aspect-square rounded-md overflow-hidden group">
+                  <img src={p.url} alt="" className="w-full h-full object-cover" />
+                  <button onClick={() => setPhotos((ps) => ps.filter((_, j) => j !== i))} aria-label="Retirer"
+                    className="absolute top-1 right-1 w-6 h-6 grid place-items-center rounded-full bg-black/65 text-white opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"><I.X size={12} /></button>
+                </div>
+              ))}
+              {photos.length < 4 && (
+                <button onClick={() => photosRef.current.click()}
+                  onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); addPhotos(e.dataTransfer.files); }}
+                  className="aspect-square rounded-md border border-dashed border-white/15 grid place-items-center text-neutral-400 hover:text-white hover:border-white/35 transition-colors" aria-label="Ajouter des photos">
+                  <I.Plus size={18} />
+                </button>
+              )}
+            </div>
+            <p className="mt-2 text-[11px] text-neutral-500 leading-snug">
+              Le modèle <span className="text-neutral-300">{tpl.name}</span> affiche jusqu'à {tpl.maxPhotos} photo{tpl.maxPhotos > 1 ? 's' : ''}.
+              {photos.length > tpl.maxPhotos && <span className="text-amber-400"> {photos.length - tpl.maxPhotos} non affichée{photos.length - tpl.maxPhotos > 1 ? 's' : ''} ici.</span>}
+            </p>
+            </>)}
+          </StudioSection>
+
+
+          <div className="p-5 pt-4" style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' } : undefined}>
+            <button onClick={() => { setStep(2); }} disabled={!routes.length}
+              className="w-full h-12 flex items-center justify-center gap-2 rounded-xl text-[14px] font-semibold text-neutral-900 bg-white hover:bg-neutral-200 disabled:opacity-50 transition-colors">
+              Suivant : la carte <I.ChevronRight size={17} />
+            </button>
+          </div>
+          </>)}
+
+          {step === 2 && (<>
           <StudioSection title="Couleur du tracé">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="relative">
@@ -1155,12 +1257,6 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             </StudioSection>
           )}
 
-          <StudioSection title="Bordure">
-            <div className="grid grid-cols-2 gap-1.5">
-              {POSTER_BORDERS.map((b) => <button key={b.id} onClick={() => setBorder(b.id)} className={chip(b.id === border)}>{b.name}</button>)}
-            </div>
-            <p className="mt-2 text-[11px] text-neutral-500 leading-snug">Imprimée avec le poster (fichier et tirage).</p>
-          </StudioSection>
 
           <StudioSection title="Carte">
             {/* Indépendant de la carte : les villes peuvent s'afficher seules */}
@@ -1205,89 +1301,17 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
 
           </StudioSection>
 
-          <StudioSection title="Textes">
-            <div className="flex flex-col gap-2">
-              <ShareFieldRow dark label="Titre" on={showTitle} onToggle={() => setShowTitle((v) => !v)} />
-              {showTitle && <input value={tplTitle} onChange={(e) => setTplTitle(e.target.value)} placeholder={initialTitle || 'Titre du poster'} maxLength={80} className={inputCls} />}
-              <ShareFieldRow dark label="Sous-titre" on={showSub} onToggle={() => setShowSub((v) => !v)} />
-              {showSub && <input value={subtitle == null ? defaultSub : subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="Ex. Bretagne · été 2026" maxLength={80} className={inputCls} />}
-              <ShareFieldRow dark label="Coordonnées GPS" on={coords} onToggle={() => setCoords((v) => !v)} />
-            </div>
-          </StudioSection>
-
-          <StudioSection title="Infos affichées" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
-            <div className="text-[11px] text-neutral-500 mb-2">Glisse pour réordonner, double-clique une valeur pour la modifier.</div>
-            <MetricsList order={order} setOrder={setOrder} enabled={enabled} onToggle={toggleMetric} values={metricValues} overrides={cfg.values || {}} onEdit={setMetricValue} />
-            <p className="mt-2.5 text-[11px] text-neutral-500 leading-snug">Proposées selon l'activité. Les durées sans GPS sont estimées pour {act.label.toLowerCase()}.</p>
-          </StudioSection>
-
-          <StudioSection title="Photos" aside={<span className="text-[11px] text-neutral-500">{Math.min(photos.length, tpl.maxPhotos)}/{tpl.maxPhotos}</span>}>
-            <input ref={bgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { setBg(e.target.files[0]); e.target.value = ''; }} />
-            <input ref={photosRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} />
-            {tpl.photoBg && (<>
-            <div className="text-[12.5px] font-medium text-neutral-200 mb-2">Photo de fond</div>
-            {bgPhoto ? (
-              <div className="flex items-center gap-3 rounded-lg p-2 bg-white/[0.04]">
-                <img src={bgPhoto.url} alt="" className="w-12 h-12 rounded-md object-cover" />
-                <div className="flex-1 min-w-0 text-[12px] text-neutral-400">Photo de fond du poster</div>
-                <button onClick={() => bgRef.current.click()} className="text-[12px] font-medium text-blue-400 hover:text-blue-300 px-1">Changer</button>
-                <button onClick={() => setBgPhoto(null)} aria-label="Retirer" className="w-8 h-8 grid place-items-center rounded-md text-neutral-400 hover:text-white hover:bg-white/10"><I.Trash size={14} /></button>
-              </div>
-            ) : (
-              <button onClick={() => bgRef.current.click()}
-                onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setBg(e.dataTransfer.files[0]); }}
-                className="w-full h-16 rounded-lg border border-dashed border-white/15 text-[12.5px] text-neutral-300 flex items-center justify-center gap-2 hover:border-white/35 hover:bg-white/[0.03] transition-colors">
-                <I.ImagePlus size={16} /> Choisir ou glisser une photo
-              </button>
-            )}
-            </>)}
-            {tpl.photoSlot && !photos.length && (
-              <div className="-mx-2 mb-2">
-                <ShareFieldRow dark label="Emplacement photo par défaut" on={cfg.photoSlot !== false} onToggle={() => setCfg((c) => ({ photoSlot: c.photoSlot === false }))} />
-              </div>
-            )}
-            <div className={`text-[12.5px] font-medium text-neutral-200 mb-2 ${tpl.photoBg ? 'mt-4' : ''}`}>Photos du voyage</div>
-            <div className="grid grid-cols-4 gap-2">
-              {photos.map((p, i) => (
-                <div key={i} className="relative aspect-square rounded-md overflow-hidden group">
-                  <img src={p.url} alt="" className="w-full h-full object-cover" />
-                  <button onClick={() => setPhotos((ps) => ps.filter((_, j) => j !== i))} aria-label="Retirer"
-                    className="absolute top-1 right-1 w-6 h-6 grid place-items-center rounded-full bg-black/65 text-white opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"><I.X size={12} /></button>
-                </div>
-              ))}
-              {photos.length < 4 && (
-                <button onClick={() => photosRef.current.click()}
-                  onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); addPhotos(e.dataTransfer.files); }}
-                  className="aspect-square rounded-md border border-dashed border-white/15 grid place-items-center text-neutral-400 hover:text-white hover:border-white/35 transition-colors" aria-label="Ajouter des photos">
-                  <I.Plus size={18} />
-                </button>
-              )}
-            </div>
-            <p className="mt-2 text-[11px] text-neutral-500 leading-snug">
-              Le modèle <span className="text-neutral-300">{tpl.name}</span> affiche jusqu'à {tpl.maxPhotos} photo{tpl.maxPhotos > 1 ? 's' : ''}.
-              {photos.length > tpl.maxPhotos && <span className="text-amber-400"> {photos.length - tpl.maxPhotos} non affichée{photos.length - tpl.maxPhotos > 1 ? 's' : ''} ici.</span>}
-            </p>
-          </StudioSection>
-
-
           <div className="p-5 pt-4" style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' } : undefined}>
-            <button onClick={() => { setStep(2); if (mock === 'none') setMock('noir'); }} disabled={!routes.length}
+            <button onClick={() => { setStep(3); if (mock === 'none') setMock('noir'); }} disabled={!routes.length}
               className="w-full h-12 flex items-center justify-center gap-2 rounded-xl text-[14px] font-semibold text-neutral-900 bg-white hover:bg-neutral-200 disabled:opacity-50 transition-colors">
-              Imprimez votre tracé <I.ChevronRight size={17} />
+              Suivant : le cadre <I.ChevronRight size={17} />
             </button>
           </div>
           </>)}
 
-          {step === 2 && (
+          {step === 3 && (
           <div className="pb-6" style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' } : undefined}>
-            <div className="px-5 pt-5 pb-4">
-              <button onClick={() => setStep(1)} className="flex items-center gap-1 text-[12.5px] text-neutral-400 hover:text-white -ml-1">
-                <I.ChevronLeft size={15} /> Modifier le design
-              </button>
-              <div className="mt-3 text-[18px] font-semibold tracking-tight">Imprimez votre tracé</div>
-              <div className="text-[12.5px] text-neutral-400 mt-0.5">{tpl.name} · {fmt.name}{fmt.sub !== 'cm' ? ` (${fmt.sub})` : ' cm'}</div>
-            </div>
-            <div className="px-5 pb-5">
+            <div className="px-5 pt-5 pb-5">
               <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-400 mb-2.5">Format</div>
               <div className="grid grid-cols-3 gap-1.5">
                 {POSTER_FORMATS.map((f) => (
@@ -1296,6 +1320,30 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                   </button>
                 ))}
               </div>
+            </div>
+          <StudioSection title="Liseré & bordure">
+            <div className="grid grid-cols-2 gap-1.5">
+              {POSTER_BORDERS.map((b) => <button key={b.id} onClick={() => setBorder(b.id)} className={chip(b.id === border)}>{b.name}</button>)}
+            </div>
+            <p className="mt-2 text-[11px] text-neutral-500 leading-snug">Imprimée avec le poster (fichier et tirage).</p>
+          </StudioSection>
+            <StudioSection title="Cadre">
+            <p className="-mt-1 mb-3 text-[11px] text-neutral-500 leading-snug">Aperçu en direct au mur. Le cadre est livré avec le tirage encadré.</p>
+              <div className="flex gap-2.5">
+                {POSTER_MOCKUPS.map((m) => (
+                  <button key={m.id} onClick={() => setMock(m.id)} title={m.name} className="flex flex-col items-center gap-1.5">
+                    <span className={`w-10 h-10 rounded-lg grid place-items-center ${mock === m.id ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
+                      style={{ background: m.id === 'none' ? 'transparent' : m.swatch }}>
+                      {m.id === 'none' ? <I.X size={14} /> : <span className="w-5 h-6 rounded-[2px] bg-neutral-100"></span>}
+                    </span>
+                    <span className={`text-[10.5px] ${mock === m.id ? 'text-white' : 'text-neutral-500'}`}>{m.id === 'none' ? 'Sans cadre' : m.name}</span>
+                  </button>
+                ))}
+              </div>
+            </StudioSection>
+            <div className="px-5 pt-5">
+              <div className="text-[18px] font-semibold tracking-tight">Imprimez votre tracé</div>
+              <div className="text-[12.5px] text-neutral-400 mt-0.5 mb-3">{tpl.name} · {fmt.name}{fmt.sub !== 'cm' ? ` (${fmt.sub})` : ' cm'}</div>
             </div>
             <div className="px-5 flex flex-col gap-2.5">
               {[
@@ -1337,19 +1385,6 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
 
             {offer === 'print' && (
               <div className="mt-2">
-                <StudioSection title="Cadre">
-                  <div className="flex gap-2.5">
-                    {POSTER_MOCKUPS.map((m) => (
-                      <button key={m.id} onClick={() => setMock(m.id)} title={m.name} className="flex flex-col items-center gap-1.5">
-                        <span className={`w-10 h-10 rounded-lg grid place-items-center ${mock === m.id ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
-                          style={{ background: m.id === 'none' ? 'transparent' : m.swatch }}>
-                          {m.id === 'none' ? <I.X size={14} /> : <span className="w-5 h-6 rounded-[2px] bg-neutral-100"></span>}
-                        </span>
-                        <span className={`text-[10.5px] ${mock === m.id ? 'text-white' : 'text-neutral-500'}`}>{m.id === 'none' ? 'Sans cadre' : m.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </StudioSection>
                 <div className="px-5 pt-4">
                   <button disabled className="w-full h-12 rounded-xl text-[14px] font-semibold bg-white/[0.08] text-neutral-400 cursor-not-allowed">
                     Commander le tirage · bientôt disponible
