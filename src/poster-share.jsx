@@ -293,7 +293,7 @@ function poBlueprintPal(bg) {
 }
 // Fonds sombres proposés (rendu sûr à l'impression : blanc et tracé clair ressortent)
 const PO_DARK_BGS = [
-  { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu marine' }, { hex: '#0f1d33', name: 'Bleu nuit' }, { hex: '#1e2a33', name: 'Ardoise' },
+  { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu plan' }, { hex: '#0f1d33', name: 'Bleu marine' }, { hex: '#1e2a33', name: 'Ardoise' },
   { hex: '#15362b', name: 'Vert forêt' }, { hex: '#3a1420', name: 'Bordeaux' }, { hex: '#2b2140', name: 'Aubergine' },
 ];
 // Boussole minimale : anneau fin, aiguille losange, points cardinaux
@@ -369,10 +369,10 @@ const POSTER_TEMPLATES = [
     // Plan technique : grille, cartouche, échelle, nord
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#103c6b' },
+    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#0f1d33' },
     bgs: PO_DARK_BGS, photoSlot: true, infos: ['activity', 'start'],
     async draw(ctx, d, w, h) {
-      const u = w / 1200, bg = d.bg || '#103c6b', line = 'rgba(255,255,255,0.85)';
+      const u = w / 1200, bg = d.bg || '#0f1d33', line = 'rgba(255,255,255,0.85)';
       const M = 50 * u;
       const items = d.stats.map((s) => [s.short || s.label, s.value + (s.unit ? ' ' + s.unit : '')]);
       const cw = w * 0.5, rh = 50 * u, hh = d.subtitle ? 124 * u : 104 * u, ch = hh + items.length * rh;
@@ -430,6 +430,7 @@ const POSTER_TEMPLATES = [
       if (d.photos.length === 1) poPhotos(ctx, d.photos, zx + 30 * u, zy, zw - 60 * u, zh, { border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'center', tape: true, u });
       else if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), leftX, zy + 6 * u, leftW, zh - 6 * u, { gap: 18 * u, border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'left', tape: true, u });
       else if (d.preview && d.photoSlot !== false) { const pw = Math.min(zw - 60 * u, zh * 1.25); poPhotoPlaceholder(ctx, zx + (zw - pw) / 2, zy + 6 * u, pw, zh - 10 * u, u, bg, d.onSlot); }
+      const legend = !d.photos.length && !(d.preview && d.photoSlot !== false); // sans photo : légende technique
       // Tracé
       // Halo du tracé dans la couleur choisie (ressort mieux qu'un halo blanc)
       const rc = poCol(d, '#ffffff');
@@ -441,7 +442,35 @@ const POSTER_TEMPLATES = [
       poStartEnd(ctx, d, proj, u, rc === 'routes' ? '#ffffff' : rc, bg);
       // Nord + échelle
       poCompass(ctx, rx, ry, R, u, '#ffffff', bg);
-      poScaleBar(ctx, d, proj, leftX, cy + 14 * u, Math.min(leftW, w * 0.22), '#fff', u);
+      if (legend) {
+        // Légende alignée sur la grille du cartouche : en-tête, tracé, départ/arrivée, échelle
+        const lw = Math.min(leftW, 360 * u), mk = rc === 'routes' ? '#ffffff' : rc;
+        const rows = [
+          ['Itinéraire', (x, y) => {
+            ctx.save(); ctx.setLineDash([2 * u, 10 * u]); ctx.lineCap = 'round';
+            ctx.strokeStyle = halo === 'routes' ? 'rgba(255,255,255,0.35)' : halo; ctx.lineWidth = 18 * u;
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 56 * u, y); ctx.stroke(); ctx.restore();
+            ctx.strokeStyle = mk; ctx.lineWidth = 4 * u; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 56 * u, y); ctx.stroke();
+          }],
+          ['Départ · arrivée', (x, y) => {
+            ctx.beginPath(); ctx.arc(x + 28 * u, y, 11 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill();
+            ctx.lineWidth = 3 * u; ctx.strokeStyle = mk; ctx.stroke();
+            ctx.beginPath(); ctx.arc(x + 28 * u, y, 4 * u, 0, Math.PI * 2); ctx.fillStyle = mk; ctx.fill();
+          }],
+        ];
+        const ly = cy + ch - (rows.length + 1) * rh; // dernière ligne = échelle, alignée sur le bas du cartouche
+        stLabel(ctx, 'Légende', leftX, ly - 18 * u, 15 * u, 'rgba(255,255,255,0.65)');
+        rows.forEach(([label, icon], i) => {
+          const y = ly + i * rh;
+          ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(leftX, y, lw, 1.2 * u);
+          icon(leftX, y + rh / 2);
+          stLabel(ctx, label, leftX + 84 * u, y + rh / 2 + 5.5 * u, 15 * u, 'rgba(255,255,255,0.8)');
+        });
+        const sy = ly + rows.length * rh;
+        ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(leftX, sy, lw, 1.2 * u); ctx.fillRect(leftX, cy + ch, lw, 1.2 * u);
+        poScaleBar(ctx, d, proj, leftX, sy + rh / 2 - 3 * u, lw - 90 * u, '#fff', u);
+      } else poScaleBar(ctx, d, proj, leftX, cy + 14 * u, Math.min(leftW, w * 0.22), '#fff', u);
       await poDrawLogo(ctx, M + 50 * u, M + 60 * u, 26 * u, '#ffffff');
       if (d.coords && d.routes[0]) stLabel(ctx, poCoords(d), M + 50 * u, M + 120 * u, 14 * u, 'rgba(255,255,255,0.7)');
     },

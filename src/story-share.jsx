@@ -786,7 +786,7 @@ function StorySwitch({ on }) {
 function ShareFieldRow({ dark, label, on, onToggle }) {
   return (
     <button onClick={onToggle}
-      className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-[12.5px] transition-colors ${dark ? 'hover:bg-white/5' : 'hover:bg-neutral-100'}`}>
+      className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-[12.5px] transition-colors ${dark ? 'hover:bg-white/[0.025]' : 'hover:bg-neutral-50'}`}>
       <span>{label}</span>
       <StorySwitch on={!!on} />
     </button>
@@ -804,7 +804,7 @@ function ShareRoutesPicker({ allRoutes, included, setIncluded, dark, sectionTitl
           const on = included.has(r.id);
           return (
             <button key={r.id} onClick={() => setIncluded((s) => { const n = new Set(s); if (n.has(r.id)) { if (n.size > 1) n.delete(r.id); } else n.add(r.id); return n; })}
-              className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors ${dark ? 'hover:bg-white/5' : 'hover:bg-neutral-100'}`}>
+              className={`flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left transition-colors ${dark ? 'hover:bg-white/[0.025]' : 'hover:bg-neutral-50'}`}>
               <span className={`w-4 h-4 shrink-0 rounded grid place-items-center border ${on ? 'bg-blue-500 border-blue-500' : (dark ? 'border-neutral-600' : 'border-neutral-300')}`}>
                 {on && <I.Check size={11} stroke="white" strokeWidth="3" />}
               </span>
@@ -1238,7 +1238,7 @@ function StoryPane({ allRoutes, routes, included, setIncluded, agg, title, setTi
                   {SHARE_FIELDS.map((f) => (
                     <div key={f.key}>
                       <button onClick={() => setShow((s) => ({ ...s, [f.key]: !s[f.key] }))}
-                        className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-[12.5px] transition-colors ${dark ? 'hover:bg-white/5' : 'hover:bg-neutral-100'}`}>
+                        className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-[12.5px] transition-colors ${dark ? 'hover:bg-white/[0.025]' : 'hover:bg-neutral-50'}`}>
                         <span>{f.label}</span>
                         <StorySwitch on={!!show[f.key]} />
                       </button>
