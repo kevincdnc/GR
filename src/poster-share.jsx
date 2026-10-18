@@ -52,7 +52,7 @@ const PO_METRICS = {
   pace: 'Allure', speed: 'Vitesse moy.', altMax: 'Altitude max', stages: 'Étapes',
 };
 const PO_ACTIVITIES = [
-  { id: 'hiking', label: 'Randonnée', icon: 'Footprints', est: 'hiking', metrics: ['distance', 'ascent', 'duration', 'altMax'], avail: ['distance', 'ascent', 'descent', 'duration', 'altMax', 'stages', 'speed'] },
+  { id: 'hiking', label: 'Randonnée', icon: 'Footprints', est: 'hiking', metrics: ['distance', 'ascent', 'duration'], avail: ['distance', 'ascent', 'descent', 'duration', 'altMax', 'stages', 'speed'] },
   { id: 'trail', label: 'Trail', icon: 'Run', est: 'trail', metrics: ['distance', 'ascent', 'duration', 'pace'], avail: ['distance', 'ascent', 'descent', 'duration', 'pace', 'altMax'] },
   { id: 'running', label: 'Course · Marathon', icon: 'Run', est: 'running', metrics: ['distance', 'duration', 'pace'], avail: ['distance', 'duration', 'pace', 'ascent', 'speed'] },
   { id: 'cycling', label: 'Vélo route', icon: 'RoadBike', est: 'cycling', metrics: ['distance', 'ascent', 'duration', 'speed'], avail: ['distance', 'ascent', 'descent', 'duration', 'speed', 'altMax', 'stages'] },
@@ -241,7 +241,7 @@ function poUnproj(proj, x, y) {
 const POSTER_TEMPLATES = [
   {
     // Plan technique : grille, cartouche, échelle, nord
-    id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3,
+    id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200, bg = '#103c6b', line = 'rgba(255,255,255,0.85)';
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
@@ -274,6 +274,14 @@ const POSTER_TEMPLATES = [
       if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), leftX, cy + 70 * u, leftW, ch - 110 * u, { gap: 18 * u, border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'left', tape: true, u });
       // Tracé
       const proj = stFit(d.routes, { x: M + 110 * u, y: M + 130 * u, w: w - 2 * M - 220 * u, h: cy - M - 230 * u });
+      if (d.showMap) {
+        // Carte en filigrane : tuiles sombres en « éclaircir » sur le bleu, au-dessus du cartouche
+        ctx.save(); ctx.beginPath(); ctx.rect(M + 13 * u, M + 13 * u, w - 2 * M - 26 * u, cy - M - 30 * u); ctx.clip();
+        ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = 0.6;
+        await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h: cy }, 'url', d.pr);
+        await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h: cy }, 'labels', d.pr);
+        ctx.restore();
+      }
       ctx.save(); ctx.setLineDash([2 * u, 10 * u]);
       stDrawRoutes(ctx, d.routes, proj, { color: 'rgba(255,255,255,0.35)', width: 18 * u, markers: false });
       ctx.restore();
@@ -297,7 +305,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Carte de nuit : fond sombre, tracé lumineux
-    id: 'nuit', name: 'Nuit', kind: 'Carte', dark: true, maxPhotos: 3, hasMap: true,
+    id: 'nuit', name: 'Nuit', kind: 'Carte', dark: true, maxPhotos: 3, mapDefault: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200;
       ctx.fillStyle = '#161616'; ctx.fillRect(0, 0, w, h);
@@ -327,7 +335,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Satellite plein cadre
-    id: 'satellite', name: 'Satellite', kind: 'Carte', dark: true, maxPhotos: 4, hasMap: true,
+    id: 'satellite', name: 'Satellite', kind: 'Carte', dark: true, maxPhotos: 4,
     async draw(ctx, d, w, h) {
       const u = w / 1200, M = 100 * u;
       if (d.showMap) { ctx.fillStyle = '#26301f'; ctx.fillRect(0, 0, w, h); }
@@ -356,7 +364,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Ancienne carte : papier vieilli, rose des vents, cartouche
-    id: 'ancienne', name: 'Ancienne carte', kind: 'Vintage', maxPhotos: 3, hasMap: true,
+    id: 'ancienne', name: 'Ancienne carte', kind: 'Vintage', maxPhotos: 3,
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#3a2817', red = '#8e2a1b', paper = '#ead9b5';
       // Papier vieilli
@@ -482,7 +490,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Relief : ombrage du terrain sur papier, typographie éditoriale
-    id: 'relief', name: 'Relief', kind: 'Éditorial', maxPhotos: 4, hasMap: true,
+    id: 'relief', name: 'Relief', kind: 'Éditorial', maxPhotos: 4,
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#1c1a17', mute = '#7d776c', M = 90 * u;
       ctx.fillStyle = '#f3f0ea'; ctx.fillRect(0, 0, w, h);
@@ -518,7 +526,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Galerie : carte claire + photos du voyage, façon carnet
-    id: 'galerie', name: 'Galerie', kind: 'Carnet', maxPhotos: 4, hasMap: true,
+    id: 'galerie', name: 'Galerie', kind: 'Carnet', maxPhotos: 4,
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#161616', mute = '#8a857c', M = 80 * u;
       ctx.fillStyle = '#fbfaf7'; ctx.fillRect(0, 0, w, h);
@@ -564,6 +572,12 @@ const POSTER_TEMPLATES = [
       const ph = d.photos.length ? 160 * u : 0;
       const photosTop = titleTop - 50 * u - ph;
       const proj = stFit(d.routes, { x: w * 0.42, y: 170 * u, w: w * 0.5, h: (ph ? photosTop : titleTop) - 120 * u - 170 * u });
+      if (d.showMap) {
+        ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = 0.5;
+        await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
+        await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'labels', d.pr);
+        ctx.restore();
+      }
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffffff'), width: 6 * u, glow: 16 * u, markers: true });
       if (ph) poPhotos(ctx, d.photos, M, photosTop, w - 2 * M, ph, { gap: 16 * u, border: 7 * u, maxRatio: 1.3, align: 'left', shadow: 16 * u });
       if (d.title) poLines(ctx, d.title, M, titleTop, w - 2 * M, 120 * u, '#ffffff', { family: PO_SERIF, maxLines: 2, lh: 1.0 });
@@ -574,7 +588,7 @@ const POSTER_TEMPLATES = [
   },
   {
     // Photo + carte : photo en haut, carte et chiffres en bas
-    id: 'photocarte', name: 'Photo & carte', kind: 'Ta photo', photoBg: true, maxPhotos: 3, hasMap: true,
+    id: 'photocarte', name: 'Photo & carte', kind: 'Ta photo', photoBg: true, maxPhotos: 3,
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#171614', mute = '#7f796f', M = 80 * u;
       const pH = Math.round(h * 0.54);
@@ -621,7 +635,7 @@ async function renderPoster(canvas, tpl, d, fmt, border, scale) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   if (!d.routes.length) return;
-  const dd = { ...d, pr: scale, photos: (d.photos || []).slice(0, tpl.maxPhotos || 4), showMap: d.showMap !== false };
+  const dd = { ...d, pr: scale, photos: (d.photos || []).slice(0, tpl.maxPhotos || 4), showMap: d.showMap != null ? d.showMap : !!tpl.mapDefault };
   try {
     if (border === 'marge' || border === 'passe') {
       const m = border === 'passe' ? W * 0.085 : W * 0.035;
@@ -678,7 +692,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const [mock, setMock] = usePoState('noir');
   const [color, setColor] = usePoState('auto');
   const [coords, setCoords] = usePoState(true);
-  const [showMap, setShowMap] = usePoState(true);
+  const [mapPref, setMapPref] = usePoState({}); // choix par modèle
   const [actOpen, setActOpen] = usePoState(false);
   const [actId, setActId] = usePoState(() => poActivityOf(allRoutes));
   const act = poActivity(actId);
@@ -696,6 +710,9 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const bgRef = usePoRef(null);
   const photosRef = usePoRef(null);
   const tpl = POSTER_TEMPLATES.find((t) => t.id === tplId) || POSTER_TEMPLATES[0];
+  // Fond de carte : activé par défaut sur les 2 premiers modèles, modifiable sur tous
+  const showMap = mapPref[tplId] != null ? mapPref[tplId] : !!tpl.mapDefault;
+  const setShowMap = (f) => setMapPref((m) => ({ ...m, [tplId]: f(showMap) }));
   const fmt = POSTER_FORMATS.find((f) => f.id === fmtId) || POSTER_FORMATS[1];
   const ratio = fmt.mm[1] / fmt.mm[0];
   const exp = poExportSize(fmt);
@@ -733,12 +750,12 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
         const tc = thumbRefs.current[tp.id];
         if (tc && my === token.current) {
           tc.width = 240; tc.height = Math.round(240 * ratio);
-          await renderPoster(tc, tp, data, fmt, 'none', 240 / PO_W);
+          await renderPoster(tc, tp, { ...data, showMap: mapPref[tp.id] != null ? mapPref[tp.id] : !!tp.mapDefault }, fmt, 'none', 240 / PO_W);
         }
       }
     }, 80);
     return () => clearTimeout(t);
-  }, [data, tplId, fmtId, border]);
+  }, [data, tplId, fmtId, border, mapPref]);
 
   const addPhotos = async (files) => {
     const list = (await Promise.all([...files].slice(0, 4).map(readImageFile))).filter(Boolean);
@@ -856,7 +873,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
         <div className={isMobile ? '' : 'flex-1 overflow-y-auto sb-scroll'}>
           {routeTools}
 
-          <StudioSection title="Activité & chiffres" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
+          <StudioSection title="Activité et infos" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
             <div className="relative mb-3">
               <button onClick={() => setActOpen((v) => !v)}
                 className={`w-full h-10 flex items-center gap-2.5 rounded-lg px-3 text-[13px] font-medium transition-colors ${actOpen ? 'bg-white/[0.12]' : 'bg-white/[0.06] hover:bg-white/[0.1]'}`}>
@@ -881,6 +898,17 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 </div>
               )}
             </div>
+            <div className="text-[12.5px] font-medium text-neutral-200 mb-2">Couleur du tracé</div>
+            <div className="flex flex-wrap gap-2">
+              <button title="Couleur du modèle" onClick={() => setColor('auto')}
+                className={`h-8 px-3 rounded-full text-[11.5px] font-semibold bg-white/[0.06] ${color === 'auto' ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}>Auto</button>
+              {SHARE_COLORS.map((c) => (
+                <button key={c.value} title={c.label} onClick={() => setColor(c.value)}
+                  className={`w-8 h-8 rounded-full transition-transform hover:scale-110 ${color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
+                  style={{ background: c.value === 'routes' ? 'conic-gradient(#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7,#ef4444)' : c.value }} />
+              ))}
+            </div>
+            <div className="text-[12.5px] font-medium text-neutral-200 mt-4 mb-2">Infos affichées</div>
             <div className="flex flex-wrap gap-1.5">
               {act.avail.map((k) => {
                 const on = metrics.includes(k);
@@ -892,7 +920,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 );
               })}
             </div>
-            <p className="mt-2.5 text-[11px] text-neutral-500 leading-snug">Proposés selon l'activité. Les durées sans GPS sont estimées pour {act.label.toLowerCase()}.</p>
+            <p className="mt-2.5 text-[11px] text-neutral-500 leading-snug">Proposées selon l'activité. Les durées sans GPS sont estimées pour {act.label.toLowerCase()}.</p>
           </StudioSection>
 
           <StudioSection title="Textes">
@@ -957,20 +985,10 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
           </StudioSection>
 
           <StudioSection title="Style">
-            <div className={`-mx-2 mb-3 ${tpl.hasMap ? '' : 'opacity-40 pointer-events-none'}`}>
-              <ShareFieldRow dark label={tpl.hasMap ? 'Fond de carte' : 'Fond de carte (sans objet pour ce modèle)'} on={tpl.hasMap && showMap} onToggle={() => setShowMap((v) => !v)} />
+            <div className="-mx-2 mb-1">
+              <ShareFieldRow dark label="Carte derrière le tracé" on={showMap} onToggle={() => setShowMap((v) => !v)} />
             </div>
-            <div className="text-[12.5px] font-medium text-neutral-200 mb-2">Couleur du tracé</div>
-            <div className="flex flex-wrap gap-2">
-              <button title="Couleur du modèle" onClick={() => setColor('auto')}
-                className={`h-8 px-3 rounded-full text-[11.5px] font-semibold bg-white/[0.06] ${color === 'auto' ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}>Auto</button>
-              {SHARE_COLORS.map((c) => (
-                <button key={c.value} title={c.label} onClick={() => setColor(c.value)}
-                  className={`w-8 h-8 rounded-full transition-transform hover:scale-110 ${color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
-                  style={{ background: c.value === 'routes' ? 'conic-gradient(#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7,#ef4444)' : c.value }} />
-              ))}
-            </div>
-            <div className="text-[12.5px] font-medium text-neutral-200 mt-4 mb-2">Bordure imprimée</div>
+            <div className="text-[12.5px] font-medium text-neutral-200 mt-3 mb-2">Bordure imprimée</div>
             <div className="grid grid-cols-2 gap-1.5">
               {POSTER_BORDERS.map((b) => <button key={b.id} onClick={() => setBorder(b.id)} className={chip(b.id === border)}>{b.name}</button>)}
             </div>
