@@ -737,6 +737,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const [border, setBorder] = usePoState('none');
   const [mock, setMock] = usePoState('noir');
   const [color, setColor] = usePoState('auto');
+  const [customColor, setCustomColor] = usePoState('#ff6b35');
+  const customOn = color !== 'auto' && !SHARE_COLORS.some((c) => c.value === color);
   const [coords, setCoords] = usePoState(true);
   const [mapPref, setMapPref] = usePoState({}); // choix par modèle
   const [actOpen, setActOpen] = usePoState(false);
@@ -955,22 +957,31 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 </div>
               )}
             </div>
-            <div className="text-[12.5px] font-medium text-neutral-200 mb-2">Couleur du tracé</div>
-            <div className="flex flex-wrap gap-2">
-              <button title="Couleur du modèle" onClick={() => setColor('auto')}
-                className={`h-8 px-3 rounded-full text-[11.5px] font-semibold bg-white/[0.06] ${color === 'auto' ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}>Auto</button>
-              {SHARE_COLORS.map((c) => (
-                <button key={c.value} title={c.label} onClick={() => setColor(c.value)}
-                  className={`w-8 h-8 rounded-full transition-transform hover:scale-110 ${color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
-                  style={{ background: c.value === 'routes' ? 'conic-gradient(#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7,#ef4444)' : c.value }} />
-              ))}
-            </div>
-            <div className="flex items-center justify-between mt-4 mb-2">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-[12.5px] font-medium text-neutral-200">Infos affichées</span>
               <span className="text-[11px] text-neutral-500">Glisse pour réordonner</span>
             </div>
             <MetricsList order={order} setOrder={setOrder} enabled={enabled} onToggle={toggleMetric} values={metricValues} />
             <p className="mt-2.5 text-[11px] text-neutral-500 leading-snug">Proposées selon l'activité. Les durées sans GPS sont estimées pour {act.label.toLowerCase()}.</p>
+          </StudioSection>
+
+          <StudioSection title="Couleur du tracé">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button title="Couleur du modèle" onClick={() => setColor('auto')}
+                className={`h-7 px-2.5 mr-0.5 rounded-full text-[11.5px] font-semibold bg-white/[0.06] ${color === 'auto' ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}>Auto</button>
+              {SHARE_COLORS.filter((c) => c.value !== 'routes').map((c) => (
+                <button key={c.value} title={c.label} onClick={() => setColor(c.value)}
+                  className={`w-7 h-7 rounded-full transition-transform hover:scale-110 ${color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
+                  style={{ background: c.value }} />
+              ))}
+              {/* Couleur personnalisée : sélecteur natif sous la pastille arc-en-ciel */}
+              <label title="Choisir ma couleur"
+                className={`relative w-7 h-7 rounded-full cursor-pointer transition-transform hover:scale-110 overflow-hidden ${customOn ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
+                style={{ background: customOn ? color : 'conic-gradient(#ef4444,#f59e0b,#eab308,#22c55e,#06b6d4,#3b82f6,#a855f7,#ec4899,#ef4444)' }}>
+                <input type="color" value={customOn ? color : customColor} onChange={(e) => { setCustomColor(e.target.value); setColor(e.target.value); }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+              </label>
+            </div>
           </StudioSection>
 
           <StudioSection title="Textes">
