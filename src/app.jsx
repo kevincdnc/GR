@@ -874,19 +874,23 @@ function App() {
     }
     if (action === 'mergeItins') { mergeItineraries(payload.ids); return; }
     if (action === 'duplicateItins') { duplicateItineraries(payload.ids); return; }
-    if (action === 'share') {
-      // Partage en story : un groupe (ses tracés affichés, sinon tous), une
-      // activité (ses sections) ou une section seule.
+    if (action === 'share' || action === 'printrace') {
+      // Partage (story, embed, lien) ou envoi sur Printrace : un groupe (ses
+      // tracés affichés, sinon tous), une activité (ses sections) ou une section seule.
       const group = payload && payload.group;
+      let pick = null;
       if (group) {
         const all = group.itineraries.flatMap(sharePartsOf);
         const shown = all.filter((x) => visibleIds.has(x.id));
-        setStoryShare({ parts: shown.length ? shown : all, title: group.name });
+        pick = { parts: shown.length ? shown : all, title: group.name };
       } else if (section) {
-        setStoryShare({ parts: sharePartsOf(itinerary).filter((x) => x.id === section.id), title: section.name });
+        pick = { parts: sharePartsOf(itinerary).filter((x) => x.id === section.id), title: section.name };
       } else if (itinerary) {
-        setStoryShare({ parts: sharePartsOf(itinerary), title: String(itinerary.name || '').replace(/^Étape \d+ — /, '') });
+        pick = { parts: sharePartsOf(itinerary), title: String(itinerary.name || '').replace(/^Étape \d+ — /, '') };
       }
+      if (!pick) return;
+      if (action === 'printrace') sendToPrintrace(pick.parts, pick.title, showToast);
+      else setStoryShare({ ...pick, mode: 'story' });
       return;
     } else if (action === 'export') {
       showToast(`Export GPX : ${target}`);
@@ -1142,9 +1146,9 @@ function App() {
           onCreate={() => { endTour(); setView('map'); startCreate(); }}
           onImport={() => { endTour(); setView('map'); setImporting(true); }}
           onPoster={() => {
-            // Studio poster : tracés affichés (ou rien → import / choix dans le studio)
+            // Envoi des tracés affichés sur Printrace (posters)
             const shown = groups.flatMap((g) => g.itineraries.flatMap(sharePartsOf)).filter((p) => visibleIds.has(p.id));
-            setStoryShare({ parts: shown, title: '', mode: 'poster' });
+            sendToPrintrace(shown, '', showToast);
           }}
           onSuggest={() => { endTour(); showToast('Suggestion d’itinéraire — bientôt disponible.'); }}
           onCreateGroup={handleCreateGroup}
@@ -1428,7 +1432,7 @@ function App() {
                   dark={dark} step={2} arrow={arrowSide}
                   icon={<I.Plus size={20} />}
                   title="Créez ou importez un itinéraire"
-                  body="Tracez un parcours point par point, importez un fichier GPX depuis Strava, Garmin ou Komoot, ou laissez GPXmap vous suggérer un itinéraire."
+                  body="Tracez un parcours point par point, importez un fichier GPX depuis Strava, Garmin ou Komoot, ou laissez Routdoor vous suggérer un itinéraire."
                   onSkip={endTour}
                   onBack={() => setOnboardStep(1)}
                   onNext={endTour}

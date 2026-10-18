@@ -313,6 +313,7 @@ function Sidebar({
                 }}
                 onDelete={(g) => onAction && onAction('deleteGroup', { group: g })}
                 onShare={(g) => onAction && onAction('share', { group: g })}
+                onPrintrace={(g) => onAction && onAction('printrace', { group: g })}
                 onClearNewlyCreated={(gid) => {
                   setGroups((gs) => gs.map((g) => g.id === gid ? { ...g, __newlyCreated: false } : g));
                 }} />
@@ -459,8 +460,8 @@ function Sidebar({
             {onPoster && <MenuItem
             dark={dark} accent={accent}
             icon={<I.Poster size={16} />}
-            title="Créer un poster"
-            desc="Imprime ton trek, run ou road trip"
+            title="Envoyer sur Printrace"
+            desc="Transforme les tracés affichés en poster"
             onClick={pick(onPoster)} />}
 
           
@@ -690,6 +691,8 @@ function ItineraryRow({
               
                 <PopItem dark={dark} icon={<I.Edit size={13} />} label="Modifier le tracé"
               onClick={() => {setMenuOpen(false);onAction('edit', { itinerary: it, groupId });}} />
+                <PopItem dark={dark} icon={<I.Poster size={13} />} label="Envoyer sur Printrace"
+              onClick={() => {setMenuOpen(false);onAction('printrace', { itinerary: it });}} />
                 <PopItem dark={dark} icon={<I.Share size={13} />} label="Partager"
               onClick={() => {setMenuOpen(false);onAction('share', { itinerary: it });}} />
                 <PopItem dark={dark} icon={<I.Download size={13} />} label="Exporter en GPX"
@@ -786,8 +789,10 @@ function SectionRow({ section, parentColor, visible, onToggle, onHover, hoveredI
         </button>
         {menuOpen &&
         <div
-          className={`absolute right-0 top-full mt-1 z-30 w-44 rounded-lg shadow-xl overflow-hidden animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}>
+          className={`absolute right-0 top-full mt-1 z-30 w-52 rounded-lg shadow-xl overflow-hidden animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}>
           
+            <PopItem dark={dark} icon={<I.Poster size={13} />} label="Envoyer sur Printrace"
+          onClick={() => {setMenuOpen(false);onAction('printrace', { itinerary: parent, section });}} />
             <PopItem dark={dark} icon={<I.Share size={13} />} label="Partager cette section"
           onClick={() => {setMenuOpen(false);onAction('share', { itinerary: parent, section });}} />
             <PopItem dark={dark} icon={<I.Download size={13} />} label="Exporter GPX"
@@ -846,7 +851,7 @@ const GROUP_EMOJIS = [
 '🏃', '🚴', '⛷️', '🧗', '☀️', '🌧️', '❄️', '🔥'];
 
 
-function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setDragOver, handleDrop, onToggleExpand, onToggleVisibility, onRename, onSetEmoji, onDelete, onShare, onClearNewlyCreated }) {
+function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setDragOver, handleDrop, onToggleExpand, onToggleVisibility, onRename, onSetEmoji, onDelete, onShare, onPrintrace, onClearNewlyCreated }) {
   const [editing, setEditing] = useState(false);
   // Icône du groupe : emoji au choix (ou dossier par défaut)
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
@@ -1050,7 +1055,9 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
           <div
             role="menu"
             onClick={(e) => e.stopPropagation()}
-            className={`absolute right-0 top-full mt-1 z-30 w-44 rounded-lg shadow-xl overflow-hidden animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}>
+            className={`absolute right-0 top-full mt-1 z-30 w-52 rounded-lg shadow-xl overflow-hidden animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}>
+            <PopItem dark={dark} icon={<I.Poster size={13} />} label="Envoyer sur Printrace"
+              onClick={() => { setMenuOpen(false); onPrintrace && onPrintrace(group); }} />
             <PopItem dark={dark} icon={<I.Share size={13} />} label="Partager"
               onClick={() => { setMenuOpen(false); onShare && onShare(group); }} />
             <PopItem dark={dark} icon={<I.Edit size={13} />} label="Renommer"
@@ -1254,25 +1261,5 @@ function Tooltip({ label, sub, dark, children, delay = 350, side = 'bottom' }) {
       )}
     </span>);
 }
-// Logotype Routdoor (blanc en thème sombre ; les anneaux du tracé sont évidés)
-function RoutdoorLogo({ dark, height = 22 }) {
-  const hole = dark ? '#000' : '#fff';
-  return (
-    <svg viewBox="0 0 1237 284" height={height} width={height * 1237 / 284} fill="none" xmlns="http://www.w3.org/2000/svg"
-      role="img" aria-label="Routdoor" className={`block select-none ${dark ? 'text-white' : 'text-neutral-900'}`}>
-      <path d="M1223.27 49.4297H1236.59L1228.14 91.6839H1210.21C1193.05 91.6839 1184.6 98.5982 1180.51 115.5L1165.91 188.228H1120.07L1147.73 49.9419H1178.2L1182.04 64.2827C1193.82 53.7832 1207.14 49.4297 1223.27 49.4297Z" fill={"currentColor"} />
-      <path d="M1024.47 192.835C986.314 192.835 957.633 166.971 957.633 129.582C957.633 81.6941 996.558 45.5859 1044.96 45.5859C1083.11 45.5859 1111.8 71.1946 1111.8 108.583C1111.8 156.471 1072.87 192.835 1024.47 192.835ZM1028.82 151.093C1049.82 151.093 1065.96 132.911 1065.96 111.912C1065.96 97.0592 1056.23 87.0719 1040.86 87.0719C1019.61 87.0719 1003.73 105.254 1003.73 126.509C1003.73 141.362 1013.46 151.093 1028.82 151.093Z" fill={"currentColor"} />
-      <path d="M857.159 192.835C819.002 192.835 790.32 166.971 790.32 129.582C790.32 81.6941 829.245 45.5859 877.646 45.5859C915.803 45.5859 944.484 71.1946 944.484 108.583C944.484 156.471 905.559 192.835 857.159 192.835ZM861.512 151.093C882.511 151.093 898.645 132.911 898.645 111.912C898.645 97.0592 888.913 87.0719 873.548 87.0719C852.293 87.0719 836.416 105.254 836.416 126.509C836.416 141.362 846.147 151.093 861.512 151.093Z" fill={"currentColor"} />
-      <path d="M747.136 0H792.463L754.819 188.223H723.576L719.991 176.699C706.674 186.687 690.797 192.577 674.408 192.577C639.324 192.577 615.508 166.456 615.508 131.372C615.508 83.7401 652.896 45.8394 700.272 45.8394C714.101 45.8394 726.137 50.1929 735.612 57.8755L747.136 0ZM662.372 124.97C662.372 140.847 673.127 151.603 689.517 151.603C709.235 151.603 726.137 134.445 726.137 113.446C726.137 97.5688 715.637 86.5571 698.992 86.5571C679.273 86.5571 662.372 103.971 662.372 124.97Z" fill={"currentColor"} />
-      <path d="M608.513 88.6089H573.173C565.234 127.534 564.722 131.119 564.722 133.68C564.722 142.387 570.1 146.997 580.087 146.997H596.989L588.794 188.226H562.929C534.248 188.226 517.346 172.093 517.346 146.484C517.346 138.802 518.627 133.68 527.59 88.6089H501.469L503.774 77.8533L579.063 9.73438H588.538L580.343 49.9399H616.195L608.513 88.6089Z" fill={"currentColor"} />
-      <path d="M401.653 192.834C366.057 192.834 343.266 171.066 343.266 140.08C343.266 129.58 345.058 123.178 360.167 49.9375H406.007C391.666 121.898 389.617 129.58 389.617 135.214C389.617 145.97 396.019 151.091 407.543 151.091C420.86 151.091 431.359 140.08 434.432 124.715L449.285 49.9375H495.125L478.735 132.141C471.309 170.554 442.115 192.834 401.653 192.834Z" fill={"currentColor"} />
-      <path d="M238.956 192.835C200.799 192.835 172.117 166.971 172.117 129.582C172.117 81.6941 211.042 45.5859 259.443 45.5859C297.599 45.5859 326.281 71.1946 326.281 108.583C326.281 156.471 287.356 192.835 238.956 192.835ZM243.309 151.093C264.308 151.093 280.442 132.911 280.442 111.912C280.442 97.0592 270.71 87.0719 255.345 87.0719C234.09 87.0719 218.213 105.254 218.213 126.509C218.213 141.362 227.944 151.093 243.309 151.093Z" fill={"currentColor"} />
-      <path d="M166.712 61.7225C166.712 89.6359 150.579 112.171 126.763 123.695L149.81 188.229H99.3614L80.1549 132.402H58.8998L47.632 188.229H0L35.8521 8.96875H110.629C144.176 8.96875 166.712 30.9922 166.712 61.7225ZM75.2893 50.4547L66.8385 92.7089H90.3984C107.3 92.7089 117.8 80.4168 117.8 66.332C117.8 56.6008 111.397 50.4547 98.8492 50.4547H75.2893Z" fill={"currentColor"} />
-      <path d="M848.466 238.656C848.469 238.661 848.473 238.667 848.478 238.673C848.487 238.686 848.499 238.702 848.513 238.721C848.541 238.759 848.579 238.811 848.626 238.874C848.721 239.001 848.854 239.178 849.024 239.4C849.363 239.845 849.85 240.473 850.476 241.254C851.726 242.814 853.537 244.993 855.838 247.542C860.419 252.617 867.039 259.272 875.124 265.446C890.885 277.484 914.574 289.403 939.936 279.759C947.726 276.796 954.576 272.726 960.908 268.579C967.595 264.2 972.921 260.299 979.434 256.279C991.617 248.76 1005.1 242.758 1024.79 242.758L1024.79 224.758C1000.75 224.758 984 232.308 969.98 240.962C963.391 245.029 956.623 249.869 951.047 253.521C945.116 257.404 939.533 260.654 933.538 262.934C917.178 269.155 900.362 262.072 886.05 251.141C879.098 245.831 873.288 240.011 869.199 235.48C867.165 233.227 865.581 231.321 864.521 229.997C863.991 229.336 863.594 228.822 863.337 228.485C863.209 228.317 863.115 228.193 863.059 228.117C863.031 228.08 863.012 228.054 863.002 228.041C862.998 228.035 862.995 228.031 862.994 228.03L862.995 228.032L862.997 228.035C862.989 228.044 862.738 228.23 855.729 233.342C848.457 238.645 848.459 238.648 848.461 238.65C848.462 238.652 848.464 238.654 848.466 238.656Z" fill={"currentColor"} />
-      <path d="M855.942 249.985C864.108 249.985 870.727 243.365 870.727 235.2C870.727 227.034 864.108 220.414 855.942 220.414C847.776 220.414 841.156 227.034 841.156 235.2C841.156 243.365 847.776 249.985 855.942 249.985Z" fill={hole} />
-      <path d="M855.941 243.985C851.089 243.985 847.156 240.051 847.156 235.199C847.156 230.347 851.09 226.414 855.941 226.414C860.793 226.414 864.727 230.347 864.728 235.199C864.728 240.051 860.794 243.985 855.941 243.985ZM855.941 255.985C867.421 255.985 876.728 246.679 876.728 235.199C876.727 223.72 867.421 214.414 855.941 214.414C844.462 214.414 835.156 223.72 835.156 235.199C835.156 246.679 844.462 255.985 855.941 255.985Z" fill={"currentColor"} />
-      <path d="M1022.81 243.798C1030.97 243.798 1037.59 237.178 1037.59 229.012C1037.59 220.846 1030.97 214.227 1022.81 214.227C1014.64 214.227 1008.02 220.846 1008.02 229.012C1008.02 237.178 1014.64 243.798 1022.81 243.798Z" fill={hole} />
-      <path d="M1022.81 237.798C1017.96 237.798 1014.02 233.864 1014.02 229.012C1014.02 224.16 1017.96 220.227 1022.81 220.227C1027.66 220.227 1031.59 224.16 1031.59 229.012C1031.59 233.864 1027.66 237.798 1022.81 237.798ZM1022.81 249.798C1034.29 249.798 1043.59 240.491 1043.59 229.012C1043.59 217.532 1034.29 208.227 1022.81 208.227C1011.33 208.227 1002.02 217.532 1002.02 229.012C1002.02 240.491 1011.33 249.798 1022.81 249.798Z" fill={"currentColor"} />
-    </svg>
-  );
-}
+// Logotype Routdoor : design system (src/ds/ui.jsx)
+function RoutdoorLogo(props) { return <UiRoutdoorLogo {...props} dark={!!props.dark} />; }

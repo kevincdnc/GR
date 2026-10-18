@@ -244,7 +244,7 @@ function poUnproj(proj, x, y) {
 }
 
 // Logo Printrace (produit posters) : SVG vectoriel recoloré selon le modèle
-const PO_LOGO_SVG = '<svg width="1236" height="335" viewBox="0 0 1236 335" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M112.422 81.6821C145.713 81.6821 167.992 105.242 167.992 135.972C167.992 177.714 133.933 210.237 90.6545 210.237H61.7168L51.4733 260.942H3.84129L39.6933 81.6821H112.422ZM90.9106 170.032C107.812 170.032 119.336 155.947 119.336 139.814C119.336 128.802 112.934 121.888 100.898 121.888H79.3867L69.6554 170.032H90.9106ZM268.294 122.144H281.611L273.16 164.398H255.234C238.076 164.398 229.625 171.312 225.528 188.214L210.931 260.942H165.091L192.749 122.656H223.223L227.064 136.997C238.844 126.497 252.161 122.144 268.294 122.144ZM303.358 105.498L311.297 66.0609H357.392L349.453 105.498H303.358ZM272.628 260.942L300.285 122.656H346.124L318.467 260.942H272.628ZM459.526 118.302C486.416 118.302 502.293 136.485 502.293 163.63C502.293 175.154 500.5 181.044 484.623 260.942H438.784C453.893 185.141 455.173 181.044 455.173 175.666C455.173 164.91 449.795 159.276 439.808 159.276C424.699 159.276 413.943 169.52 409.846 186.934L394.993 260.942H349.153L376.811 122.656H408.821L412.407 136.741C424.699 125.217 441.344 118.302 459.526 118.302ZM623.862 161.325H588.522C580.583 200.25 580.071 203.835 580.071 206.396C580.071 215.103 585.449 219.713 595.436 219.713H612.338L604.143 260.942H578.278C549.597 260.942 532.695 244.809 532.695 219.2C532.695 211.518 533.976 206.396 542.939 161.325H516.818L519.122 150.569L594.412 82.4504H603.887L595.692 122.656H631.544L623.862 161.325ZM730.45 122.144H743.766L735.315 164.398H717.389C700.231 164.398 691.781 171.312 687.683 188.214L673.086 260.942H627.247L654.904 122.656H685.378L689.22 136.997C701 126.497 714.316 122.144 730.45 122.144ZM872.587 122.656H907.415L879.758 260.942H847.235L844.93 250.443C831.87 259.918 815.992 265.552 799.347 265.552C764.263 265.552 738.398 240.968 738.398 203.579C738.398 154.411 777.067 118.302 821.882 118.302C838.784 118.302 853.637 124.705 864.137 136.228L872.587 122.656ZM811.127 224.066C831.614 224.066 849.027 205.884 849.027 185.141C849.027 169.776 838.528 159.532 822.394 159.532C802.164 159.532 785.006 177.458 785.006 198.713C785.006 214.079 795.249 224.066 811.127 224.066ZM979.729 265.552C941.316 265.552 915.708 238.151 915.708 202.811C915.708 154.667 954.121 118.302 1003.29 118.302C1041.45 118.302 1066.29 144.935 1066.03 178.739H1020.96C1018.4 166.703 1009.44 159.788 996.887 159.788C976.912 159.788 961.547 179.251 961.803 199.482C962.059 214.591 971.791 223.81 985.619 223.81C998.424 223.81 1009.95 216.383 1016.86 203.323H1061.93C1049.64 243.016 1018.14 265.552 979.729 265.552ZM1226.08 179.251C1226.33 187.958 1224.8 195.128 1222.75 203.067H1119.29C1119.29 219.456 1128.25 227.907 1144.64 227.907C1156.17 227.907 1166.15 222.786 1172.3 214.079H1218.91C1204.57 246.602 1174.09 265.552 1138.5 265.552C1101.36 265.552 1076.01 237.895 1076.01 202.811C1076.01 155.179 1111.86 118.302 1162.06 118.302C1200.73 118.302 1226.08 144.679 1226.08 179.251ZM1157.45 154.923C1142.34 154.923 1131.33 164.142 1124.92 176.69H1183.06C1181.26 162.349 1172.3 154.923 1157.45 154.923Z" fill="white" fill-opacity="0.98"/><path d="M502.983 101.001C502.983 101.001 617 -35.0894 628.983 26.4988C640.967 88.087 673.482 20.8826 703.482 98.1606" stroke-width="21" stroke="white" stroke-opacity="0.6"/></svg>';
+const PO_LOGO_SVG = PRINTRACE_LOGO_SVG; // design system (src/ds/ui.jsx)
 const poLogoCache = {};
 function poLogo(color) {
   if (!poLogoCache[color]) {
@@ -751,56 +751,20 @@ function readImageFile(file) {
 }
 
 // Section repliable de l'inspecteur
-function StudioSection({ title, aside, children, defaultOpen = true }) {
-  const [open, setOpen] = usePoState(defaultOpen);
-  return (
-    <div className="border-b border-white/[0.06] last:border-b-0">
-      <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center justify-between px-5 py-3.5 text-left group">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-400 group-hover:text-neutral-200 transition-colors">{title}</span>
-        <span className="flex items-center gap-2">
-          {aside}
-          <span className="text-neutral-500 transition-transform" style={{ transform: open ? 'none' : 'rotate(-90deg)' }}><I.ChevronDown size={14} /></span>
-        </span>
-      </button>
-      {open && <div className="px-5 pb-5 -mt-0.5">{children}</div>}
-    </div>
-  );
-}
+// Section repliable de l'inspecteur : design system (src/ds/ui.jsx)
+const StudioSection = UiSection;
 
 // Empreinte courte d'une chaîne (clé d'enregistrement)
 function poHash(str) { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
 
-// Petite étoile « recommandé » posée sur une pastille
 // Étapes du panneau : contenu → personnalisation de la carte → cadrage et impression
 const PO_STEPS = ['Contenu', 'Carte', 'Cadre'];
 function PoStepper({ step, setStep }) {
-  return (
-    <div className="shrink-0 flex items-center gap-1 px-4 h-12 border-b border-white/[0.06]">
-      {PO_STEPS.map((name, i) => {
-        const n = i + 1, on = n === step, done = n < step;
-        return (
-          <React.Fragment key={n}>
-            {i > 0 && <span className={`flex-1 h-px ${n <= step ? 'bg-white/30' : 'bg-white/10'}`} />}
-            <button onClick={() => setStep(n)} className={`flex items-center gap-1.5 h-8 px-1.5 rounded-lg text-[12px] font-medium transition-colors ${on ? 'text-white' : done ? 'text-neutral-300 hover:text-white' : 'text-neutral-500 hover:text-neutral-300'}`}>
-              <span className={`w-5 h-5 rounded-full grid place-items-center text-[10.5px] font-semibold tabular-nums ${on ? 'bg-white text-neutral-900' : done ? 'bg-white/15 text-white' : 'ring-1 ring-white/20'}`}>
-                {done ? <I.Check size={11} /> : n}
-              </span>
-              {name}
-            </button>
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
+  return <UiStepper steps={PO_STEPS} step={step} onStep={setStep} className="shrink-0 px-4 h-12 border-b border-white/[0.06]" />;
 }
-
-// Recommandé : simple point vert, discret
-function RecStar() {
-  return <span className="pointer-events-none absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-neutral-950" />;
-}
-function RecDot({ className = '' }) {
-  return <span className={`inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-400 ${className}`} />;
-}
+// « Recommandé » : point vert du design system, posé sur une pastille ou en ligne
+function RecStar() { return <UiRecDot floating />; }
+function RecDot({ className = '' }) { return <UiRecDot className={className} />; }
 // Les choix recommandés passent en tête de liste
 function poRecFirst(list, isRec) { return [...list.filter(isRec), ...list.filter((x) => !isRec(x))]; }
 
@@ -869,7 +833,7 @@ function MetricsList({ order, setOrder, enabled, onToggle, values, overrides = {
   );
 }
 
-function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle, initialTitle, dark, isMobile, onToast, routeTools }) {
+function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle, initialTitle, dark, isMobile, onToast, routeTools, storeId }) {
   const [tplId, setTplId] = usePoState('blueprint');
   const [fmtId, setFmtId] = usePoState('a3');
   // Parcours : 1 = design, 2 = « Imprimez votre tracé » (fichier ou tirage encadré)
@@ -892,7 +856,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   // Réglages de design PAR MODÈLE : modifier un modèle ne touche pas les autres.
   // Exception : textes et infos affichées sont communs à tous les modèles (cfgs._shared).
   // Ils s'enregistrent automatiquement (navigateur) pour ce jeu de tracés.
-  const storeKey = 'printrace_studio_' + poHash(allRoutes.map((r) => r.id).join('|'));
+  // storeId : projet fixe (app Printrace) ; sinon un enregistrement par jeu de tracés
+  const storeKey = 'printrace_studio_' + (storeId || poHash(allRoutes.map((r) => r.id).join('|')));
   const saved = usePoMemo(() => { try { return JSON.parse(localStorage.getItem(storeKey) || 'null'); } catch (e) { return null; } }, [storeKey]);
   const [cfgs, setCfgs] = usePoState(() => {
     const c = (saved && saved.cfgs) || {};
@@ -1097,8 +1062,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
     setBusy(false);
   };
 
-  const chip = (on) => `rounded-lg px-2.5 h-9 text-[12.5px] font-medium transition-all ${on ? 'bg-white text-neutral-900 shadow-sm' : 'bg-white/[0.05] text-neutral-300 hover:bg-white/[0.1] hover:text-white'}`;
-  const inputCls = 'w-full h-10 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-[13px] outline-none placeholder:text-neutral-500 focus:border-white/30 focus:bg-white/[0.06] transition-colors';
+  const chip = uiChipCls, inputCls = uiInputCls; // design system
   const ms = PO_MOCK_STYLE[stageMock];
   const metricValues = usePoMemo(() => {
     const m = {}; poStats(agg, order, infoX).forEach((st) => { m[st.key] = st.value + (st.unit ? ' ' + st.unit : ''); }); return m;
@@ -1143,8 +1107,9 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
       {/* Scène : le poster (au mur si un cadre est choisi) */}
       <div className={`min-w-0 relative flex flex-col items-center justify-center ${isMobile ? 'order-1 shrink-0 px-5 pt-5 pb-4' : 'flex-1 px-10 py-8'}`}
         style={{ ...(isMobile ? { height: 'min(64vh, 620px)' } : {}), background: stageMock !== 'none' ? 'radial-gradient(ellipse at 50% 30%, #ebe6de 0%, #d8d1c6 65%, #c9c1b4 100%)' : 'radial-gradient(ellipse at 50% 40%, #3a3a3e 0%, #2a2a2d 55%, #1f1f22 100%)' }}>
-        <div className="relative min-h-0 flex-1 w-full grid place-items-center">
-          <div className="relative h-full max-w-full" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, maxHeight: '100%' }}>
+        {/* Le poster tient dans la scène en hauteur ET en largeur (unités de conteneur) */}
+        <div className="relative min-h-0 flex-1 w-full grid place-items-center" style={{ containerType: 'size' }}>
+          <div className="relative" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, width: `min(100cqw, calc(100cqh * ${fmt.mm[0] / fmt.mm[1]}))` }}>
             <div className="absolute inset-0" style={ms ? {
               padding: '3.2%', background: ms.border,
               boxShadow: `0 40px 70px -24px rgba(0,0,0,0.5), 0 14px 26px -12px rgba(0,0,0,0.35)${ms.shadow ? ', ' + ms.shadow : ''}`,

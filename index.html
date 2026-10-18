@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>GPXmap</title>
+<title>Routdoor</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
 
 <meta name="ext-resource-dependency" content="assets/boussole.svg" data-resource-id="boussole" />
@@ -21,7 +21,7 @@
 
 <template id="__bundler_thumbnail" data-bg-color="#171717">
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- GPXmap : tracé blanc sur fond neutral-900 -->
+  <!-- Routdoor : tracé blanc sur fond neutral-900 -->
   <rect width="32" height="32" rx="7" fill="#171717"/>
   <path d="M8 23C11 23 11.5 17 15 16C18.5 15 19 19.5 22 17C24 15.3 23.6 11.5 24 9" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
   <circle cx="8" cy="23" r="2.4" fill="#ffffff"/>
@@ -31,6 +31,7 @@
 
 
 <!-- Leaflet / React : servis depuis node_modules (copiés dans vendor/ au build) -->
+<link rel="stylesheet" href="ds.css" />
 <link rel="stylesheet" href="vendor/leaflet.css" />
 <script src="vendor/leaflet.js"></script>
 <script src="vendor/canvas2svg.js"></script>
@@ -39,87 +40,9 @@
 <script src="vendor/react-dom.js"></script>
 
 <style>
-  /* Typographie GPXmap : Barlow (texte) + Barlow Semi Condensed (chiffres,
-     titres) — servies avec le site (fonts/, cf. scripts/build.mjs). */
-  @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/barlow-latin-400-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/barlow-latin-500-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/barlow-latin-600-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/barlow-latin-700-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/barlow-semi-condensed-latin-400-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/barlow-semi-condensed-latin-500-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/barlow-semi-condensed-latin-600-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Barlow Semi Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/barlow-semi-condensed-latin-700-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Unbounded'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/unbounded-latin-400-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/playfair-display-latin-400-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'Playfair Display'; font-style: italic; font-weight: 400; font-display: swap; src: url(fonts/playfair-display-latin-400-italic.woff2) format('woff2'); }
-  @font-face { font-family: 'Playfair Display'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/playfair-display-latin-700-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'IM Fell English'; font-style: normal; font-weight: 400; font-display: swap; src: url(fonts/im-fell-english-latin-400-normal.woff2) format('woff2'); }
-  @font-face { font-family: 'IM Fell English'; font-style: italic; font-weight: 400; font-display: swap; src: url(fonts/im-fell-english-latin-400-italic.woff2) format('woff2'); }
-  @font-face { font-family: 'Unbounded'; font-style: normal; font-weight: 800; font-display: swap; src: url(fonts/unbounded-latin-800-normal.woff2) format('woff2'); }
-  /* Logotype « GPXmap » : géométrique large, « GPX » extra-gras + « map » léger */
-  .logo-type {
-    font-family: 'Unbounded', 'Barlow Semi Condensed', ui-sans-serif, sans-serif;
-    letter-spacing: -0.02em;
-    font-size-adjust: none;
-    line-height: 1;
-  }
-  html, body, #root { height: 100%; margin: 0; }
-  body {
-    font-family: 'Barlow', ui-sans-serif, system-ui, -apple-system, sans-serif;
-    font-size-adjust: 0.53;
-    font-feature-settings: 'kern', 'liga';
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    color: #171717;
-    overflow: hidden;
-  }
-  /* Chiffres : condensé à chiffres tabulaires (remplace la chasse fixe du design) */
-  .font-mono, .tabular-nums {
-    font-family: 'Barlow Semi Condensed', 'Barlow', ui-sans-serif, sans-serif;
-    font-variant-numeric: tabular-nums;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    word-spacing: 0.14em; /* espace des milliers lisible (« 1 313 m ») */
-  }
-  /* Titres : condensé, plus « sport » */
-  h1, h2, h3 { font-family: 'Barlow Semi Condensed', 'Barlow', ui-sans-serif, sans-serif; letter-spacing: 0.005em; }
+  /* Fondations (polices, base, défilement, animations) : src/ds/tokens.css */
+  body { color: #171717; overflow: hidden; }
 
-  /* Smooth nice scrollbars in the sidebar */
-  .sb-scroll::-webkit-scrollbar { width: 10px; }
-  .sb-scroll::-webkit-scrollbar-track { background: transparent; }
-  .sb-scroll::-webkit-scrollbar-thumb {
-    background: rgba(115,115,115,.25);
-    border-radius: 999px;
-    border: 3px solid transparent;
-    background-clip: content-box;
-  }
-  .sb-scroll::-webkit-scrollbar-thumb:hover {
-    background: rgba(115,115,115,.45);
-    border: 3px solid transparent;
-    background-clip: content-box;
-  }
-  .sb-scroll { scrollbar-width: thin; scrollbar-color: rgba(115,115,115,.3) transparent; }
-
-  /* Menu dropdown */
-  @keyframes menuIn {
-    from { opacity: 0; transform: translateY(-4px) scale(.98); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  .animate-menu { animation: menuIn .14s ease-out; }
-
-  /* Tooltip */
-  @keyframes tipIn {
-    from { opacity: 0; transform: translate(-50%, -2px); }
-    to   { opacity: 1; transform: translate(-50%, 0); }
-  }
-  .animate-tip { animation: tipIn .12s ease-out; }
-  /* Fixed-position tooltips can't use `translate(-50%)` from the animation
-     because their top/left are already explicit. Use a plain fade. */
-  @keyframes tipFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  .animate-tip-fixed { animation: tipFadeIn .12s ease-out; }
   /* Subtle pulsing halo around draft POI markers, to keep them noticeable on map */
   @keyframes poiPulse {
     0%   { transform: scale(1);    opacity: 0.22; }
@@ -224,7 +147,7 @@
   .dark .leaflet-control-attribution a { color: #a3a3a3 !important; }
   /* Ombrage du relief réel (cf. applyHillshade dans map.jsx) */
   .hillshade-layer { mix-blend-mode: multiply; }
-  /* ---- Verre dépoli (GPXmap) : navigation et éléments flottants ---- */
+  /* ---- Verre dépoli (Routdoor) : navigation et éléments flottants ---- */
   .glass {
     background: rgba(255,255,255,0.72);
     -webkit-backdrop-filter: blur(18px) saturate(160%);
@@ -277,19 +200,7 @@
     border: 2.5px solid #fff;
   }
 
-  /* Toast pop-in */
-  @keyframes toastIn {
-    from { opacity: 0; transform: translate(-50%, 12px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
-  }
-  .animate-in { animation: toastIn .25s ease-out; }
 
-  /* Focus rings (Tailwind ring with offset) */
-  button:focus-visible, input:focus-visible, select:focus-visible {
-    outline: 2px solid rgba(14,165,233,.6);
-    outline-offset: 2px;
-    border-radius: 6px;
-  }
   /* Forecast slider thumb */
   .cartes-range { height: 20px; }
   .cartes-range::-webkit-slider-thumb {
@@ -330,6 +241,8 @@
 <script src="data/gr34.js"></script>
 <script src="js/gpx.js"></script>
 <script type="text/babel" src="src/icons.jsx"></script>
+<script type="text/babel" src="src/ds/ui.jsx"></script>
+<script type="text/babel" src="src/track-io.jsx"></script>
 <script type="text/babel" src="src/data.jsx"></script>
 <script type="text/babel" src="tweaks-panel.jsx"></script>
 <script type="text/babel" src="src/map.jsx"></script>
@@ -345,6 +258,7 @@
 <script type="text/babel" src="src/poster-map.jsx"></script>
 <script type="text/babel" src="src/poster-share.jsx"></script>
 <script type="text/babel" src="src/embed-share.jsx"></script>
+<script type="text/babel" src="src/printrace-bridge.jsx"></script>
 <script type="text/babel" src="src/app.jsx"></script>
 </body>
 </html>

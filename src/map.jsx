@@ -1645,13 +1645,13 @@ function MapView({
                     </Tooltip>
                     {/* Divider + discreet icon-only Share button */}
                     <span className={`w-px self-stretch my-0.5 -ml-3 ${dark ? 'bg-neutral-700/60' : 'bg-neutral-200'}`}></span>
-                    <Tooltip dark={dark} label="Partager cet itinéraire" sub="Lien public ou intégration sur votre site" side="top" delay={120}>
+                    <Tooltip dark={dark} label="Envoyer sur Printrace" sub="Transforme cet itinéraire en poster à imprimer" side="top" delay={120}>
                       <button
-                        onClick={(e) => { e.stopPropagation(); onAction && onAction('share', { itinerary: singleRouteStats.parentItinerary || r }); }}
+                        onClick={(e) => { e.stopPropagation(); onAction && onAction('printrace', { itinerary: singleRouteStats.parentItinerary || r }); }}
                         className={`-ml-3 p-1.5 rounded-md transition-colors ${dark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'}`}
-                        aria-label="Partager cet itinéraire"
+                        aria-label="Envoyer sur Printrace"
                       >
-                        <I.ShareUp size={15} />
+                        <I.Poster size={15} />
                       </button>
                     </Tooltip>
                     {/* 3-dots actions menu — placed at the far right */}
@@ -1673,6 +1673,8 @@ function MapView({
                           className={`absolute right-0 bottom-full mb-1 z-30 w-52 rounded-lg shadow-2xl overflow-hidden animate-menu ${dark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-neutral-200'}`}>
                           <SingleRoutePopItem dark={dark} icon={<I.Edit size={13} />} label="Modifier le tracé"
                             onClick={() => { setSingleMenuOpen(false); onAction && onAction('edit', { itinerary: singleRouteStats.parentItinerary || r, groupId: singleRouteStats.groupId }); }} />
+                          <SingleRoutePopItem dark={dark} icon={<I.Poster size={13} />} label="Envoyer sur Printrace"
+                            onClick={() => { setSingleMenuOpen(false); onAction && onAction('printrace', { itinerary: singleRouteStats.parentItinerary || r }); }} />
                           <SingleRoutePopItem dark={dark} icon={<I.Share size={13} />} label="Partager"
                             onClick={() => { setSingleMenuOpen(false); onAction && onAction('share', { itinerary: singleRouteStats.parentItinerary || r }); }} />
                           <SingleRoutePopItem dark={dark} icon={<I.Download size={13} />} label="Exporter en GPX"
@@ -1898,7 +1900,7 @@ function MapView({
                 Activer votre localisation&nbsp;?
               </h3>
               <p className={`mt-2 text-[12.5px] leading-relaxed ${dark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                Pour vous afficher sur la carte et vous suggérer des itinéraires près de chez vous, GPXmap peut accéder à votre position.
+                Pour vous afficher sur la carte et vous suggérer des itinéraires près de chez vous, Routdoor peut accéder à votre position.
               </p>
               <div className="flex gap-2.5 mt-5">
                 <button

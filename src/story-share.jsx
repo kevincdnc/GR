@@ -774,21 +774,15 @@ const SHARE_COLORS = [
 
 const ST_CHECKER = { backgroundColor: '#2a2a2a', backgroundImage: 'linear-gradient(45deg,#3a3a3a 25%,transparent 25%),linear-gradient(-45deg,#3a3a3a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#3a3a3a 75%),linear-gradient(-45deg,transparent 75%,#3a3a3a 75%)', backgroundSize: '20px 20px', backgroundPosition: '0 0,0 10px,10px -10px,-10px 0' };
 
-function StorySwitch({ on }) {
-  return (
-    <span className="shrink-0 relative block rounded-full transition-colors" style={{ width: 28, height: 16, background: on ? '#3b82f6' : '#404040' }}>
-      <span className="absolute top-[2px] w-3 h-3 rounded-full bg-white transition-all" style={{ left: on ? 14 : 2 }}></span>
-    </span>
-  );
-}
-
-// Ligne « libellé + interrupteur »
+// Interrupteur et ligne « libellé + interrupteur » : design system (src/ds/ui.jsx)
+function StorySwitch({ on }) { return <UiSwitch on={on} />; }
 function ShareFieldRow({ dark, label, on, onToggle }) {
+  if (dark) return <UiToggleRow label={label} on={on} onToggle={onToggle} />;
   return (
     <button onClick={onToggle}
-      className={`w-full flex items-center justify-between rounded-md px-2 py-1.5 text-[12.5px] transition-colors ${dark ? 'hover:bg-white/[0.025]' : 'hover:bg-neutral-50'}`}>
+      className="w-full flex items-center justify-between rounded-md px-2 py-1.5 text-[12.5px] transition-colors hover:bg-neutral-50">
       <span>{label}</span>
-      <StorySwitch on={!!on} />
+      <UiSwitch on={!!on} />
     </button>
   );
 }
@@ -825,10 +819,7 @@ const SHARE_MODES = [
   { id: 'embed', name: 'Embed', icon: 'Code' },
 ];
 const SHARE_MODE_KEY = 'gr34_share_mode_v2';
-const isTrackFile = (f) => {
-  const exts = (window.GpxLib && window.GpxLib.TRACK_EXTENSIONS) || ['gpx', 'fit', 'tcx', 'kml', 'kmz', 'geojson', 'json', 'igc'];
-  return exts.some((e) => f.name.toLowerCase().endsWith('.' + e));
-};
+// isTrackFile, readTrackFile, TRACK_ACCEPT : src/track-io.jsx
 
 // Choix d'un tracé parmi « Mes tracés » (groupes > itinéraires)
 function StudioRoutePicker({ groups, onPick, onClose }) {
@@ -1046,7 +1037,8 @@ function StoryShareModal({ parts, title: initialTitle, groups, dark: appDark, on
         </div>
       ) : (
         <>
-          {mode === 'poster' && <PosterPane {...common} routeTools={routeTools} />}
+          {/* Les posters se font sur Printrace (produit dédié) */}
+          {mode === 'poster' && <PrintraceHandoff routes={routes} title={linkTitle} onToast={onToast} />}
           {mode === 'story' && <StoryPane {...common} />}
           {mode === 'embed' && <EmbedPane {...common} />}
         </>

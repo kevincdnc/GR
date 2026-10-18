@@ -248,13 +248,13 @@ function SharePanel({ itinerary, dark, accent, plan, onClose }) {
                         />
                         <div className="flex-1 min-w-0">
                           <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider mb-2.5" style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}>
-                            GPXmap Pro
+                            Routdoor Pro
                           </span>
                           <h3 className="text-[19px] font-bold tracking-tight text-white leading-snug">
-                            Libérez toute la puissance de GPXmap
+                            Libérez toute la puissance de Routdoor
                           </h3>
                           <p className="text-[12.5px] mt-2.5 mb-1 leading-relaxed" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                            Restez fidèle à votre marque et débloquez tout GPXmap :
+                            Restez fidèle à votre marque et débloquez tout Routdoor :
                           </p>
                           <ul className="mt-2 space-y-1.5">
                             {['Itinéraires illimités', 'Customisation des cartes', 'Cartes météo & avalanche avancées', 'Export illimité'].map((feat) => (
@@ -396,10 +396,10 @@ function SharePreview({ itinerary, dark, color, compact, controls, short, metric
             <span className={`w-7 h-7 grid place-items-center rounded-md shadow ${dark ? 'bg-neutral-900/90 text-neutral-300' : 'bg-white/95 text-neutral-700'}`}><I.Stack size={14} /></span>
           </div>
         )}
-        {/* Filigrane GPXmap — en haut à gauche */}
+        {/* Filigrane Routdoor — en haut à gauche */}
         {watermark && (
           <div className="group/wm absolute left-2.5 top-2.5 flex items-center rounded-md px-1.5 py-1 transition-all" style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}>
-            <span className="logo-type text-[10px] whitespace-nowrap" style={{ color: '#fff' }}><b className="font-extrabold">GPX</b>map</span>
+            <span className="logo-type text-[10px] whitespace-nowrap" style={{ color: '#fff' }}><b className="font-extrabold">Rout</b>door</span>
           </div>
         )}
       </div>

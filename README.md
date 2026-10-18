@@ -1,12 +1,33 @@
-# GPXmap
+# Routdoor · Printrace
 
-App perso pour suivre mon GR34 (sentier des douaniers). L'interface vient d'un prototype Claude Design
-(README d'origine dans [`docs/design-handoff.md`](docs/design-handoff.md)), renommé GPXmap et simplifié.
-Les données démo du prototype sont remplacées par mes vraies étapes. Thème sombre par défaut, navigation
-et éléments flottants en verre dépoli au-dessus de la carte plein écran ; typographie
-Barlow (texte) et Barlow Semi Condensed (chiffres, titres), servies avec le site.
+Deux produits, un même code et un même design system :
 
-En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.github.io/GR/#metrics
+- **Routdoor** — créer, importer et modifier ses itinéraires (né du suivi de mon GR34, le sentier des douaniers).
+  En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.github.io/GR/#metrics
+- **Printrace** — transformer un tracé (GPX, FIT, lien Strava, ou envoyé depuis Routdoor) en poster
+  vectoriel prêt à imprimer. En ligne : https://kevincdnc.github.io/GR/printrace/
+- **Design system** — fondations et composants communs, documentation vivante :
+  https://kevincdnc.github.io/GR/design-system/
+
+L'interface de Routdoor vient d'un prototype Claude Design (README d'origine dans
+[`docs/design-handoff.md`](docs/design-handoff.md)). Thème sombre par défaut, typographie Barlow (texte)
+et Barlow Semi Condensed (chiffres, titres), servies avec le site.
+
+## Organisation du code
+
+| Dossier / fichier | Rôle |
+|---|---|
+| `index.html`, `src/*.jsx` | Routdoor (carte, itinéraires, stats, partage story / embed / lien) |
+| `printrace.html`, `src/printrace/` | Printrace : navigation, bibliothèque de tracés, import (fichier, lien Strava, Routdoor) |
+| `src/poster-share.jsx`, `src/poster-map.jsx` | Studio poster (modèles, carte vectorielle, export PNG / SVG), utilisé par Printrace |
+| `src/ds/tokens.css`, `src/ds/ui.jsx` | Design system : jetons (couleurs, rayons, typo) et composants `Ui*` |
+| `design-system.html`, `src/ds/showcase.jsx` | Documentation vivante du design system |
+| `src/track-io.jsx`, `lib/gpx.mjs` | Lecture des fichiers de trace (GPX, FIT, TCX, KML/KMZ, GeoJSON, IGC) |
+| `src/printrace-bridge.jsx` | « Envoyer sur Printrace » depuis Routdoor (tracés dans le lien `#t=…`) |
+| `workers/strava/` | Relais Strava optionnel (import direct depuis un lien d'activité) |
+
+Toute nouvelle page réutilise le design system : composants `Ui*` de `src/ds/ui.jsx` et
+fondations de `ds.css`, plutôt que des styles écrits à la main.
 
 ## Ce qui est réel / simulé
 
@@ -22,7 +43,10 @@ En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.g
 | Recherche de lieu | Réel (Nominatim) |
 | Tracé à la main : tracé automatique sur sentiers / chemins / routes (BRouter, OpenStreetMap) et altitudes réelles (Open-Meteo, MNT Copernicus) | **Réel** (services en ligne ; ligne droite si indisponibles) |
 | Partage en story (menu ⋯ d'une activité ou d'un groupe, bouton *Partager* des stats) : 10 modèles 1080×1920, données affichées au choix, photo de fond, export PNG / copie / partage natif | **Réel** (rendu dans le navigateur) |
-| Strava / Komoot / Garmin | Simulé, comme dans le design |
+| Strava / Komoot / Garmin (Routdoor) | Simulé, comme dans le design |
+| Printrace : import GPX / FIT…, bibliothèque, cases à cocher, studio poster | **Réel**, enregistré dans le navigateur |
+| Printrace : lien d'activité Strava | Parcours guidé (export GPX du compte Strava puis dépôt) ; import direct avec le relais `workers/strava` une fois déployé |
+| Routdoor → Printrace (« Envoyer sur Printrace ») | **Réel** (tracés transmis dans le lien) |
 | Panneau « Réglages design » (mode sombre, accent, densité) | Visible seulement dans l'éditeur Claude Design |
 
 ## Ajouter une étape

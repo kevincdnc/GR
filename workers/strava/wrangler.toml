@@ -1,0 +1,12 @@
+# Relais Strava de Printrace — déploiement : voir README.md
+name = "printrace-strava"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+STRAVA_CLIENT_ID = ""                               # identifiant de l'application Strava
+ALLOWED_ORIGINS = "https://kevincdnc.github.io"      # sites autorisés (séparés par des virgules)
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = ""                                              # npx wrangler kv namespace create SESSIONS
