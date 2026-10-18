@@ -916,7 +916,7 @@ function StoryShareModal({ parts, title: initialTitle, groups, dark: appDark, on
 
   // Section « Tracé » de l'inspecteur poster : liste + import + mes tracés
   const routeTools = (
-    <StudioSection title="Tracé" aside={<span className="text-[11px] text-neutral-500">{routes.length}/{allRoutes.length}</span>}>
+    <StudioSection title="Tracé" defaultOpen={false} aside={<span className="text-[11px] text-neutral-500">{routes.length}/{allRoutes.length}</span>}>
       {allRoutes.length > 1 && (
         <div className="flex flex-col gap-0.5 max-h-[168px] overflow-y-auto sb-scroll -mx-1.5 px-1.5 mb-2.5">
           {allRoutes.map((r) => {

@@ -685,6 +685,52 @@ function StudioSection({ title, aside, children, defaultOpen = true }) {
   );
 }
 
+// Liste des infos : interrupteur, valeur, réordonnable au glisser (souris et tactile)
+function MetricsList({ order, setOrder, enabled, onToggle, values }) {
+  const listRef = usePoRef(null);
+  const [dragKey, setDragKey] = usePoState(null);
+  usePoEffect(() => {
+    if (!dragKey) return;
+    const up = () => setDragKey(null);
+    window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+    return () => { window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+  }, [dragKey]);
+  const onMove = (e) => {
+    if (!dragKey || !listRef.current) return;
+    const rows = [...listRef.current.children];
+    let idx = rows.findIndex((r) => { const b = r.getBoundingClientRect(); return e.clientY < b.top + b.height / 2; });
+    if (idx < 0) idx = rows.length;
+    setOrder((o) => {
+      const from = o.indexOf(dragKey);
+      const to = Math.max(0, Math.min(o.length - 1, idx > from ? idx - 1 : idx));
+      if (to === from) return o;
+      const n = o.filter((k) => k !== dragKey); n.splice(to, 0, dragKey); return n;
+    });
+  };
+  return (
+    <div ref={listRef} className="rounded-xl ring-1 ring-white/[0.07] overflow-hidden divide-y divide-white/[0.06]"
+      onPointerMove={onMove} onPointerUp={() => setDragKey(null)} onPointerCancel={() => setDragKey(null)}>
+      {order.map((k) => {
+        const on = enabled.has(k);
+        const dragging = dragKey === k;
+        return (
+          <div key={k} className={`flex items-center gap-2 h-11 pr-3 transition-colors select-none ${dragging ? 'bg-white/[0.1]' : 'bg-white/[0.02] hover:bg-white/[0.04]'}`}>
+            <span onPointerDown={(e) => { e.preventDefault(); setDragKey(k); }} title="Glisser pour réordonner"
+              className="w-8 h-full grid place-items-center text-neutral-500 hover:text-neutral-200 cursor-grab active:cursor-grabbing" style={{ touchAction: 'none' }}>
+              <I.Drag size={14} />
+            </span>
+            <button onClick={() => onToggle(k)} className="flex-1 min-w-0 h-full flex items-center gap-3 text-left">
+              <span className={`flex-1 min-w-0 truncate text-[13px] ${on ? 'text-white' : 'text-neutral-500'}`}>{PO_METRICS[k]}</span>
+              <span className={`text-[12px] tabular-nums whitespace-nowrap ${on ? 'text-neutral-300' : 'text-neutral-600'}`}>{values[k] || '—'}</span>
+              <StorySwitch on={on} />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle, initialTitle, dark, isMobile, onToast, routeTools }) {
   const [tplId, setTplId] = usePoState('nuit');
   const [fmtId, setFmtId] = usePoState('a3');
@@ -696,8 +742,16 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const [actOpen, setActOpen] = usePoState(false);
   const [actId, setActId] = usePoState(() => poActivityOf(allRoutes));
   const act = poActivity(actId);
-  const [metrics, setMetrics] = usePoState(() => poActivity(poActivityOf(allRoutes)).metrics);
-  usePoEffect(() => { setMetrics(act.metrics); }, [actId]);
+  // Infos : ordre (réorganisable) + infos activées
+  const orderFor = (a) => [...a.metrics, ...a.avail.filter((k) => !a.metrics.includes(k))];
+  const [order, setOrder] = usePoState(() => orderFor(poActivity(poActivityOf(allRoutes))));
+  const [enabled, setEnabled] = usePoState(() => new Set(poActivity(poActivityOf(allRoutes)).metrics));
+  const firstAct = usePoRef(true);
+  usePoEffect(() => {
+    if (firstAct.current) { firstAct.current = false; return; }
+    setOrder(orderFor(act)); setEnabled(new Set(act.metrics));
+  }, [actId]);
+  const metrics = usePoMemo(() => order.filter((k) => enabled.has(k)), [order, enabled]);
   const [showTitle, setShowTitle] = usePoState(true);
   const [showSub, setShowSub] = usePoState(true);
   const [subtitle, setSubtitle] = usePoState(null);
@@ -811,7 +865,10 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const chip = (on) => `rounded-lg px-2.5 h-9 text-[12.5px] font-medium transition-all ${on ? 'bg-white text-neutral-900 shadow-sm' : 'bg-white/[0.05] text-neutral-300 hover:bg-white/[0.1] hover:text-white'}`;
   const inputCls = 'w-full h-10 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-[13px] outline-none placeholder:text-neutral-500 focus:border-white/30 focus:bg-white/[0.06] transition-colors';
   const ms = PO_MOCK_STYLE[mock];
-  const toggleMetric = (k) => setMetrics((m) => m.includes(k) ? m.filter((x) => x !== k) : act.avail.filter((x) => m.includes(x) || x === k));
+  const toggleMetric = (k) => setEnabled((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const metricValues = usePoMemo(() => {
+    const m = {}; poStats(agg, order).forEach((st) => { m[st.key] = st.value + (st.unit ? ' ' + st.unit : ''); }); return m;
+  }, [agg, order]);
 
   return (
     <div className={`flex-1 min-h-0 flex ${isMobile ? 'flex-col overflow-y-auto sb-scroll' : ''}`}>
@@ -908,18 +965,11 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                   style={{ background: c.value === 'routes' ? 'conic-gradient(#ef4444,#f59e0b,#22c55e,#3b82f6,#a855f7,#ef4444)' : c.value }} />
               ))}
             </div>
-            <div className="text-[12.5px] font-medium text-neutral-200 mt-4 mb-2">Infos affichées</div>
-            <div className="flex flex-wrap gap-1.5">
-              {act.avail.map((k) => {
-                const on = metrics.includes(k);
-                return (
-                  <button key={k} onClick={() => toggleMetric(k)}
-                    className={`h-8 px-3 rounded-full text-[12px] font-medium border transition-all flex items-center gap-1.5 ${on ? 'bg-blue-500 border-blue-500 text-white' : 'border-white/15 text-neutral-300 hover:border-white/30 hover:text-white'}`}>
-                    {on && <I.Check size={11} stroke="white" strokeWidth="3" />}{PO_METRICS[k]}
-                  </button>
-                );
-              })}
+            <div className="flex items-center justify-between mt-4 mb-2">
+              <span className="text-[12.5px] font-medium text-neutral-200">Infos affichées</span>
+              <span className="text-[11px] text-neutral-500">Glisse pour réordonner</span>
             </div>
+            <MetricsList order={order} setOrder={setOrder} enabled={enabled} onToggle={toggleMetric} values={metricValues} />
             <p className="mt-2.5 text-[11px] text-neutral-500 leading-snug">Proposées selon l'activité. Les durées sans GPS sont estimées pour {act.label.toLowerCase()}.</p>
           </StudioSection>
 
@@ -936,11 +986,12 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
           <StudioSection title="Photos" aside={<span className="text-[11px] text-neutral-500">{Math.min(photos.length, tpl.maxPhotos)}/{tpl.maxPhotos}</span>}>
             <input ref={bgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { setBg(e.target.files[0]); e.target.value = ''; }} />
             <input ref={photosRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} />
+            {tpl.photoBg && (<>
             <div className="text-[12.5px] font-medium text-neutral-200 mb-2">Photo de fond</div>
             {bgPhoto ? (
               <div className="flex items-center gap-3 rounded-lg p-2 bg-white/[0.04]">
                 <img src={bgPhoto.url} alt="" className="w-12 h-12 rounded-md object-cover" />
-                <div className="flex-1 min-w-0 text-[12px] text-neutral-400">Modèles <span className="text-neutral-200">Photo</span> et <span className="text-neutral-200">Photo & carte</span></div>
+                <div className="flex-1 min-w-0 text-[12px] text-neutral-400">Photo de fond du poster</div>
                 <button onClick={() => bgRef.current.click()} className="text-[12px] font-medium text-blue-400 hover:text-blue-300 px-1">Changer</button>
                 <button onClick={() => setBgPhoto(null)} aria-label="Retirer" className="w-8 h-8 grid place-items-center rounded-md text-neutral-400 hover:text-white hover:bg-white/10"><I.Trash size={14} /></button>
               </div>
@@ -951,7 +1002,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 <I.ImagePlus size={16} /> Choisir ou glisser une photo
               </button>
             )}
-            <div className="text-[12.5px] font-medium text-neutral-200 mt-4 mb-2">Photos du voyage</div>
+            </>)}
+            <div className={`text-[12.5px] font-medium text-neutral-200 mb-2 ${tpl.photoBg ? 'mt-4' : ''}`}>Photos du voyage</div>
             <div className="grid grid-cols-4 gap-2">
               {photos.map((p, i) => (
                 <div key={i} className="relative aspect-square rounded-md overflow-hidden group">
@@ -1005,10 +1057,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
               ))}
             </div>
           </StudioSection>
-        </div>
 
-        <div className={`p-4 flex flex-col gap-2 border-t border-white/[0.06] ${isMobile ? 'sticky bottom-0 z-10 bg-neutral-950' : ''}`}
-          style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' } : undefined}>
+          <div className="p-5 pt-4 flex flex-col gap-2" style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' } : undefined}>
           <button onClick={doDownload} disabled={busy || !routes.length}
             className="w-full h-11 flex items-center justify-center gap-2 rounded-lg text-[13.5px] font-semibold text-neutral-900 bg-white hover:bg-neutral-200 disabled:opacity-50 transition-colors">
             <I.Download size={16} /> {busy ? 'Export en cours…' : `Télécharger en HD · ${exp.dpi} dpi`}
@@ -1017,6 +1067,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             className="w-full h-10 flex items-center justify-center gap-2 rounded-lg text-[13px] font-medium text-neutral-200 bg-white/[0.06] hover:bg-white/[0.1] disabled:opacity-50 transition-colors">
             Imprimer · PDF
           </button>
+          </div>
         </div>
       </div>
     </div>
