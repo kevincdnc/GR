@@ -361,7 +361,7 @@ const PO_PAL = {
 
 // ---------------------------------------------------------------- les modèles
 // Modèles ouverts pour l'instant ; les autres sont affichés verrouillés
-const PO_OPEN_TEMPLATES = ['blueprint'];
+const PO_OPEN_TEMPLATES = ['blueprint', 'nuit', 'photo'];
 const poOpen = (id) => PO_OPEN_TEMPLATES.includes(id);
 
 const POSTER_TEMPLATES = [
