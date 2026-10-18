@@ -187,7 +187,7 @@ function poPhotos(ctx, photos, x, y, w, h, o = {}) {
     ctx.shadowColor = 'transparent';
     poRound(ctx, px + b, py + b, cw - 2 * b, ch - 2 * b, Math.max(0, (o.radius || 0) - b)); ctx.clip();
     stCover(ctx, p.img, px + b, py + b, cw - 2 * b, ch - 2 * b);
-    if (o.sepia) {
+    if (o.sepia && !ctx.__isSvg) {
       ctx.globalCompositeOperation = 'color'; ctx.fillStyle = '#8a6a3e'; ctx.fillRect(px, py, cw, ch);
       ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = 'rgba(234,217,181,0.55)'; ctx.fillRect(px, py, cw, ch);
       ctx.globalCompositeOperation = 'source-over';
@@ -239,6 +239,54 @@ function poUnproj(proj, x, y) {
   return [180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))), lng];
 }
 
+// Logo Printrace (produit posters) : SVG vectoriel recoloré selon le modèle
+const PO_LOGO_SVG = '<svg width="1236" height="335" viewBox="0 0 1236 335" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M112.422 81.6821C145.713 81.6821 167.992 105.242 167.992 135.972C167.992 177.714 133.933 210.237 90.6545 210.237H61.7168L51.4733 260.942H3.84129L39.6933 81.6821H112.422ZM90.9106 170.032C107.812 170.032 119.336 155.947 119.336 139.814C119.336 128.802 112.934 121.888 100.898 121.888H79.3867L69.6554 170.032H90.9106ZM268.294 122.144H281.611L273.16 164.398H255.234C238.076 164.398 229.625 171.312 225.528 188.214L210.931 260.942H165.091L192.749 122.656H223.223L227.064 136.997C238.844 126.497 252.161 122.144 268.294 122.144ZM303.358 105.498L311.297 66.0609H357.392L349.453 105.498H303.358ZM272.628 260.942L300.285 122.656H346.124L318.467 260.942H272.628ZM459.526 118.302C486.416 118.302 502.293 136.485 502.293 163.63C502.293 175.154 500.5 181.044 484.623 260.942H438.784C453.893 185.141 455.173 181.044 455.173 175.666C455.173 164.91 449.795 159.276 439.808 159.276C424.699 159.276 413.943 169.52 409.846 186.934L394.993 260.942H349.153L376.811 122.656H408.821L412.407 136.741C424.699 125.217 441.344 118.302 459.526 118.302ZM623.862 161.325H588.522C580.583 200.25 580.071 203.835 580.071 206.396C580.071 215.103 585.449 219.713 595.436 219.713H612.338L604.143 260.942H578.278C549.597 260.942 532.695 244.809 532.695 219.2C532.695 211.518 533.976 206.396 542.939 161.325H516.818L519.122 150.569L594.412 82.4504H603.887L595.692 122.656H631.544L623.862 161.325ZM730.45 122.144H743.766L735.315 164.398H717.389C700.231 164.398 691.781 171.312 687.683 188.214L673.086 260.942H627.247L654.904 122.656H685.378L689.22 136.997C701 126.497 714.316 122.144 730.45 122.144ZM872.587 122.656H907.415L879.758 260.942H847.235L844.93 250.443C831.87 259.918 815.992 265.552 799.347 265.552C764.263 265.552 738.398 240.968 738.398 203.579C738.398 154.411 777.067 118.302 821.882 118.302C838.784 118.302 853.637 124.705 864.137 136.228L872.587 122.656ZM811.127 224.066C831.614 224.066 849.027 205.884 849.027 185.141C849.027 169.776 838.528 159.532 822.394 159.532C802.164 159.532 785.006 177.458 785.006 198.713C785.006 214.079 795.249 224.066 811.127 224.066ZM979.729 265.552C941.316 265.552 915.708 238.151 915.708 202.811C915.708 154.667 954.121 118.302 1003.29 118.302C1041.45 118.302 1066.29 144.935 1066.03 178.739H1020.96C1018.4 166.703 1009.44 159.788 996.887 159.788C976.912 159.788 961.547 179.251 961.803 199.482C962.059 214.591 971.791 223.81 985.619 223.81C998.424 223.81 1009.95 216.383 1016.86 203.323H1061.93C1049.64 243.016 1018.14 265.552 979.729 265.552ZM1226.08 179.251C1226.33 187.958 1224.8 195.128 1222.75 203.067H1119.29C1119.29 219.456 1128.25 227.907 1144.64 227.907C1156.17 227.907 1166.15 222.786 1172.3 214.079H1218.91C1204.57 246.602 1174.09 265.552 1138.5 265.552C1101.36 265.552 1076.01 237.895 1076.01 202.811C1076.01 155.179 1111.86 118.302 1162.06 118.302C1200.73 118.302 1226.08 144.679 1226.08 179.251ZM1157.45 154.923C1142.34 154.923 1131.33 164.142 1124.92 176.69H1183.06C1181.26 162.349 1172.3 154.923 1157.45 154.923Z" fill="white" fill-opacity="0.98"/><path d="M502.983 101.001C502.983 101.001 617 -35.0894 628.983 26.4988C640.967 88.087 673.482 20.8826 703.482 98.1606" stroke-width="21" stroke="white" stroke-opacity="0.6"/></svg>';
+const poLogoCache = {};
+function poLogo(color) {
+  if (!poLogoCache[color]) {
+    const svg = PO_LOGO_SVG.replace(/fill="white"/g, `fill="${color}"`).replace(/stroke="white"/g, `stroke="${color}"`);
+    poLogoCache[color] = stLoadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), false);
+  }
+  return poLogoCache[color];
+}
+// h = hauteur visuelle souhaitée (comme stDrawLogo) ; la boîte du SVG a de la marge en haut
+async function poDrawLogo(ctx, x, y, h, color = '#ffffff', align = 'left') {
+  const img = await poLogo(color);
+  const bh = h * 1.3, bw = bh * 1236 / 335;
+  const yy = y - (bh - h) * 0.55;
+  if (img) {
+    const xx = align === 'center' ? x - bw / 2 : align === 'right' ? x - bw : x;
+    ctx.drawImage(img, xx, yy, bw, bh);
+  } else {
+    ctx.fillStyle = color; ctx.textAlign = align; ctx.font = stFont(800, h, ST_TXT); ctx.fillText('printrace', x, y + h * 0.8);
+  }
+}
+
+// Carte vectorielle (poster-map.jsx) aux couleurs du modèle
+async function poMap(ctx, d, proj, rect, pal, o = {}) {
+  if (!d.showMap || typeof pmDrawMap !== 'function') return false;
+  try {
+    return await pmDrawMap(ctx, { proj, rect, pal, style: d.mapStyle || 'epure', opacity: d.mapOpacity == null ? 1 : d.mapOpacity, labels: d.mapLabels !== false, routes: d.routes, ...o });
+  } catch (e) { console.warn('carte vectorielle', e); return false; }
+}
+const PO_PAL = {
+  blueprint: { land: '#174b82', water: '#0e3765', coast: '#a9c6e6', coastWidth: 1.2, road: '#4f7aa9', roadMajor: '#8fb1d8', path: '#5f88b6', waterway: '#4a7cb0', wood: '#1a5089', park: '#1a5089',
+    label: { color: 'rgba(255,255,255,0.92)', halo: '#123f70', haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: '#ffffff' } },
+  nuit: { land: '#1e1e1f', water: '#111112', coast: '#3b3b3d', road: '#2f2f31', roadMajor: '#434346', path: '#36363a', waterway: '#1c2630', wood: '#202421', park: '#202421',
+    label: { color: 'rgba(255,255,255,0.6)', halo: '#18181a', upper: true, spacing: 0.16, weight: 600, dot: 'rgba(255,255,255,0.7)' } },
+  satellite: { label: { color: '#ffffff', halo: 'rgba(0,0,0,0.6)', haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: '#ffffff' } },
+  ancienne: { water: '#d2c096', coast: '#5b4326', coastWidth: 1.4, road: '#b39a72', roadMajor: '#8e6f48', path: '#a68c64', waterway: '#8c9a8a', wood: '#dccb9b', park: '#dccb9b',
+    label: { color: '#3a2817', halo: 'rgba(234,217,181,0.95)', haloWidth: 3.5, family: PO_FELL, weight: 400, scale: 1.2, dot: '#3a2817' } },
+  relief: { land: '#ebe7df', water: '#cfd9dd', coast: '#a9b8bd', coastWidth: 0.9, road: '#d6cfc2', roadMajor: '#bdb3a2', path: '#cbc3b5', waterway: '#b6c6cc', wood: '#dfe2d2', park: '#dfe2d2',
+    label: { color: '#6a645a', halo: '#ebe7df', family: PO_SERIF, weight: 400, italic: true, scale: 1.1, dot: '#6a645a' } },
+  galerie: { land: '#ecebe6', water: '#d5dee2', coast: '#bac7cc', coastWidth: 0.9, road: '#ffffff', roadMajor: '#ffffff', roadScale: 1.35, path: '#d8d5cd', waterway: '#c3d0d5', wood: '#e1e5d8', park: '#e1e5d8',
+    label: { color: '#77736b', halo: '#ecebe6', upper: true, spacing: 0.12, weight: 600, dot: '#8a857c' } },
+  photo: { water: 'rgba(10,20,30,0.22)', coast: 'rgba(255,255,255,0.55)', road: 'rgba(255,255,255,0.26)', roadMajor: 'rgba(255,255,255,0.45)', path: 'rgba(255,255,255,0.32)', waterway: 'rgba(255,255,255,0.3)',
+    label: { color: '#ffffff', halo: 'rgba(0,0,0,0.5)', haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: '#ffffff' } },
+  photocarte: { land: '#e7e3da', water: '#cfd9dd', coast: '#b0bec3', coastWidth: 0.9, road: '#f8f6f1', roadMajor: '#ffffff', roadScale: 1.3, path: '#d4cec2', waterway: '#bccbd0', wood: '#dde1d1', park: '#dde1d1',
+    label: { color: '#7f796f', halo: '#e7e3da', upper: true, spacing: 0.12, weight: 600, dot: '#8a8378' } },
+};
+
 // ---------------------------------------------------------------- les 8 modèles
 const POSTER_TEMPLATES = [
   {
@@ -246,19 +294,23 @@ const POSTER_TEMPLATES = [
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     async draw(ctx, d, w, h) {
       const u = w / 1200, bg = '#103c6b', line = 'rgba(255,255,255,0.85)';
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
-      const gs = w / 48;
-      for (let i = 0, x = 0; x <= w; i++, x += gs) { ctx.fillStyle = i % 4 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)'; ctx.fillRect(x, 0, 1.2 * u, h); }
-      for (let i = 0, y = 0; y <= h; i++, y += gs) { ctx.fillStyle = i % 4 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)'; ctx.fillRect(0, y, w, 1.2 * u); }
       const M = 50 * u;
-      ctx.strokeStyle = line; ctx.lineWidth = 3 * u; ctx.strokeRect(M, M, w - 2 * M, h - 2 * M);
-      ctx.lineWidth = 1.2 * u; ctx.strokeRect(M + 12 * u, M + 12 * u, w - 2 * M - 24 * u, h - 2 * M - 24 * u);
-      // Cartouche
       const items = d.stats.map((s) => [s.label, s.value + (s.unit ? ' ' + s.unit : '')]);
       items.push(['Activité', d.activityLabel]);
       if (d.routes[0]) items.push(['Départ', poDms(d.routes[0].coords[0][0], 'N', 'S') + '  ' + poDms(d.routes[0].coords[0][1], 'E', 'O')]);
       const cw = w * 0.5, rh = 50 * u, ch = 112 * u + items.length * rh;
       const cx = w - M - 12 * u - cw, cy = h - M - 12 * u - ch;
+      const proj = stFit(d.routes, { x: M + 110 * u, y: M + 130 * u, w: w - 2 * M - 220 * u, h: cy - M - 230 * u });
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+      // Carte vectorielle dans le cadre, sous la grille
+      await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, PO_PAL.blueprint,
+        { u, labelRect: { x: M + 30 * u, y: M + 150 * u, w: w - 2 * M - 60 * u, h: cy - M - 170 * u } });
+      const gs = w / 48;
+      for (let i = 0, x = 0; x <= w; i++, x += gs) { ctx.fillStyle = i % 4 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.11)'; ctx.fillRect(x, 0, 1.2 * u, h); }
+      for (let i = 0, y = 0; y <= h; i++, y += gs) { ctx.fillStyle = i % 4 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.11)'; ctx.fillRect(0, y, w, 1.2 * u); }
+      ctx.strokeStyle = line; ctx.lineWidth = 3 * u; ctx.strokeRect(M, M, w - 2 * M, h - 2 * M);
+      ctx.lineWidth = 1.2 * u; ctx.strokeRect(M + 12 * u, M + 12 * u, w - 2 * M - 24 * u, h - 2 * M - 24 * u);
+      // Cartouche
       ctx.fillStyle = bg; ctx.fillRect(cx, cy, cw, ch);
       ctx.strokeStyle = line; ctx.lineWidth = 2 * u; ctx.strokeRect(cx, cy, cw, ch);
       poLine(ctx, d.title || 'Itinéraire', cx + 26 * u, cy + 60 * u, cw - 52 * u, 44 * u, '#fff', { upper: true, spacing: 0.06 });
@@ -275,15 +327,6 @@ const POSTER_TEMPLATES = [
       const leftX = M + 50 * u, leftW = cx - 40 * u - leftX;
       if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), leftX, cy + 70 * u, leftW, ch - 110 * u, { gap: 18 * u, border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'left', tape: true, u });
       // Tracé
-      const proj = stFit(d.routes, { x: M + 110 * u, y: M + 130 * u, w: w - 2 * M - 220 * u, h: cy - M - 230 * u });
-      if (d.showMap) {
-        // Carte en filigrane : tuiles sombres en « éclaircir » sur le bleu, au-dessus du cartouche
-        ctx.save(); ctx.beginPath(); ctx.rect(M + 13 * u, M + 13 * u, w - 2 * M - 26 * u, cy - M - 30 * u); ctx.clip();
-        ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = 0.6;
-        await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h: cy }, 'url', d.pr);
-        await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h: cy }, 'labels', d.pr);
-        ctx.restore();
-      }
       ctx.save(); ctx.setLineDash([2 * u, 10 * u]);
       stDrawRoutes(ctx, d.routes, proj, { color: 'rgba(255,255,255,0.35)', width: 18 * u, markers: false });
       ctx.restore();
@@ -301,7 +344,7 @@ const POSTER_TEMPLATES = [
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(nx, ny - 46 * u); ctx.lineTo(nx + 18 * u, ny + 14 * u); ctx.lineTo(nx, ny + 2 * u); ctx.lineTo(nx - 18 * u, ny + 14 * u); ctx.closePath(); ctx.fill();
       stLabel(ctx, 'N', nx, ny + 50 * u, 20 * u, '#fff', 'center');
       poScaleBar(ctx, d, proj, leftX, cy + 14 * u, Math.min(leftW, w * 0.22), '#fff', u);
-      await stDrawLogo(ctx, M + 50 * u, M + 60 * u, 26 * u, '#ffffff');
+      await poDrawLogo(ctx, M + 50 * u, M + 60 * u, 26 * u, '#ffffff');
       if (d.coords && d.routes[0]) stLabel(ctx, poCoords(d), M + 50 * u, M + 120 * u, 14 * u, 'rgba(255,255,255,0.7)');
     },
   },
@@ -318,8 +361,8 @@ const POSTER_TEMPLATES = [
       const photosTop = titleY - 120 * u - ph;
       const mapBottom = ph ? photosTop - 50 * u : titleY - 160 * u;
       const proj = stFit(d.routes, { x: 140 * u, y: 230 * u, w: w - 280 * u, h: mapBottom - 230 * u }, 15);
-      if (d.showMap) await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
-      if (d.showMap) await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'labels', d.pr);
+      await poMap(ctx, d, proj, { x: 0, y: 0, w, h }, PO_PAL.nuit,
+        { u, labelRect: { x: 70 * u, y: 170 * u, w: w - 140 * u, h: (ph ? photosTop : titleY - 150 * u) - 190 * u } });
       let g = ctx.createRadialGradient(w / 2, h * 0.42, w * 0.2, w / 2, h * 0.5, w * 0.95);
       g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
@@ -327,7 +370,7 @@ const POSTER_TEMPLATES = [
       g = ctx.createLinearGradient(0, fadeTop, 0, h); g.addColorStop(0, 'rgba(10,10,10,0)'); g.addColorStop(0.45, 'rgba(10,10,10,0.85)'); g.addColorStop(1, 'rgba(10,10,10,0.96)');
       ctx.fillStyle = g; ctx.fillRect(0, fadeTop, w, h);
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffb648'), width: 7 * u, glow: 30 * u });
-      await stDrawLogo(ctx, w / 2, 110 * u, 34 * u, '#ffffff', 'center');
+      await poDrawLogo(ctx, w / 2, 110 * u, 34 * u, '#ffffff', 'center');
       if (ph) poPhotos(ctx, d.photos, 110 * u, photosTop, w - 220 * u, ph, { gap: 18 * u, radius: 14 * u, maxRatio: 1.5 });
       if (d.title) poLine(ctx, d.title, w / 2, titleY, w - 220 * u, 84 * u, '#ffffff', { upper: true, spacing: 0.1, align: 'center' });
       if (d.subtitle) stLabel(ctx, d.subtitle, w / 2, titleY + 50 * u, 20 * u, 'rgba(255,255,255,0.6)', 'center');
@@ -340,8 +383,7 @@ const POSTER_TEMPLATES = [
     id: 'satellite', name: 'Satellite', kind: 'Carte', dark: true, maxPhotos: 4,
     async draw(ctx, d, w, h) {
       const u = w / 1200, M = 100 * u;
-      if (d.showMap) { ctx.fillStyle = '#26301f'; ctx.fillRect(0, 0, w, h); }
-      else { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#13202c'); bg.addColorStop(1, '#05080b'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
+      { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#13202c'); bg.addColorStop(1, '#05080b'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
       const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 70 * u, labelSize: 20 * u, cols: poCols(d.stats.length) });
       const statsTop = h - 110 * u - L.height;
       const th = poLinesHeight(ctx, d.title, w - 2 * M, 96 * u, { maxLines: 2 });
@@ -349,14 +391,21 @@ const POSTER_TEMPLATES = [
       const ph = d.photos.length ? 170 * u : 0;
       const photosTop = titleTop - 50 * u - ph;
       const proj = stFit(d.routes, { x: 130 * u, y: 160 * u, w: w - 260 * u, h: (ph ? photosTop : titleTop) - 130 * u - 160 * u }, 16);
-      if (d.showMap) await stDrawTiles(ctx, 'satellite', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
+      if (d.showMap) {
+        // Imagerie satellite (photo aérienne, forcément en image) + noms de lieux vectoriels
+        ctx.save(); ctx.globalAlpha = d.mapOpacity == null ? 1 : d.mapOpacity;
+        await stDrawTiles(ctx, 'satellite', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
+        ctx.restore();
+        await poMap(ctx, d, proj, { x: 0, y: 0, w, h }, PO_PAL.satellite,
+          { u, opacity: 1, labelRect: { x: 70 * u, y: 170 * u, w: w - 140 * u, h: (ph ? photosTop : titleTop) - 260 * u } });
+      }
       const fadeTop = (ph ? photosTop : titleTop) - 300 * u;
       let g = ctx.createLinearGradient(0, fadeTop, 0, h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.4, 'rgba(0,0,0,0.6)'); g.addColorStop(1, 'rgba(0,0,0,0.9)');
       ctx.fillStyle = g; ctx.fillRect(0, fadeTop, w, h);
       g = ctx.createLinearGradient(0, 0, 0, 260 * u); g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, 260 * u);
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffd23f'), width: 7 * u, casing: 'rgba(0,0,0,0.45)', casingWidth: 3 * u });
-      await stDrawLogo(ctx, M, 80 * u, 32 * u, '#ffffff');
+      await poDrawLogo(ctx, M, 80 * u, 32 * u, '#ffffff');
       if (d.coords) stLabel(ctx, poCoords(d), w - M, 104 * u, 16 * u, 'rgba(255,255,255,0.75)', 'right');
       if (ph) poPhotos(ctx, d.photos, M, photosTop, w - 2 * M, ph, { gap: 14 * u, border: 6 * u, maxRatio: 1.4, align: 'left' });
       if (d.title) poLines(ctx, d.title, M, titleTop, w - 2 * M, 96 * u, '#ffffff', { maxLines: 2, lh: 1.02 });
@@ -395,13 +444,10 @@ const POSTER_TEMPLATES = [
       const mx = M + 44 * u, my = M + 44 * u, mw = w - 2 * mx;
       const mh = h * (d.photos.length ? 0.42 : 0.52);
       const proj = stFit(d.routes, { x: mx + 70 * u, y: my + 70 * u, w: mw - 140 * u, h: mh - 140 * u }, 15);
+      await poMap(ctx, d, proj, { x: mx, y: my, w: mw, h: mh }, PO_PAL.ancienne,
+        { u, labelRect: { x: mx + 20 * u, y: my + 40 * u, w: mw - 220 * u, h: mh - 60 * u } });
       ctx.save(); ctx.beginPath(); ctx.rect(mx, my, mw, mh); ctx.clip();
-      if (d.showMap) await stDrawTiles(ctx, 'topo', proj, { x: mx, y: my, w: mw, h: mh }, 'url', d.pr);
-      ctx.globalCompositeOperation = 'color'; ctx.fillStyle = '#9a7646'; ctx.fillRect(mx, my, mw, mh);
-      ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = 'rgba(234,217,181,0.85)'; ctx.fillRect(mx, my, mw, mh);
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = 'rgba(234,217,181,0.28)'; ctx.fillRect(mx, my, mw, mh);
-      poSpeckle(ctx, mx, my, mw, mh, 900, '#5b3b16', 3);
+      poSpeckle(ctx, mx, my, mw, mh, 700, '#5b3b16', 3);
       // Graticule réel (lat/lng)
       const tl = poUnproj(proj, mx, my), br = poUnproj(proj, mx + mw, my + mh);
       const span = Math.max(br[1] - tl[1], tl[0] - br[0]);
@@ -487,16 +533,16 @@ const POSTER_TEMPLATES = [
         ctx.fillText('Échelle · ' + s.label, mx + 20 * u, by - 12 * u);
       }
       if (d.coords) { ctx.font = poFont(400, 18 * u, PO_FELL, true); ctx.fillStyle = '#5a4126'; ctx.textAlign = 'center'; ctx.fillText(poCoords(d), cx, by + 6 * u); }
-      await stDrawLogo(ctx, w - mx - 20 * u, by - 18 * u, 26 * u, ink, 'right');
+      await poDrawLogo(ctx, w - mx - 20 * u, by - 18 * u, 26 * u, ink, 'right');
     },
   },
   {
     // Relief : ombrage du terrain sur papier, typographie éditoriale
-    id: 'relief', name: 'Relief', kind: 'Éditorial', maxPhotos: 4,
+    id: 'relief', name: 'Éditorial', kind: 'Magazine', maxPhotos: 4,
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#1c1a17', mute = '#7d776c', M = 90 * u;
       ctx.fillStyle = '#f3f0ea'; ctx.fillRect(0, 0, w, h);
-      await stDrawLogo(ctx, M, M - 26 * u, 26 * u, ink);
+      await poDrawLogo(ctx, M, M - 26 * u, 26 * u, ink);
       if (d.coords) stLabel(ctx, poCoords(d), w - M, M - 6 * u, 15 * u, mute, 'right');
       const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 62 * u, labelSize: 18 * u, cols: poCols(d.stats.length) });
       const statsTop = h - M - L.height;
@@ -508,14 +554,8 @@ const POSTER_TEMPLATES = [
       const mapTop = M + 30 * u, mapBottom = titleTop - 60 * u - (ph ? ph + 24 * u : 0);
       const mapH = mapBottom - mapTop;
       const proj = stFit(d.routes, { x: M + 80 * u, y: mapTop + 80 * u, w: w - 2 * M - 160 * u, h: mapH - 160 * u }, 15);
+      await poMap(ctx, d, proj, { x: M, y: mapTop, w: w - 2 * M, h: mapH }, PO_PAL.relief, { u });
       ctx.save(); ctx.beginPath(); ctx.rect(M, mapTop, w - 2 * M, mapH); ctx.clip();
-      if (d.showMap) { ctx.fillStyle = '#e6e2d9'; ctx.fillRect(M, mapTop, w - 2 * M, mapH); }
-      if (d.showMap) await stDrawTiles(ctx, 'light', proj, { x: M, y: mapTop, w: w - 2 * M, h: mapH }, 'url', d.pr);
-      ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.75;
-      if (d.showMap) await stDrawTiles(ctx, 'hillshade', proj, { x: M, y: mapTop, w: w - 2 * M, h: mapH }, 'url', d.pr);
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = 'rgba(243,240,234,0.18)'; ctx.fillRect(M, mapTop, w - 2 * M, mapH);
-      ctx.globalCompositeOperation = 'source-over';
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#c2410c'), width: 6 * u, casing: '#ffffff', casingWidth: 3 * u });
       ctx.restore();
       if (ph) poPhotos(ctx, d.photos, M, mapBottom + 24 * u, w - 2 * M, ph, { gap: 24 * u });
@@ -543,15 +583,16 @@ const POSTER_TEMPLATES = [
       const phH = n ? (n === 4 ? (footTop - 40 * u - y) * 0.48 : (footTop - 40 * u - y) * 0.34) : 0;
       const mapH = footTop - 40 * u - y - (n ? phH + 22 * u : 0);
       const proj = stFit(d.routes, { x: M + 60 * u, y: y + 60 * u, w: w - 2 * M - 120 * u, h: mapH - 120 * u }, 16);
-      ctx.save(); stRoundRect(ctx, M, y, w - 2 * M, mapH, 20 * u); ctx.clip();
-      ctx.fillStyle = '#eceae5'; ctx.fillRect(M, y, w - 2 * M, mapH);
-      if (d.showMap) await stDrawTiles(ctx, 'light', proj, { x: M, y, w: w - 2 * M, h: mapH }, 'url', d.pr);
+      const gy = y;
+      ctx.save(); stRoundRect(ctx, M, gy, w - 2 * M, mapH, 20 * u); ctx.fillStyle = '#ecebe6'; ctx.fill(); ctx.restore();
+      await poMap(ctx, d, proj, { x: M, y: gy, w: w - 2 * M, h: mapH }, PO_PAL.galerie, { u, clip: (g) => stRoundRect(g, M, gy, w - 2 * M, mapH, 20 * u) });
+      ctx.save(); stRoundRect(ctx, M, gy, w - 2 * M, mapH, 20 * u); ctx.clip();
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, 'routes'), width: 7 * u, casing: '#ffffff', casingWidth: 3 * u });
       ctx.restore();
       if (n) poPhotos(ctx, d.photos, M, y + mapH + 22 * u, w - 2 * M, phH, { gap: 22 * u, radius: 20 * u, grid: true });
       ctx.fillStyle = 'rgba(22,22,22,0.12)'; ctx.fillRect(M, footTop - 10 * u, w - 2 * M, 1.5 * u);
       if (d.stats.length) stDrawStats(ctx, d.stats, M, footTop + 20 * u, w - 2 * M, { layout: L, color: ink, labelColor: mute, dividers: true, dividerColor: 'rgba(22,22,22,0.1)' });
-      await stDrawLogo(ctx, w / 2, h - M + 6 * u, 22 * u, ink, 'center');
+      await poDrawLogo(ctx, w / 2, h - M + 6 * u, 22 * u, ink, 'center');
       if (d.coords) stLabel(ctx, poCoords(d), M, h - M + 24 * u, 14 * u, mute);
     },
   },
@@ -565,7 +606,7 @@ const POSTER_TEMPLATES = [
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h * 0.4);
       g = ctx.createLinearGradient(0, h * 0.42, 0, h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.5, 'rgba(0,0,0,0.5)'); g.addColorStop(1, 'rgba(0,0,0,0.85)');
       ctx.fillStyle = g; ctx.fillRect(0, h * 0.42, w, h * 0.58);
-      await stDrawLogo(ctx, M, 80 * u, 32 * u, '#ffffff');
+      await poDrawLogo(ctx, M, 80 * u, 32 * u, '#ffffff');
       if (d.coords) stLabel(ctx, poCoords(d), w - M, 104 * u, 16 * u, 'rgba(255,255,255,0.8)', 'right');
       const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 72 * u, labelSize: 20 * u, cols: poCols(d.stats.length) });
       const statsTop = h - 110 * u - L.height;
@@ -574,12 +615,8 @@ const POSTER_TEMPLATES = [
       const ph = d.photos.length ? 160 * u : 0;
       const photosTop = titleTop - 50 * u - ph;
       const proj = stFit(d.routes, { x: w * 0.42, y: 170 * u, w: w * 0.5, h: (ph ? photosTop : titleTop) - 120 * u - 170 * u });
-      if (d.showMap) {
-        ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = 0.5;
-        await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'url', d.pr);
-        await stDrawTiles(ctx, 'dark', proj, { x: 0, y: 0, w, h }, 'labels', d.pr);
-        ctx.restore();
-      }
+      await poMap(ctx, d, proj, { x: 0, y: 0, w, h: (ph ? photosTop : titleTop) - 40 * u }, PO_PAL.photo,
+        { u, labelRect: { x: 60 * u, y: 160 * u, w: w - 120 * u, h: (ph ? photosTop : titleTop) - 220 * u } });
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffffff'), width: 6 * u, glow: 16 * u, markers: true });
       if (ph) poPhotos(ctx, d.photos, M, photosTop, w - 2 * M, ph, { gap: 16 * u, border: 7 * u, maxRatio: 1.3, align: 'left', shadow: 16 * u });
       if (d.title) poLines(ctx, d.title, M, titleTop, w - 2 * M, 120 * u, '#ffffff', { family: PO_SERIF, maxLines: 2, lh: 1.0 });
@@ -600,7 +637,7 @@ const POSTER_TEMPLATES = [
       ctx.fillStyle = g; ctx.fillRect(0, pH * 0.45, w, pH * 0.55);
       g = ctx.createLinearGradient(0, 0, 0, 220 * u); g.addColorStop(0, 'rgba(0,0,0,0.45)'); g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, 220 * u);
-      await stDrawLogo(ctx, M, 66 * u, 30 * u, '#ffffff');
+      await poDrawLogo(ctx, M, 66 * u, 30 * u, '#ffffff');
       const tw = d.photos.length ? w * 0.5 - M : w - 2 * M; // les tirages occupent la droite
       const tsz = d.photos.length ? 88 * u : 104 * u;
       const th = poLinesHeight(ctx, d.title, tw, tsz, { family: PO_SERIF, maxLines: 3, lh: 1.0 });
@@ -611,11 +648,9 @@ const POSTER_TEMPLATES = [
       const by = pH + 60 * u, bh = h - by - M;
       const mapW = (w - 2 * M) * 0.58;
       const proj = stFit(d.routes, { x: M + 40 * u, y: by + 40 * u, w: mapW - 80 * u, h: bh - 80 * u }, 16);
+      ctx.save(); stRoundRect(ctx, M, by, mapW, bh, 16 * u); ctx.fillStyle = '#e7e3da'; ctx.fill(); ctx.restore();
+      await poMap(ctx, d, proj, { x: M, y: by, w: mapW, h: bh }, PO_PAL.photocarte, { u, clip: (g) => stRoundRect(g, M, by, mapW, bh, 16 * u) });
       ctx.save(); stRoundRect(ctx, M, by, mapW, bh, 16 * u); ctx.clip();
-      ctx.fillStyle = '#e7e3da'; ctx.fillRect(M, by, mapW, bh);
-      if (d.showMap) await stDrawTiles(ctx, 'topo', proj, { x: M, y: by, w: mapW, h: bh }, 'url', d.pr);
-      ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = 'rgba(128,128,128,0.75)'; ctx.fillRect(M, by, mapW, bh);
-      ctx.globalCompositeOperation = 'source-over';
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#e5482d'), width: 6 * u, casing: '#ffffff', casingWidth: 3 * u });
       ctx.restore();
       const sx = M + mapW + 50 * u, sw = w - M - sx;
@@ -629,15 +664,11 @@ const POSTER_TEMPLATES = [
   },
 ];
 
-// Rendu complet : cadre (bordure) + modèle. `scale` = px canvas par unité.
-async function renderPoster(canvas, tpl, d, fmt, border, scale) {
-  const ctx = canvas.getContext('2d');
+// Rendu complet : cadre (bordure) + modèle, dans un contexte déjà à l'échelle.
+async function renderPosterCtx(ctx, tpl, d, fmt, border, pr) {
   const W = PO_W, H = poHeight(fmt);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
   if (!d.routes.length) return;
-  const dd = { ...d, pr: scale, photos: (d.photos || []).slice(0, tpl.maxPhotos || 4), showMap: d.showMap != null ? d.showMap : !!tpl.mapDefault };
+  const dd = { ...d, pr, photos: (d.photos || []).slice(0, tpl.maxPhotos || 4), showMap: d.showMap != null ? d.showMap : !!tpl.mapDefault };
   try {
     if (border === 'marge' || border === 'passe') {
       const m = border === 'passe' ? W * 0.085 : W * 0.035;
@@ -658,6 +689,37 @@ async function renderPoster(canvas, tpl, d, fmt, border, scale) {
       }
     }
   } catch (e) { console.warn('poster render', e); }
+}
+// Canvas (aperçu, vignettes, PNG). `scale` = px canvas par unité.
+async function renderPoster(canvas, tpl, d, fmt, border, scale) {
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  await renderPosterCtx(ctx, tpl, d, fmt, border, scale);
+}
+// SVG vectoriel prêt pour l'imprimeur : carte, tracé et textes en vecteurs,
+// polices intégrées, dimensions physiques en mm.
+async function renderPosterSvg(tpl, d, fmt, border) {
+  const W = PO_W, H = poHeight(fmt);
+  const ctx = new C2S(W, H);
+  ctx.__isSvg = true;
+  // Images distantes (imagerie satellite) intégrées dans le fichier
+  const draw = ctx.drawImage.bind(ctx);
+  ctx.drawImage = function (img, ...rest) {
+    if (img && img.nodeName === 'IMG' && !/^data:/.test(img.src)) {
+      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      return draw(c, ...rest);
+    }
+    return draw(img, ...rest);
+  };
+  await renderPosterCtx(ctx, tpl, d, fmt, border, 3);
+  let svg = ctx.getSerializedSvg(true);
+  svg = svg.replace(/<svg([^>]*?)\swidth="[^"]*"\sheight="[^"]*"/, `<svg$1 width="${fmt.mm[0]}mm" height="${fmt.mm[1]}mm" viewBox="0 0 ${W} ${H}"`);
+  const css = await pmFontFaceCss(svg);
+  if (css) svg = svg.replace(/(<svg[^>]*>)/, `$1<style>${css}</style>`);
+  return svg;
 }
 
 // ---------------------------------------------------------------- panneau (studio)
@@ -738,6 +800,12 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const [fmtId, setFmtId] = usePoState('a3');
   const [border, setBorder] = usePoState('none');
   const [mock, setMock] = usePoState('noir');
+  // Parcours : 1 = design, 2 = « Imprimez votre tracé » (fichier ou tirage encadré)
+  const [step, setStep] = usePoState(1);
+  const [offer, setOffer] = usePoState('file');
+  const [mapStyle, setMapStyle] = usePoState('epure');
+  const [mapOpacity, setMapOpacity] = usePoState(100);
+  const [mapLabels, setMapLabels] = usePoState(true);
   const [color, setColor] = usePoState('auto');
   const [customColor, setCustomColor] = usePoState('#ff6b35');
   const customOn = color !== 'auto' && !SHARE_COLORS.some((c) => c.value === color);
@@ -788,8 +856,9 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
     title: showTitle ? (title.trim() || initialTitle || 'Mon aventure') : '',
     subtitle: showSub ? (subtitle == null ? defaultSub : subtitle) : '',
     stats: poStats(agg, metrics),
-    photos, bgPhoto: bgPhoto && bgPhoto.img, showMap,
-  }), [routes, agg, color, coords, title, subtitle, defaultSub, showTitle, showSub, metrics, photos, bgPhoto, actId, showMap]);
+    photos, bgPhoto: bgPhoto && bgPhoto.img, showMap, mapStyle, mapOpacity: mapOpacity / 100, mapLabels,
+  }), [routes, agg, color, coords, title, subtitle, defaultSub, showTitle, showSub, metrics, photos, bgPhoto, actId, showMap, mapStyle, mapOpacity, mapLabels]);
+  const stageMock = step === 2 && offer === 'print' ? mock : 'none';
 
   const token = usePoRef(0);
   usePoEffect(() => {
@@ -834,7 +903,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   };
   const fileName = () => {
     const slug = (data.title || 'aventure').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
-    return `routdoor-poster-${slug || 'aventure'}-${fmt.id}.png`;
+    return `printrace-${slug || 'aventure'}-${fmt.id}`;
   };
   const doDownload = async () => {
     setBusy(true);
@@ -842,13 +911,32 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
       const c = await exportCanvas();
       const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = fileName();
+      a.href = URL.createObjectURL(blob); a.download = fileName() + '.png';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       onToast && onToast(`Poster ${fmt.name} téléchargé (${exp.w} × ${exp.h} px)`);
     } catch (e) { onToast && onToast('Export impossible : ' + e.message); }
     setBusy(false);
   };
+  const saveBlob = (blob, name) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+  // SVG vectoriel (carte, tracé, textes en vecteurs, polices intégrées)
+  const doDownloadSvg = async () => {
+    setBusy(true);
+    try {
+      await storyFontsReady();
+      const svg = await renderPosterSvg(tpl, data, fmt, border);
+      saveBlob(new Blob([svg], { type: 'image/svg+xml' }), fileName() + '.svg');
+      onToast && onToast(`SVG vectoriel ${fmt.name} téléchargé`);
+    } catch (e) { onToast && onToast('Export SVG impossible : ' + e.message); }
+    setBusy(false);
+  };
+  // Formule « fichier numérique » : PNG 300 dpi + SVG
+  const doGetFiles = async () => { await doDownload(); await doDownloadSvg(); };
   // Impression : page au format exact, sans marge (→ « Enregistrer en PDF »)
   const doPrint = async () => {
     const win = window.open('', '_blank');
@@ -868,7 +956,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
 
   const chip = (on) => `rounded-lg px-2.5 h-9 text-[12.5px] font-medium transition-all ${on ? 'bg-white text-neutral-900 shadow-sm' : 'bg-white/[0.05] text-neutral-300 hover:bg-white/[0.1] hover:text-white'}`;
   const inputCls = 'w-full h-10 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-[13px] outline-none placeholder:text-neutral-500 focus:border-white/30 focus:bg-white/[0.06] transition-colors';
-  const ms = PO_MOCK_STYLE[mock];
+  const ms = PO_MOCK_STYLE[stageMock];
   const toggleMetric = (k) => setEnabled((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const metricValues = usePoMemo(() => {
     const m = {}; poStats(agg, order).forEach((st) => { m[st.key] = st.value + (st.unit ? ' ' + st.unit : ''); }); return m;
@@ -904,7 +992,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
 
       {/* Scène : le poster (au mur si un cadre est choisi) */}
       <div className={`min-w-0 relative flex flex-col items-center justify-center ${isMobile ? 'order-1 shrink-0 px-5 pt-5 pb-4' : 'flex-1 px-10 py-8'}`}
-        style={{ ...(isMobile ? { height: 'min(64vh, 620px)' } : {}), background: mock !== 'none' ? 'radial-gradient(ellipse at 50% 30%, #ebe6de 0%, #d8d1c6 65%, #c9c1b4 100%)' : 'radial-gradient(ellipse at 50% 40%, #1d1d1f 0%, #0b0b0c 75%)' }}>
+        style={{ ...(isMobile ? { height: 'min(64vh, 620px)' } : {}), background: stageMock !== 'none' ? 'radial-gradient(ellipse at 50% 30%, #ebe6de 0%, #d8d1c6 65%, #c9c1b4 100%)' : 'radial-gradient(ellipse at 50% 40%, #1d1d1f 0%, #0b0b0c 75%)' }}>
         <div className="relative min-h-0 flex-1 w-full grid place-items-center">
           <div className="relative h-full max-w-full" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, maxHeight: '100%' }}>
             <div className="absolute inset-0" style={ms ? {
@@ -924,14 +1012,15 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             </div>
           </div>
         </div>
-        <div className={`mt-4 text-[11.5px] tabular-nums ${mock !== 'none' ? 'text-neutral-600' : 'text-neutral-500'}`}>
-          {fmt.name}{fmt.sub !== 'cm' ? ` · ${fmt.sub}` : ' cm'} · {exp.w} × {exp.h} px · {exp.dpi} dpi{mock !== 'none' ? ' · cadre en aperçu' : ''}
+        <div className={`mt-4 text-[11.5px] tabular-nums ${stageMock !== 'none' ? 'text-neutral-600' : 'text-neutral-500'}`}>
+          {fmt.name}{fmt.sub !== 'cm' ? ` · ${fmt.sub}` : ' cm'} · {exp.w} × {exp.h} px · {exp.dpi} dpi{stageMock !== 'none' ? ' · cadre en aperçu' : ''}
         </div>
       </div>
 
       {/* Inspecteur */}
       <div className={isMobile ? 'order-3 flex flex-col border-t border-white/[0.06]' : 'w-[340px] shrink-0 flex flex-col border-l border-white/[0.06] bg-white/[0.015]'}>
         <div className={isMobile ? '' : 'flex-1 overflow-y-auto sb-scroll'}>
+          {step === 1 && (<>
           {routeTools}
 
           <StudioSection title="Activité et infos" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
@@ -1049,38 +1138,121 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             </div>
           </StudioSection>
 
-          <StudioSection title="Style">
-            <div className="-mx-2 mb-1">
+          <StudioSection title="Carte">
+            <div className="-mx-2">
               <ShareFieldRow dark label="Carte derrière le tracé" on={showMap} onToggle={() => setShowMap((v) => !v)} />
             </div>
-            <div className="text-[12.5px] font-medium text-neutral-200 mt-3 mb-2">Bordure imprimée</div>
-            <div className="grid grid-cols-2 gap-1.5">
-              {POSTER_BORDERS.map((b) => <button key={b.id} onClick={() => setBorder(b.id)} className={chip(b.id === border)}>{b.name}</button>)}
-            </div>
-            <div className="text-[12.5px] font-medium text-neutral-200 mt-4 mb-2">Cadre (aperçu au mur)</div>
-            <div className="flex gap-2.5">
-              {POSTER_MOCKUPS.map((m) => (
-                <button key={m.id} onClick={() => setMock(m.id)} title={m.name} className="flex flex-col items-center gap-1.5">
-                  <span className={`w-10 h-10 rounded-lg grid place-items-center ${mock === m.id ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
-                    style={{ background: m.id === 'none' ? 'transparent' : m.swatch }}>
-                    {m.id === 'none' ? <I.X size={14} /> : <span className="w-5 h-6 rounded-[2px] bg-neutral-100"></span>}
-                  </span>
-                  <span className={`text-[10.5px] ${mock === m.id ? 'text-white' : 'text-neutral-500'}`}>{m.name}</span>
-                </button>
-              ))}
-            </div>
+            {showMap && (
+              <>
+                {tpl.id !== 'satellite' ? (
+                  <>
+                    <div className="text-[12.5px] font-medium text-neutral-200 mt-3 mb-2">Style de carte</div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {PM_STYLES.map((m) => <button key={m.id} onClick={() => setMapStyle(m.id)} className={chip(m.id === mapStyle)}>{m.name}</button>)}
+                    </div>
+                    <p className="mt-2 text-[11px] text-neutral-500 leading-snug">
+                      {mapStyle === 'epure' ? 'Littoral, plans d’eau et grands axes.' : mapStyle === 'routes' ? 'Réseau routier détaillé, rivières et villages.' : 'Forêts, rivières, sentiers et sommets.'} Carte vectorielle aux couleurs du modèle.
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-[11px] text-neutral-500 leading-snug">Imagerie satellite (photo aérienne) avec noms de lieux vectoriels.</p>
+                )}
+                <div className="flex items-center gap-3 mt-4">
+                  <span className="text-[12.5px] font-medium text-neutral-200 w-16">Opacité</span>
+                  <input type="range" min={15} max={100} step={5} value={mapOpacity} onChange={(e) => setMapOpacity(Number(e.target.value))} className="flex-1 accent-white" />
+                  <span className="text-[12px] tabular-nums text-neutral-400 w-10 text-right">{mapOpacity} %</span>
+                </div>
+                <div className="-mx-2 mt-2">
+                  <ShareFieldRow dark label="Noms de lieux (hors tracé)" on={mapLabels} onToggle={() => setMapLabels((v) => !v)} />
+                </div>
+              </>
+            )}
           </StudioSection>
 
-          <div className="p-5 pt-4 flex flex-col gap-2" style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' } : undefined}>
-          <button onClick={doDownload} disabled={busy || !routes.length}
-            className="w-full h-11 flex items-center justify-center gap-2 rounded-lg text-[13.5px] font-semibold text-neutral-900 bg-white hover:bg-neutral-200 disabled:opacity-50 transition-colors">
-            <I.Download size={16} /> {busy ? 'Export en cours…' : `Télécharger en HD · ${exp.dpi} dpi`}
-          </button>
-          <button onClick={doPrint} disabled={busy || !routes.length}
-            className="w-full h-10 flex items-center justify-center gap-2 rounded-lg text-[13px] font-medium text-neutral-200 bg-white/[0.06] hover:bg-white/[0.1] disabled:opacity-50 transition-colors">
-            Imprimer · PDF
-          </button>
+          <div className="p-5 pt-4" style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' } : undefined}>
+            <button onClick={() => { setStep(2); if (mock === 'none') setMock('noir'); }} disabled={!routes.length}
+              className="w-full h-12 flex items-center justify-center gap-2 rounded-xl text-[14px] font-semibold text-neutral-900 bg-white hover:bg-neutral-200 disabled:opacity-50 transition-colors">
+              Imprimez votre tracé <I.ChevronRight size={17} />
+            </button>
           </div>
+          </>)}
+
+          {step === 2 && (
+          <div className="pb-6" style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' } : undefined}>
+            <div className="px-5 pt-5 pb-4">
+              <button onClick={() => setStep(1)} className="flex items-center gap-1 text-[12.5px] text-neutral-400 hover:text-white -ml-1">
+                <I.ChevronLeft size={15} /> Modifier le design
+              </button>
+              <div className="mt-3 text-[18px] font-semibold tracking-tight">Imprimez votre tracé</div>
+              <div className="text-[12.5px] text-neutral-400 mt-0.5">{tpl.name} · {fmt.name}{fmt.sub !== 'cm' ? ` (${fmt.sub})` : ' cm'}</div>
+            </div>
+            <div className="px-5 flex flex-col gap-2.5">
+              {[
+                { id: 'file', icon: 'Download', title: 'Fichier numérique HD', desc: 'PNG 300 dpi + SVG vectoriel, à imprimer où tu veux', price: '3,99 €' },
+                { id: 'print', icon: 'Poster', title: 'Tirage encadré', desc: 'Papier d’art, bordure et cadre au choix', price: 'Bientôt' },
+              ].map((o) => {
+                const on = offer === o.id; const Ico = I[o.icon];
+                return (
+                  <button key={o.id} onClick={() => { setOffer(o.id); if (o.id === 'print' && mock === 'none') setMock('noir'); }}
+                    className={`text-left rounded-xl p-3.5 flex items-start gap-3 transition-all ${on ? 'bg-white/[0.08] ring-2 ring-white' : 'bg-white/[0.03] ring-1 ring-white/10 hover:ring-white/25'}`}>
+                    <span className={`mt-0.5 w-4 h-4 rounded-full shrink-0 grid place-items-center border-2 ${on ? 'border-white' : 'border-neutral-600'}`}>{on && <span className="w-2 h-2 rounded-full bg-white"></span>}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-center gap-2 text-[13.5px] font-semibold"><Ico size={15} /> {o.title}</span>
+                      <span className="block text-[12px] text-neutral-400 mt-0.5 leading-snug">{o.desc}</span>
+                    </span>
+                    <span className={`text-[14px] font-semibold tabular-nums whitespace-nowrap ${o.id === 'print' ? 'text-neutral-500 text-[12px] mt-0.5' : ''}`}>{o.price}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {offer === 'file' && (
+              <div className="px-5 mt-5">
+                <ul className="flex flex-col gap-2 text-[12.5px] text-neutral-300">
+                  <li className="flex items-center gap-2"><I.Check size={13} /> PNG {exp.w} × {exp.h} px · {exp.dpi} dpi</li>
+                  <li className="flex items-center gap-2"><I.Check size={13} /> SVG vectoriel : carte, tracé et textes nets à toute taille</li>
+                  <li className="flex items-center gap-2"><I.Check size={13} /> Polices intégrées, prêt pour l’imprimeur</li>
+                </ul>
+                <button onClick={doGetFiles} disabled={busy || !routes.length}
+                  className="mt-5 w-full h-12 flex items-center justify-center gap-2 rounded-xl text-[14px] font-semibold text-neutral-900 bg-white hover:bg-neutral-200 disabled:opacity-50 transition-colors">
+                  <I.Download size={16} /> {busy ? 'Préparation des fichiers…' : 'Télécharger · 3,99 €'}
+                </button>
+                <p className="mt-2 text-[11px] text-neutral-500 text-center">Version démo : le paiement n’est pas encore activé.</p>
+                <button onClick={doPrint} disabled={busy || !routes.length} className="mt-3 w-full text-[12.5px] text-neutral-400 hover:text-white">
+                  ou imprimer chez moi (PDF)
+                </button>
+              </div>
+            )}
+
+            {offer === 'print' && (
+              <div className="mt-2">
+                <StudioSection title="Bordure imprimée">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {POSTER_BORDERS.map((b) => <button key={b.id} onClick={() => setBorder(b.id)} className={chip(b.id === border)}>{b.name}</button>)}
+                  </div>
+                </StudioSection>
+                <StudioSection title="Cadre">
+                  <div className="flex gap-2.5">
+                    {POSTER_MOCKUPS.map((m) => (
+                      <button key={m.id} onClick={() => setMock(m.id)} title={m.name} className="flex flex-col items-center gap-1.5">
+                        <span className={`w-10 h-10 rounded-lg grid place-items-center ${mock === m.id ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
+                          style={{ background: m.id === 'none' ? 'transparent' : m.swatch }}>
+                          {m.id === 'none' ? <I.X size={14} /> : <span className="w-5 h-6 rounded-[2px] bg-neutral-100"></span>}
+                        </span>
+                        <span className={`text-[10.5px] ${mock === m.id ? 'text-white' : 'text-neutral-500'}`}>{m.id === 'none' ? 'Sans cadre' : m.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </StudioSection>
+                <div className="px-5 pt-4">
+                  <button disabled className="w-full h-12 rounded-xl text-[14px] font-semibold bg-white/[0.08] text-neutral-400 cursor-not-allowed">
+                    Commander le tirage · bientôt disponible
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          )}
         </div>
       </div>
     </div>

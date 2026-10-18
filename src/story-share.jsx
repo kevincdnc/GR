@@ -208,7 +208,12 @@ function stDrawRoutes(ctx, routes, proj, o) {
   }
   routes.forEach((r) => {
     const col = color === 'routes' ? r.color : color;
-    if (glow) { ctx.shadowColor = col; ctx.shadowBlur = glow; }
+    if (glow && ctx.__isSvg) {
+      // SVG : pas de flou d'ombre → halo en traits larges et transparents
+      ctx.save(); ctx.strokeStyle = col;
+      [[2.4, 0.08], [1.5, 0.14], [0.8, 0.22]].forEach(([k, a]) => { ctx.globalAlpha = a; ctx.lineWidth = width + glow * k; stPath(ctx, proj, r.coords); ctx.stroke(); });
+      ctx.restore();
+    } else if (glow) { ctx.shadowColor = col; ctx.shadowBlur = glow; }
     ctx.strokeStyle = col; ctx.lineWidth = width;
     stPath(ctx, proj, r.coords); ctx.stroke();
     ctx.shadowBlur = 0;

@@ -108,6 +108,8 @@ export function build({ single = false } = {}) {
     'vendor/react-dom.js': nm('react-dom/umd/react-dom.production.min.js'),
     'vendor/leaflet.js': nm('leaflet/dist/leaflet.js'),
     'vendor/leaflet.css': nm('leaflet/dist/leaflet.css'),
+    // Export SVG des posters (contexte canvas -> SVG)
+    'vendor/canvas2svg.js': nm('canvas2svg/canvas2svg.js'),
   }
 
   if (!single) {
