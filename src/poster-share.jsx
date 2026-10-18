@@ -292,25 +292,22 @@ const PO_DARK_BGS = [
   { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu plan' }, { hex: '#0f1d33', name: 'Bleu nuit' }, { hex: '#1e2a33', name: 'Ardoise' },
   { hex: '#15362b', name: 'Vert forêt' }, { hex: '#3a1420', name: 'Bordeaux' }, { hex: '#2b2140', name: 'Aubergine' },
 ];
-// Boussole rétro et simple : double anneau, étoile à 4 branches ombrées, N à empattements
+// Boussole minimale : anneau fin, aiguille losange, points cardinaux
 function poCompass(ctx, x, y, R, u, color, bg) {
-  const dark = bg || '#000000';
-  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineJoin = 'miter';
-  ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.arc(x, y, R - 4 * u, 0, Math.PI * 2); ctx.stroke();
-  // Étoile : chaque branche moitié pleine, moitié couleur du fond (effet gravure)
-  for (let k = 0; k < 4; k++) {
-    const r = k * Math.PI / 2, len = R * (k === 0 ? 0.9 : 0.78), wd = R * 0.2;
-    const tip = [x + Math.sin(r) * len, y - Math.cos(r) * len];
-    const sd = (sg) => [x + Math.sin(r + sg * Math.PI / 4) * wd, y - Math.cos(r + sg * Math.PI / 4) * wd];
-    const L = sd(-1), Rr = sd(1);
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(L[0], L[1]); ctx.lineTo(tip[0], tip[1]); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(Rr[0], Rr[1]); ctx.lineTo(tip[0], tip[1]); ctx.closePath(); ctx.fillStyle = dark; ctx.fill();
-    ctx.lineWidth = 0.9 * u; ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(Rr[0], Rr[1]); ctx.stroke();
-  }
-  ctx.fillStyle = dark; ctx.beginPath(); ctx.arc(x, y, 2.6 * u, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 0.9 * u; ctx.stroke();
-  ctx.fillStyle = color; ctx.font = poFont(700, 17 * u, PO_SERIF); ctx.textAlign = 'center';
-  ctx.fillText('N', x, y - R - 8 * u);
+  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
+  // Aiguille : nord plein, sud au trait
+  const nl = R * 0.7, wd = R * 0.17;
+  ctx.beginPath(); ctx.moveTo(x, y - nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = bg || '#000000'; ctx.lineWidth = 1 * u;
+  ctx.beginPath(); ctx.moveTo(x, y + nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color;
+  [['N', 0], ['E', 1], ['S', 2], ['O', 3]].forEach(([t, k]) => {
+    const r = k * Math.PI / 2, sz = t === 'N' ? 13 * u : 10.5 * u, dd = R + 12 * u;
+    ctx.globalAlpha = t === 'N' ? 1 : 0.75;
+    ctx.font = stFont(t === 'N' ? 700 : 600, sz, ST_TXT); ctx.textAlign = 'center';
+    ctx.fillText(t, x + Math.sin(r) * dd, y - Math.cos(r) * dd + sz * 0.36);
+  });
   ctx.restore();
 }
 // Marqueurs départ / arrivée : même pastille (anneau + point) aux deux bouts
@@ -379,7 +376,7 @@ const POSTER_TEMPLATES = [
       const proj = stFit(d.routes, { x: M + 110 * u, y: M + 130 * u, w: w - 2 * M - 220 * u, h: cy - M - 230 * u });
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       // Carte vectorielle dans le cadre, sous la grille
-      const R = 30 * u, rx = w - M - 12 * u - 62 * u - R, ry = M + 12 * u + 58 * u + R; // boussole, marges haut/droite généreuses
+      const R = 30 * u, rx = w - M - 12 * u - 78 * u - R, ry = M + 12 * u + 66 * u + R; // boussole, marges haut/droite généreuses
       await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, poBlueprintPal(bg),
         { u, labelRect: { x: M + 30 * u, y: M + 150 * u, w: w - 2 * M - 60 * u, h: cy - M - 170 * u },
           avoid: [{ x0: rx - R - 40 * u, x1: rx + R + 40 * u, y0: ry - R - 40 * u, y1: ry + R + 40 * u }] });
