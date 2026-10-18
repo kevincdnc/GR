@@ -856,6 +856,9 @@ function StudioSection({ title, aside, children, defaultOpen = true }) {
   );
 }
 
+// Empreinte courte d'une chaîne (clé d'enregistrement)
+function poHash(str) { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+
 // Petite étoile « recommandé » posée sur une pastille
 function RecStar() {
   return <span className="pointer-events-none absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 text-neutral-900 grid place-items-center text-[8px] leading-none ring-2 ring-neutral-950">★</span>;
@@ -910,36 +913,13 @@ function MetricsList({ order, setOrder, enabled, onToggle, values }) {
 function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle, initialTitle, dark, isMobile, onToast, routeTools }) {
   const [tplId, setTplId] = usePoState('nuit');
   const [fmtId, setFmtId] = usePoState('a3');
-  const [border, setBorder] = usePoState('none');
-  const [mock, setMock] = usePoState('noir');
   // Parcours : 1 = design, 2 = « Imprimez votre tracé » (fichier ou tirage encadré)
   const [step, setStep] = usePoState(1);
   const [offer, setOffer] = usePoState('file');
-  const [stylePref, setStylePref] = usePoState({}); // style de carte par modèle
-  const [opacityPref, setOpacityPref] = usePoState({}); // opacité par modèle
-  const [bgPref, setBgPref] = usePoState({}); // couleur de fond par modèle
-  const [mapLabels, setMapLabels] = usePoState(true);
-  const [color, setColor] = usePoState('auto');
-  const [customColor, setCustomColor] = usePoState('#ff6b35');
-  const customOn = color !== 'auto' && !SHARE_COLORS.some((c) => c.value === color);
-  const [coords, setCoords] = usePoState(true);
-  const [mapPref, setMapPref] = usePoState({}); // choix par modèle
   const [actOpen, setActOpen] = usePoState(false);
   const [actId, setActId] = usePoState(() => poActivityOf(allRoutes));
   const act = poActivity(actId);
-  // Infos : ordre (réorganisable) + infos activées
   const orderFor = (a) => [...a.metrics, ...a.avail.filter((k) => !a.metrics.includes(k))];
-  const [order, setOrder] = usePoState(() => orderFor(poActivity(poActivityOf(allRoutes))));
-  const [enabled, setEnabled] = usePoState(() => new Set(poActivity(poActivityOf(allRoutes)).metrics));
-  const firstAct = usePoRef(true);
-  usePoEffect(() => {
-    if (firstAct.current) { firstAct.current = false; return; }
-    setOrder(orderFor(act)); setEnabled(new Set(act.metrics));
-  }, [actId]);
-  const metrics = usePoMemo(() => order.filter((k) => enabled.has(k)), [order, enabled]);
-  const [showTitle, setShowTitle] = usePoState(true);
-  const [showSub, setShowSub] = usePoState(true);
-  const [subtitle, setSubtitle] = usePoState(null);
   const [bgPhoto, setBgPhoto] = usePoState(null);
   const [photos, setPhotos] = usePoState([]);
   const [busy, setBusy] = usePoState(false);
@@ -948,19 +928,57 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const thumbRefs = usePoRef({});
   const bgRef = usePoRef(null);
   const photosRef = usePoRef(null);
+
+  // Réglages de design PAR MODÈLE : modifier un modèle ne touche pas les autres.
+  // Ils s'enregistrent automatiquement (navigateur) pour ce jeu de tracés.
+  const storeKey = 'printrace_studio_' + poHash(allRoutes.map((r) => r.id).join('|'));
+  const saved = usePoMemo(() => { try { return JSON.parse(localStorage.getItem(storeKey) || 'null'); } catch (e) { return null; } }, [storeKey]);
+  const [cfgs, setCfgs] = usePoState(() => (saved && saved.cfgs) || {});
+  usePoEffect(() => { if (saved && saved.tplId) setTplId(saved.tplId); if (saved && saved.fmtId) setFmtId(saved.fmtId); if (saved && saved.actId) setActId(saved.actId); }, []);
+  const [versions, setVersions] = usePoState(() => (saved && saved.versions) || []);
+  usePoEffect(() => {
+    const t = setTimeout(() => { try { localStorage.setItem(storeKey, JSON.stringify({ cfgs, tplId, fmtId, actId, versions })); } catch (e) {} }, 300);
+    return () => clearTimeout(t);
+  }, [cfgs, tplId, fmtId, actId, versions, storeKey]);
+  const defaultsFor = (t) => ({
+    color: 'auto', customColor: '#ff6b35', coords: true, mapLabels: true,
+    map: !!t.mapDefault, mapStyle: (t.rec && t.rec.mapStyle) || 'epure', mapOpacity: (t.rec && t.rec.mapOpacity) || 100, bg: (t.rec && t.rec.bg) || null,
+    showTitle: true, showSub: true, subtitle: null, title: null, act: null, order: null, enabled: null, border: 'none', mock: 'noir',
+  });
+  const cfgOf = (t) => ({ ...defaultsFor(t), ...(cfgs[t.id] || {}) });
   const tpl = POSTER_TEMPLATES.find((t) => t.id === tplId) || POSTER_TEMPLATES[0];
-  // Fond de carte : activé par défaut sur les 2 premiers modèles, modifiable sur tous
-  const showMap = mapPref[tplId] != null ? mapPref[tplId] : !!tpl.mapDefault;
-  // Par défaut chaque modèle s'ouvre avec ses réglages recommandés
+  const cfg = cfgOf(tpl);
+  const setCfg = (patch) => setCfgs((all) => {
+    const cur = { ...defaultsFor(tpl), ...(all[tpl.id] || {}) };
+    const pv = typeof patch === 'function' ? patch(cur) : patch;
+    return { ...all, [tpl.id]: { ...(all[tpl.id] || {}), ...pv } };
+  });
+  const orderOf = (c) => (c.order && c.act === actId ? c.order : orderFor(act));
+  const enabledOf = (c) => new Set(c.enabled && c.act === actId ? c.enabled : act.metrics);
   const rec = tpl.rec || { colors: [], mapStyle: 'epure', mapOpacity: 100 };
-  const styleOf = (t) => stylePref[t.id] || (t.rec && t.rec.mapStyle) || 'epure';
-  const opacityOf = (t) => (opacityPref[t.id] != null ? opacityPref[t.id] : (t.rec && t.rec.mapOpacity) || 100);
-  const mapStyle = styleOf(tpl), mapOpacity = opacityOf(tpl);
-  const bgOf = (t) => bgPref[t.id] || (t.rec && t.rec.bg) || null;
-  const bgColor = bgOf(tpl);
-  const setMapStyle = (v) => setStylePref((p) => ({ ...p, [tplId]: v }));
-  const setMapOpacity = (v) => setOpacityPref((p) => ({ ...p, [tplId]: v }));
-  const setShowMap = (f) => setMapPref((m) => ({ ...m, [tplId]: f(showMap) }));
+  // Accès « à plat » pour l'interface
+  const { color, customColor, coords, mapLabels, mapStyle, mapOpacity, showTitle, showSub, subtitle, border, mock } = cfg;
+  const showMap = cfg.map, bgColor = cfg.bg;
+  const order = orderOf(cfg), enabled = enabledOf(cfg);
+  const metrics = order.filter((k) => enabled.has(k));
+  const customOn = color !== 'auto' && !SHARE_COLORS.some((c) => c.value === color);
+  const setColor = (v) => setCfg({ color: v });
+  const setCustomColor = (v) => setCfg({ customColor: v });
+  const setCoords = (f) => setCfg((c) => ({ coords: f(c.coords) }));
+  const setMapLabels = (f) => setCfg((c) => ({ mapLabels: f(c.mapLabels) }));
+  const setShowMap = (f) => setCfg((c) => ({ map: f(c.map) }));
+  const setMapStyle = (v) => setCfg({ mapStyle: v });
+  const setMapOpacity = (v) => setCfg({ mapOpacity: v });
+  const setBgColor = (v) => setCfg({ bg: v });
+  const setShowTitle = (f) => setCfg((c) => ({ showTitle: f(c.showTitle) }));
+  const setShowSub = (f) => setCfg((c) => ({ showSub: f(c.showSub) }));
+  const setSubtitle = (v) => setCfg({ subtitle: v });
+  const setTplTitle = (v) => setCfg({ title: v });
+  const setBorder = (v) => setCfg({ border: v });
+  const setMock = (v) => setCfg({ mock: v });
+  const setOrder = (f) => setCfg((c) => ({ act: actId, order: f(orderOf(c)), enabled: [...enabledOf(c)] }));
+  const toggleMetric = (k) => setCfg((c) => { const n = enabledOf(c); if (n.has(k)) n.delete(k); else n.add(k); return { act: actId, order: orderOf(c), enabled: [...n] }; });
+  const tplTitle = cfg.title != null ? cfg.title : title;
   const fmt = POSTER_FORMATS.find((f) => f.id === fmtId) || POSTER_FORMATS[1];
   const ratio = fmt.mm[1] / fmt.mm[0];
   const exp = poExportSize(fmt);
@@ -973,13 +991,21 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
     return bits.join(' · ');
   }, [routes.length, agg.dateLabel]);
 
-  const data = usePoMemo(() => ({
-    routes, agg, color, coords, activityLabel: act.label,
-    title: showTitle ? (title.trim() || initialTitle || 'Mon aventure') : '',
-    subtitle: showSub ? (subtitle == null ? defaultSub : subtitle) : '',
-    stats: poStats(agg, metrics),
-    photos, bgPhoto: bgPhoto && bgPhoto.img, showMap, mapStyle, mapOpacity: mapOpacity / 100, mapLabels, bg: bgColor, preview: true,
-  }), [bgColor, routes, agg, color, coords, title, subtitle, defaultSub, showTitle, showSub, metrics, photos, bgPhoto, actId, showMap, mapStyle, mapOpacity, mapLabels]);
+  // Données de rendu d'un modèle avec SES réglages
+  const dataFor = (t) => {
+    const c = cfgOf(t);
+    const ord = orderOf(c), en = enabledOf(c);
+    const ttl = c.title != null ? c.title : title;
+    return {
+      routes, agg, color: c.color, coords: c.coords, activityLabel: act.label,
+      title: c.showTitle ? (ttl.trim() || initialTitle || 'Mon aventure') : '',
+      subtitle: c.showSub ? (c.subtitle == null ? defaultSub : c.subtitle) : '',
+      stats: poStats(agg, ord.filter((k) => en.has(k))),
+      photos, bgPhoto: bgPhoto && bgPhoto.img, showMap: c.map, mapStyle: c.mapStyle, mapOpacity: c.mapOpacity / 100,
+      mapLabels: c.mapLabels, bg: c.bg, preview: true,
+    };
+  };
+  const data = usePoMemo(() => dataFor(tpl), [cfgs, tplId, routes, agg, title, defaultSub, photos, bgPhoto, actId]);
   const stageMock = step === 2 && offer === 'print' ? mock : 'none';
 
   const token = usePoRef(0);
@@ -999,12 +1025,12 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
         const tc = thumbRefs.current[tp.id];
         if (tc && my === token.current) {
           tc.width = 240; tc.height = Math.round(240 * ratio);
-          await renderPoster(tc, tp, { ...data, showMap: mapPref[tp.id] != null ? mapPref[tp.id] : !!tp.mapDefault, mapStyle: styleOf(tp), mapOpacity: opacityOf(tp) / 100, bg: bgOf(tp) }, fmt, 'none', 240 / PO_W);
+          await renderPoster(tc, tp, dataFor(tp), fmt, 'none', 240 / PO_W);
         }
       }
     }, 80);
     return () => clearTimeout(t);
-  }, [data, tplId, fmtId, border, mapPref, stylePref, opacityPref, bgPref]);
+  }, [data, tplId, fmtId, border, cfgs]);
 
   const addPhotos = async (files) => {
     const list = (await Promise.all([...files].slice(0, 4).map(readImageFile))).filter(Boolean);
@@ -1039,6 +1065,17 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
       onToast && onToast(`Poster ${fmt.name} téléchargé (${exp.w} × ${exp.h} px)`);
     } catch (e) { onToast && onToast('Export impossible : ' + e.message); }
     setBusy(false);
+  };
+  // Versions enregistrées (design d'un modèle + format), réouvrables
+  const saveVersion = () => {
+    const v = { id: Date.now(), at: Date.now(), tplId, fmtId, actId, cfg: cfgs[tplId] || {}, name: `${tpl.name} · ${fmt.name}` };
+    setVersions((vs) => [v, ...vs].slice(0, 12));
+    onToast && onToast('Version enregistrée');
+  };
+  const openVersion = (v) => {
+    setCfgs((all) => ({ ...all, [v.tplId]: v.cfg }));
+    setTplId(v.tplId); setFmtId(v.fmtId); if (v.actId) setActId(v.actId);
+    onToast && onToast('Version restaurée');
   };
   const saveBlob = (blob, name) => {
     const a = document.createElement('a');
@@ -1079,7 +1116,6 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const chip = (on) => `rounded-lg px-2.5 h-9 text-[12.5px] font-medium transition-all ${on ? 'bg-white text-neutral-900 shadow-sm' : 'bg-white/[0.05] text-neutral-300 hover:bg-white/[0.1] hover:text-white'}`;
   const inputCls = 'w-full h-10 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-[13px] outline-none placeholder:text-neutral-500 focus:border-white/30 focus:bg-white/[0.06] transition-colors';
   const ms = PO_MOCK_STYLE[stageMock];
-  const toggleMetric = (k) => setEnabled((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const metricValues = usePoMemo(() => {
     const m = {}; poStats(agg, order).forEach((st) => { m[st.key] = st.value + (st.unit ? ' ' + st.unit : ''); }); return m;
   }, [agg, order]);
@@ -1209,7 +1245,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
               <div className="flex flex-wrap items-center gap-2">
                 {tpl.bgs.map((b) => (
                   <span key={b.hex} className="relative">
-                    <button title={b.name} onClick={() => setBgPref((p) => ({ ...p, [tplId]: b.hex }))}
+                    <button title={b.name} onClick={() => setBgColor(b.hex)}
                       className={`block w-8 h-8 rounded-lg transition-transform hover:scale-110 ${bgColor === b.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
                       style={{ background: b.hex }} />
                     {rec.bg === b.hex && <RecStar />}
@@ -1264,7 +1300,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
           <StudioSection title="Textes">
             <div className="flex flex-col gap-2">
               <ShareFieldRow dark label="Titre" on={showTitle} onToggle={() => setShowTitle((v) => !v)} />
-              {showTitle && <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={initialTitle || 'Titre du poster'} maxLength={80} className={inputCls} />}
+              {showTitle && <input value={tplTitle} onChange={(e) => setTplTitle(e.target.value)} placeholder={initialTitle || 'Titre du poster'} maxLength={80} className={inputCls} />}
               <ShareFieldRow dark label="Sous-titre" on={showSub} onToggle={() => setShowSub((v) => !v)} />
               {showSub && <input value={subtitle == null ? defaultSub : subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="Ex. Bretagne · été 2026" maxLength={80} className={inputCls} />}
               <ShareFieldRow dark label="Coordonnées GPS" on={coords} onToggle={() => setCoords((v) => !v)} />
@@ -1413,6 +1449,31 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 </div>
               </div>
             )}
+
+            {/* Enregistrer ma version */}
+            <div className="mx-5 mt-6 pt-5 border-t border-white/[0.07]">
+              <button onClick={saveVersion}
+                className="w-full h-10 flex items-center justify-center gap-2 rounded-lg text-[13px] font-medium text-neutral-100 bg-white/[0.06] hover:bg-white/[0.1] transition-colors">
+                <I.Check size={14} /> Enregistrer ma version
+              </button>
+              <p className="mt-2 text-[11px] text-neutral-500 leading-snug">Chaque modèle garde ses propres réglages, enregistrés automatiquement sur cet appareil.</p>
+              {versions.length > 0 && (
+                <div className="mt-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-400 mb-2">Mes versions</div>
+                  <div className="flex flex-col gap-1">
+                    {versions.map((v) => (
+                      <div key={v.id} className="flex items-center gap-2 rounded-lg px-2.5 h-10 bg-white/[0.03] hover:bg-white/[0.06]">
+                        <button onClick={() => openVersion(v)} className="flex-1 min-w-0 text-left">
+                          <div className="text-[12.5px] font-medium truncate">{v.name}</div>
+                          <div className="text-[10.5px] text-neutral-500">{new Date(v.at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                        </button>
+                        <button onClick={() => setVersions((vs) => vs.filter((x) => x.id !== v.id))} aria-label="Supprimer" className="w-7 h-7 grid place-items-center rounded-md text-neutral-500 hover:text-white hover:bg-white/10"><I.Trash size={13} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           )}
         </div>
