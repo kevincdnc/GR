@@ -50,6 +50,8 @@ const PO_MOCK_STYLE = {
 const PO_METRICS = {
   distance: 'Distance', ascent: 'Dénivelé +', descent: 'Dénivelé −', duration: 'Durée',
   pace: 'Allure', speed: 'Vitesse moy.', altMax: 'Altitude max', stages: 'Étapes',
+  // Infos propres à certains modèles (liste `infos` du modèle)
+  activity: 'Activité', start: 'Départ (GPS)',
 };
 const PO_ACTIVITIES = [
   { id: 'hiking', label: 'Randonnée', icon: 'Footprints', est: 'hiking', metrics: ['distance', 'ascent', 'duration'], avail: ['distance', 'ascent', 'descent', 'duration', 'altMax', 'stages', 'speed'] },
@@ -86,7 +88,7 @@ function poAggregate(routes, act) {
     dateLabel: stDateLabel(rs.map((r) => r.date)),
   };
 }
-function poStats(agg, keys) {
+function poStats(agg, keys, x = {}) {
   const out = [];
   keys.forEach((k) => {
     const label = PO_METRICS[k];
@@ -98,6 +100,8 @@ function poStats(agg, keys) {
     if (k === 'speed') out.push({ key: k, label, value: stNum(agg.speed), unit: 'km/h' });
     if (k === 'altMax' && agg.altMax != null) out.push({ key: k, label, value: stNum(agg.altMax, 0), unit: 'm' });
     if (k === 'stages') out.push({ key: k, label, value: String(agg.count), unit: '' });
+    if (k === 'activity' && x.activity) out.push({ key: k, label, value: x.activity, unit: '' });
+    if (k === 'start' && x.start) out.push({ key: k, label, short: 'Départ', value: poDms(x.start[0], 'N', 'S') + '  ' + poDms(x.start[1], 'E', 'O'), unit: '' });
   });
   return out;
 }
@@ -324,18 +328,20 @@ function poStartEnd(ctx, d, proj, u, color, bg) {
   ctx.restore();
 }
 // Photo factice (aperçu seulement) : cadre en pointillés discret avec un croquis
-function poPhotoPlaceholder(ctx, x, y, w, h, u, bg) {
+function poPhotoPlaceholder(ctx, x, y, w, h, u, bg, onSlot) {
   const pw = Math.min(w, h * 1.25) * 0.86, ph = h * 0.86;
   const ox = x + (Math.min(w, h * 1.25) - pw) / 2, oy = y + (h - ph) / 2;
+  // Position à l'écran (px du canvas) pour y poser le bouton « Ajouter une photo »
+  if (onSlot && ctx.getTransform) { const m = ctx.getTransform(); onSlot({ x: m.a * ox + m.e, y: m.d * oy + m.f, w: m.a * pw, h: m.d * ph }); }
   ctx.save();
   ctx.translate(ox + pw / 2, oy + ph / 2); ctx.rotate(-1.5 * Math.PI / 180); ctx.translate(-pw / 2, -ph / 2);
   ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(0, 0, pw, ph);
   ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 1.4 * u;
   ctx.setLineDash && ctx.setLineDash([6 * u, 5 * u]); ctx.strokeRect(0, 0, pw, ph); ctx.setLineDash && ctx.setLineDash([]);
   ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.6 * u; ctx.lineJoin = 'round';
-  ctx.beginPath(); ctx.arc(pw * 0.7, ph * 0.32, ph * 0.1, 0, Math.PI * 2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(pw * 0.12, ph * 0.8); ctx.lineTo(pw * 0.36, ph * 0.5); ctx.lineTo(pw * 0.52, ph * 0.66); ctx.lineTo(pw * 0.66, ph * 0.52); ctx.lineTo(pw * 0.88, ph * 0.8); ctx.stroke();
-  stLabel(ctx, 'Ta photo', pw / 2, ph - 16 * u, 12 * u, 'rgba(255,255,255,0.4)', 'center');
+  // Croquis dans la moitié haute : le bouton « Ajouter une photo » se pose en dessous
+  ctx.beginPath(); ctx.arc(pw * 0.68, ph * 0.24, ph * 0.08, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pw * 0.2, ph * 0.64); ctx.lineTo(pw * 0.4, ph * 0.38); ctx.lineTo(pw * 0.54, ph * 0.52); ctx.lineTo(pw * 0.66, ph * 0.4); ctx.lineTo(pw * 0.8, ph * 0.64); ctx.stroke();
   ctx.restore();
 }
 
@@ -364,19 +370,17 @@ const POSTER_TEMPLATES = [
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
     rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#141414' },
-    bgs: PO_DARK_BGS, photoSlot: true,
+    bgs: PO_DARK_BGS, photoSlot: true, infos: ['activity', 'start'],
     async draw(ctx, d, w, h) {
       const u = w / 1200, bg = d.bg || '#141414', line = 'rgba(255,255,255,0.85)';
       const M = 50 * u;
-      const items = d.stats.map((s) => [s.label, s.value + (s.unit ? ' ' + s.unit : '')]);
-      items.push(['Activité', d.activityLabel]);
-      if (d.routes[0]) items.push(['Départ', poDms(d.routes[0].coords[0][0], 'N', 'S') + '  ' + poDms(d.routes[0].coords[0][1], 'E', 'O')]);
+      const items = d.stats.map((s) => [s.short || s.label, s.value + (s.unit ? ' ' + s.unit : '')]);
       const cw = w * 0.5, rh = 50 * u, hh = d.subtitle ? 124 * u : 104 * u, ch = hh + items.length * rh;
       const cx = w - M - 12 * u - cw, cy = h - M - 12 * u - ch;
       const proj = stFit(d.routes, { x: M + 110 * u, y: M + 130 * u, w: w - 2 * M - 220 * u, h: cy - M - 230 * u });
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       // Carte vectorielle dans le cadre, sous la grille
-      const R = 30 * u, rx = w - M - 12 * u - 78 * u - R, ry = M + 12 * u + 66 * u + R; // boussole, marges haut/droite généreuses
+      const R = 30 * u, rx = w - M - 12 * u - 60 * u - R, ry = M + 12 * u + 52 * u + R; // boussole, marges haut/droite
       await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, poBlueprintPal(bg),
         { u, labelRect: { x: M + 30 * u, y: M + 150 * u, w: w - 2 * M - 60 * u, h: cy - M - 170 * u },
           avoid: [{ x0: rx - R - 40 * u, x1: rx + R + 40 * u, y0: ry - R - 40 * u, y1: ry + R + 40 * u }] });
@@ -425,7 +429,7 @@ const POSTER_TEMPLATES = [
       const zx = M + 12 * u, zw = cx - zx, zy = cy + 64 * u, zh = ch - 100 * u;
       if (d.photos.length === 1) poPhotos(ctx, d.photos, zx + 30 * u, zy, zw - 60 * u, zh, { border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'center', tape: true, u });
       else if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), leftX, zy + 6 * u, leftW, zh - 6 * u, { gap: 18 * u, border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'left', tape: true, u });
-      else if (d.preview && d.photoSlot !== false) { const pw = Math.min(zw - 60 * u, zh * 1.25); poPhotoPlaceholder(ctx, zx + (zw - pw) / 2, zy + 6 * u, pw, zh - 10 * u, u, bg); }
+      else if (d.preview && d.photoSlot !== false) { const pw = Math.min(zw - 60 * u, zh * 1.25); poPhotoPlaceholder(ctx, zx + (zw - pw) / 2, zy + 6 * u, pw, zh - 10 * u, u, bg, d.onSlot); }
       // Tracé
       // Halo du tracé dans la couleur choisie (ressort mieux qu'un halo blanc)
       const rc = poCol(d, '#ffffff');
@@ -697,9 +701,15 @@ function StudioSection({ title, aside, children, defaultOpen = true }) {
 function poHash(str) { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
 
 // Petite étoile « recommandé » posée sur une pastille
+// Recommandé : simple point vert, discret
 function RecStar() {
-  return <span className="pointer-events-none absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 text-neutral-900 grid place-items-center text-[8px] leading-none ring-2 ring-neutral-950">★</span>;
+  return <span className="pointer-events-none absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-neutral-950" />;
 }
+function RecDot({ className = '' }) {
+  return <span className={`inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-400 ${className}`} />;
+}
+// Les choix recommandés passent en tête de liste
+function poRecFirst(list, isRec) { return [...list.filter(isRec), ...list.filter((x) => !isRec(x))]; }
 
 // Liste des infos : interrupteur, valeur, réordonnable au glisser (souris et tactile)
 // Réglages communs à tous les modèles : textes et infos affichées
@@ -780,6 +790,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const [photos, setPhotos] = usePoState([]);
   const [busy, setBusy] = usePoState(false);
   const [ready, setReady] = usePoState(false);
+  const [slot, setSlot] = usePoState(null); // emplacement photo factice dans l'aperçu
   const previewRef = usePoRef(null);
   const thumbRefs = usePoRef({});
   const bgRef = usePoRef(null);
@@ -818,8 +829,18 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
       _shared: { ...(all._shared || {}), ...poPick(pv, PO_SHARED_KEYS) },
     };
   });
-  const orderOf = (c) => (c.order && c.act === actId ? c.order : orderFor(act));
-  const enabledOf = (c) => new Set(c.enabled && c.act === actId ? c.enabled : act.metrics);
+  // Liste des infos = métriques de l'activité + infos propres au modèle (activité, GPS…)
+  const ownOrder = (c) => (c.order && c.act === actId ? c.order : null);
+  const orderOf = (c, t = tpl) => {
+    const ok = [...act.avail, ...(t.infos || [])];
+    const base = (ownOrder(c) || orderFor(act)).filter((k) => ok.includes(k));
+    return [...base, ...ok.filter((k) => !base.includes(k))];
+  };
+  const enabledOf = (c, t = tpl) => {
+    const s = new Set(c.enabled && c.act === actId ? c.enabled : act.metrics);
+    (t.infos || []).forEach((k) => { if (!(ownOrder(c) || []).includes(k)) s.add(k); }); // affichées par défaut
+    return s;
+  };
   const rec = tpl.rec || { colors: [], mapStyle: 'epure', mapOpacity: 100 };
   // Accès « à plat » pour l'interface
   const { color, customColor, coords, mapLabels, mapStyle, mapOpacity, showTitle, showSub, subtitle, border, mock } = cfg;
@@ -856,16 +877,17 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
     return bits.join(' · ');
   }, [routes.length, agg.dateLabel]);
 
+  const infoX = usePoMemo(() => ({ activity: act.label, start: routes[0] && routes[0].coords[0] }), [act, routes]);
   // Données de rendu d'un modèle avec SES réglages
   const dataFor = (t) => {
     const c = cfgOf(t);
-    const ord = orderOf(c), en = enabledOf(c);
+    const ord = orderOf(c, t), en = enabledOf(c, t);
     const ttl = c.title != null ? c.title : title;
     return {
       routes, agg, color: c.color, coords: c.coords, activityLabel: act.label,
       title: c.showTitle ? (ttl.trim() || initialTitle || 'Mon aventure') : '',
       subtitle: c.showSub ? (c.subtitle == null ? defaultSub : c.subtitle) : '',
-      stats: poStats(agg, ord.filter((k) => en.has(k))).map((st) => (c.values && c.values[st.key] ? { ...st, value: c.values[st.key], unit: '' } : st)),
+      stats: poStats(agg, ord.filter((k) => en.has(k)), infoX).map((st) => (c.values && c.values[st.key] ? { ...st, value: c.values[st.key], unit: '' } : st)),
       photoSlot: c.photoSlot,
       photos, bgPhoto: bgPhoto && bgPhoto.img, showMap: c.map, mapStyle: c.mapStyle, mapOpacity: c.mapOpacity / 100,
       mapLabels: c.mapLabels, bg: c.bg, preview: true,
@@ -883,7 +905,9 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
       const c = previewRef.current;
       if (c) {
         const pw = 1000; c.width = pw; c.height = Math.round(pw * ratio);
-        await renderPoster(c, tpl, data, fmt, border, pw / PO_W);
+        let sl = null;
+        await renderPoster(c, tpl, { ...data, onSlot: (r) => { sl = { l: r.x / c.width, t: r.y / c.height, w: r.w / c.width, h: r.h / c.height }; } }, fmt, border, pw / PO_W);
+        if (my === token.current) setSlot(sl);
       }
       if (my !== token.current) return;
       setReady(true);
@@ -983,8 +1007,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const inputCls = 'w-full h-10 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-[13px] outline-none placeholder:text-neutral-500 focus:border-white/30 focus:bg-white/[0.06] transition-colors';
   const ms = PO_MOCK_STYLE[stageMock];
   const metricValues = usePoMemo(() => {
-    const m = {}; poStats(agg, order).forEach((st) => { m[st.key] = st.value + (st.unit ? ' ' + st.unit : ''); }); return m;
-  }, [agg, order]);
+    const m = {}; poStats(agg, order, infoX).forEach((st) => { m[st.key] = st.value + (st.unit ? ' ' + st.unit : ''); }); return m;
+  }, [agg, order, infoX]);
   // Valeur saisie à la main (double-clic dans la liste) ; vide = valeur calculée
   const setMetricValue = (k, v) => setCfg((c) => { const vals = { ...(c.values || {}) }; if (v && v.trim()) vals[k] = v.trim(); else delete vals[k]; return { values: vals }; });
 
@@ -1034,9 +1058,10 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
               <div className="relative w-full h-full overflow-hidden" style={ms ? { boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' } : undefined}>
                 <canvas ref={previewRef} width={1000} height={1414} className="block w-full h-full" />
                 {!ready && <div className="absolute inset-0 grid place-items-center text-[12px] text-neutral-400 bg-neutral-900">Préparation…</div>}
-                {tpl.photoSlot && cfg.photoSlot !== false && !photos.length && ready && (
+                {tpl.photoSlot && cfg.photoSlot !== false && !photos.length && ready && slot && (
                   <button onClick={() => photosRef.current && photosRef.current.click()}
-                    className="absolute left-[8%] bottom-[4%] flex items-center gap-1.5 rounded-full pl-2.5 pr-3 h-7 text-[11.5px] font-medium bg-black/55 text-white/90 ring-1 ring-white/20 backdrop-blur hover:bg-black/70 transition-colors">
+                    style={{ left: `${(slot.l + slot.w / 2) * 100}%`, top: `${(slot.t + slot.h * 0.82) * 100}%`, transform: 'translate(-50%, -50%)' }}
+                    className="absolute whitespace-nowrap flex items-center gap-1.5 rounded-full pl-2.5 pr-3 h-7 text-[11.5px] font-medium bg-black/55 text-white/90 ring-1 ring-white/20 backdrop-blur hover:bg-black/70 transition-colors">
                     <I.ImagePlus size={13} /> Ajouter une photo
                   </button>
                 )}
@@ -1095,7 +1120,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                   className={`h-7 px-2.5 mr-0.5 rounded-full text-[11.5px] font-semibold bg-white/[0.06] ${color === 'auto' ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}>Auto</button>
                 <RecStar />
               </span>
-              {SHARE_COLORS.filter((c) => c.value !== 'routes').map((c) => (
+              {poRecFirst(SHARE_COLORS.filter((c) => c.value !== 'routes'), (c) => rec.colors.includes(c.value)).sort((a, b) => (rec.colors.includes(a.value) && rec.colors.includes(b.value) ? rec.colors.indexOf(a.value) - rec.colors.indexOf(b.value) : 0)).map((c) => (
                 <span key={c.value} className="relative">
                   <button title={c.label + (rec.colors.includes(c.value) ? ' · recommandé' : '')} onClick={() => setColor(c.value)}
                     className={`block w-7 h-7 rounded-full transition-transform hover:scale-110 ${color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
@@ -1111,13 +1136,13 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
               </label>
             </div>
-            <p className="mt-2.5 text-[11px] text-neutral-500 flex items-center gap-1.5"><span className="text-amber-400">★</span> Recommandé pour l’impression avec {tpl.name}</p>
+            <p className="mt-2.5 text-[11px] text-neutral-500 flex items-center gap-1.5"><RecDot /> Recommandé pour l’impression avec {tpl.name}</p>
           </StudioSection>
 
           {tpl.bgs && (
             <StudioSection title="Couleur de fond">
               <div className="flex flex-wrap items-center gap-2">
-                {tpl.bgs.map((b) => (
+                {poRecFirst(tpl.bgs, (b) => b.hex === rec.bg).map((b) => (
                   <span key={b.hex} className="relative">
                     <button title={b.name} onClick={() => setBgColor(b.hex)}
                       className={`block w-8 h-8 rounded-lg transition-transform hover:scale-110 ${bgColor === b.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
@@ -1145,17 +1170,17 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
             <div className="-mx-2">
               <ShareFieldRow dark label="Carte derrière le tracé" on={showMap} onToggle={() => setShowMap((v) => !v)} />
             </div>
-            {!showMap && rec.map && <p className="text-[11px] text-neutral-500 flex items-center gap-1.5"><span className="text-amber-400">★</span> Recommandée sur ce modèle</p>}
+            {!showMap && rec.map && <p className="text-[11px] text-neutral-500 flex items-center gap-1.5"><RecDot /> Recommandée sur ce modèle</p>}
             {showMap && (
               <>
                 {tpl.id !== 'satellite' ? (
                   <>
                     <div className="text-[12.5px] font-medium text-neutral-200 mt-3 mb-2">Style de carte</div>
                     <div className="grid grid-cols-3 gap-1.5">
-                      {PM_STYLES.map((m) => (
-                        <button key={m.id} onClick={() => setMapStyle(m.id)} className={`${chip(m.id === mapStyle)} h-auto py-1.5 flex flex-col items-center leading-tight`}>
-                          <span>{m.name}</span>
-                          <span className={`text-[9.5px] mt-0.5 ${m.id === rec.mapStyle ? (m.id === mapStyle ? 'text-amber-600' : 'text-amber-400') : 'opacity-0'}`}>★ Recommandé</span>
+                      {poRecFirst(PM_STYLES, (m) => m.id === rec.mapStyle).map((m) => (
+                        <button key={m.id} onClick={() => setMapStyle(m.id)} title={m.id === rec.mapStyle ? 'Recommandé' : undefined}
+                          className={`${chip(m.id === mapStyle)} flex items-center justify-center gap-1.5`}>
+                          {m.name}{m.id === rec.mapStyle && <RecDot />}
                         </button>
                       ))}
                     </div>
@@ -1172,7 +1197,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                   <span className="text-[12px] tabular-nums text-neutral-400 w-10 text-right">{mapOpacity} %</span>
                 </div>
                 <div className="mt-1 text-[11px] text-neutral-500 flex items-center gap-1.5">
-                  <span className="text-amber-400">★</span> Recommandé : {rec.mapOpacity} %
+                  <RecDot /> Recommandé : {rec.mapOpacity} %
                   {mapOpacity !== rec.mapOpacity && <button onClick={() => setMapOpacity(rec.mapOpacity)} className="ml-1 text-neutral-300 hover:text-white underline underline-offset-2">rétablir</button>}
                 </div>
               </>
