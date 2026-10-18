@@ -292,67 +292,53 @@ const PO_DARK_BGS = [
   { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu plan' }, { hex: '#0f1d33', name: 'Bleu nuit' }, { hex: '#1e2a33', name: 'Ardoise' },
   { hex: '#15362b', name: 'Vert forêt' }, { hex: '#3a1420', name: 'Bordeaux' }, { hex: '#2b2140', name: 'Aubergine' },
 ];
-// Boussole minimale : anneau fin, aiguille losange, points cardinaux
+// Boussole rétro et simple : double anneau, étoile à 4 branches ombrées, N à empattements
 function poCompass(ctx, x, y, R, u, color, bg) {
-  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.lineWidth = 1.1 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
-  // Aiguille : nord plein, sud au trait
-  const nl = R * 0.7, wd = R * 0.17;
-  ctx.beginPath(); ctx.moveTo(x, y - nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = bg || '#000000'; ctx.lineWidth = 1 * u;
-  ctx.beginPath(); ctx.moveTo(x, y + nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = color;
-  [['N', 0], ['E', 1], ['S', 2], ['O', 3]].forEach(([t, k]) => {
-    const r = k * Math.PI / 2, sz = t === 'N' ? 13 * u : 10.5 * u, dd = R + 11 * u;
-    ctx.globalAlpha = t === 'N' ? 1 : 0.75;
-    ctx.font = stFont(t === 'N' ? 700 : 600, sz, ST_TXT); ctx.textAlign = 'center';
-    ctx.fillText(t, x + Math.sin(r) * dd, y - Math.cos(r) * dd + sz * 0.36);
-  });
+  const dark = bg || '#000000';
+  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineJoin = 'miter';
+  ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.arc(x, y, R - 4 * u, 0, Math.PI * 2); ctx.stroke();
+  // Étoile : chaque branche moitié pleine, moitié couleur du fond (effet gravure)
+  for (let k = 0; k < 4; k++) {
+    const r = k * Math.PI / 2, len = R * (k === 0 ? 0.9 : 0.78), wd = R * 0.2;
+    const tip = [x + Math.sin(r) * len, y - Math.cos(r) * len];
+    const sd = (sg) => [x + Math.sin(r + sg * Math.PI / 4) * wd, y - Math.cos(r + sg * Math.PI / 4) * wd];
+    const L = sd(-1), Rr = sd(1);
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(L[0], L[1]); ctx.lineTo(tip[0], tip[1]); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(Rr[0], Rr[1]); ctx.lineTo(tip[0], tip[1]); ctx.closePath(); ctx.fillStyle = dark; ctx.fill();
+    ctx.lineWidth = 0.9 * u; ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(Rr[0], Rr[1]); ctx.stroke();
+  }
+  ctx.fillStyle = dark; ctx.beginPath(); ctx.arc(x, y, 2.6 * u, 0, Math.PI * 2); ctx.fill(); ctx.lineWidth = 0.9 * u; ctx.stroke();
+  ctx.fillStyle = color; ctx.font = poFont(700, 17 * u, PO_SERIF); ctx.textAlign = 'center';
+  ctx.fillText('N', x, y - R - 8 * u);
   ctx.restore();
 }
-// Marqueurs départ / arrivée (sans lettre) : départ = cible, arrivée = drapeau à damier
+// Marqueurs départ / arrivée : même pastille (anneau + point) aux deux bouts
 function poStartEnd(ctx, d, proj, u, color, bg) {
   if (!d.routes.length) return;
   const a = d.routes[0].coords[0], lr = d.routes[d.routes.length - 1], b = lr.coords[lr.coords.length - 1];
-  let [x, y] = proj.px(a[0], a[1]);
   ctx.save();
-  ctx.beginPath(); ctx.arc(x, y, 11 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill();
-  ctx.lineWidth = 3 * u; ctx.strokeStyle = color; ctx.stroke();
-  ctx.beginPath(); ctx.arc(x, y, 4 * u, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
-  [x, y] = proj.px(b[0], b[1]);
-  ctx.beginPath(); ctx.arc(x, y, 5 * u, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
-  const ph = 34 * u, fw = 24 * u, fh = 16 * u, cs = fw / 4;
-  ctx.lineWidth = 2.4 * u; ctx.strokeStyle = color; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - ph); ctx.stroke();
-  const fx = x + 1 * u, fy = y - ph;
-  ctx.fillStyle = color; ctx.fillRect(fx, fy, fw, fh);
-  ctx.fillStyle = bg;
-  for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) if ((i + j) % 2) ctx.fillRect(fx + i * cs, fy + j * (fh / 2), cs, fh / 2);
-  ctx.lineWidth = 1.2 * u; ctx.strokeRect(fx, fy, fw, fh);
+  [a, b].forEach((c) => {
+    const [x, y] = proj.px(c[0], c[1]);
+    ctx.beginPath(); ctx.arc(x, y, 11 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill();
+    ctx.lineWidth = 3 * u; ctx.strokeStyle = color; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, 4 * u, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+  });
   ctx.restore();
 }
-// Photo factice (aperçu seulement) : tirage scotché avec un croquis au trait
+// Photo factice (aperçu seulement) : cadre en pointillés discret avec un croquis
 function poPhotoPlaceholder(ctx, x, y, w, h, u, bg) {
-  const pw = Math.min(w, h * 1.25), ph = h;
+  const pw = Math.min(w, h * 1.25) * 0.86, ph = h * 0.86;
+  const ox = x + (Math.min(w, h * 1.25) - pw) / 2, oy = y + (h - ph) / 2;
   ctx.save();
-  ctx.translate(x + pw / 2, y + ph / 2); ctx.rotate(-2.2 * Math.PI / 180); ctx.translate(-pw / 2, -ph / 2);
-  ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 18 * u; ctx.shadowOffsetY = 6 * u;
-  ctx.fillStyle = '#f4f2ec'; ctx.fillRect(0, 0, pw, ph);
-  ctx.shadowColor = 'transparent';
-  const b = 9 * u, iw = pw - 2 * b, ih = ph - 2 * b;
-  ctx.fillStyle = poMix(bg, '#ffffff', 0.16); ctx.fillRect(b, b, iw, ih);
-  ctx.save(); ctx.beginPath(); ctx.rect(b, b, iw, ih); ctx.clip();
-  ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2 * u; ctx.lineJoin = 'round';
-  ctx.beginPath(); ctx.arc(b + iw * 0.72, b + ih * 0.3, ih * 0.12, 0, Math.PI * 2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(b, b + ih * 0.85); ctx.lineTo(b + iw * 0.3, b + ih * 0.45); ctx.lineTo(b + iw * 0.48, b + ih * 0.68);
-  ctx.lineTo(b + iw * 0.66, b + ih * 0.5); ctx.lineTo(b + iw, b + ih * 0.88); ctx.stroke();
-  ctx.setLineDash && ctx.setLineDash([4 * u, 5 * u]);
-  ctx.beginPath(); ctx.moveTo(b + iw * 0.12, b + ih * 0.95); ctx.bezierCurveTo(b + iw * 0.3, b + ih * 0.75, b + iw * 0.45, b + ih * 0.9, b + iw * 0.58, b + ih * 0.66); ctx.stroke();
-  ctx.setLineDash && ctx.setLineDash([]);
-  ctx.restore();
-  stLabel(ctx, '+ Ta photo', pw / 2, ph - b - 14 * u, 13 * u, 'rgba(255,255,255,0.85)', 'center');
-  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.translate(pw / 2, 0); ctx.rotate(3 * Math.PI / 180);
-  ctx.fillRect(-pw * 0.18, -10 * u, pw * 0.36, 22 * u);
+  ctx.translate(ox + pw / 2, oy + ph / 2); ctx.rotate(-1.5 * Math.PI / 180); ctx.translate(-pw / 2, -ph / 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(0, 0, pw, ph);
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 1.4 * u;
+  ctx.setLineDash && ctx.setLineDash([6 * u, 5 * u]); ctx.strokeRect(0, 0, pw, ph); ctx.setLineDash && ctx.setLineDash([]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.6 * u; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.arc(pw * 0.7, ph * 0.32, ph * 0.1, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pw * 0.12, ph * 0.8); ctx.lineTo(pw * 0.36, ph * 0.5); ctx.lineTo(pw * 0.52, ph * 0.66); ctx.lineTo(pw * 0.66, ph * 0.52); ctx.lineTo(pw * 0.88, ph * 0.8); ctx.stroke();
+  stLabel(ctx, 'Ta photo', pw / 2, ph - 16 * u, 12 * u, 'rgba(255,255,255,0.4)', 'center');
   ctx.restore();
 }
 
@@ -393,13 +379,21 @@ const POSTER_TEMPLATES = [
       const proj = stFit(d.routes, { x: M + 110 * u, y: M + 130 * u, w: w - 2 * M - 220 * u, h: cy - M - 230 * u });
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       // Carte vectorielle dans le cadre, sous la grille
-      const R = 30 * u, rx = w - M - 50 * u - R - 12 * u, ry = M + 78 * u; // boussole alignée sur le logo
+      const R = 30 * u, rx = w - M - 12 * u - 62 * u - R, ry = M + 12 * u + 58 * u + R; // boussole, marges haut/droite généreuses
       await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, poBlueprintPal(bg),
         { u, labelRect: { x: M + 30 * u, y: M + 150 * u, w: w - 2 * M - 60 * u, h: cy - M - 170 * u },
           avoid: [{ x0: rx - R - 40 * u, x1: rx + R + 40 * u, y0: ry - R - 40 * u, y1: ry + R + 40 * u }] });
+      // Quadrillage : normal autour du cadre, atténué à l'intérieur de la carte
       const gs = w / 48;
-      for (let i = 0, x = 0; x <= w; i++, x += gs) { ctx.fillStyle = i % 4 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.11)'; ctx.fillRect(x, 0, 1.2 * u, h); }
-      for (let i = 0, y = 0; y <= h; i++, y += gs) { ctx.fillStyle = i % 4 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.11)'; ctx.fillRect(0, y, w, 1.2 * u); }
+      const grid = (r, a1, a2) => {
+        ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
+        for (let i = 0, x = 0; x <= w; i++, x += gs) { ctx.fillStyle = i % 4 ? `rgba(255,255,255,${a1})` : `rgba(255,255,255,${a2})`; ctx.fillRect(x, 0, 1.2 * u, h); }
+        for (let i = 0, y = 0; y <= h; i++, y += gs) { ctx.fillStyle = i % 4 ? `rgba(255,255,255,${a1})` : `rgba(255,255,255,${a2})`; ctx.fillRect(0, y, w, 1.2 * u); }
+        ctx.restore();
+      };
+      const ix = M + 12 * u, iy = M + 12 * u, iw = w - 2 * M - 24 * u, ih = h - 2 * M - 24 * u;
+      [[0, 0, w, iy], [0, iy + ih, w, h - iy - ih], [0, iy, ix, ih], [ix + iw, iy, w - ix - iw, ih]].forEach(([x, y, ww, hh2]) => grid({ x, y, w: ww, h: hh2 }, 0.05, 0.11));
+      grid({ x: ix, y: iy, w: iw, h: ih }, 0.022, 0.05);
       ctx.strokeStyle = line; ctx.lineWidth = 3 * u; ctx.strokeRect(M, M, w - 2 * M, h - 2 * M);
       ctx.lineWidth = 1.2 * u; ctx.strokeRect(M + 12 * u, M + 12 * u, w - 2 * M - 24 * u, h - 2 * M - 24 * u);
       // Cartouche
@@ -428,11 +422,14 @@ const POSTER_TEMPLATES = [
       else if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), leftX, zy + 6 * u, leftW, zh - 6 * u, { gap: 18 * u, border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'left', tape: true, u });
       else if (d.preview && d.photoSlot !== false) { const pw = Math.min(zw - 60 * u, zh * 1.25); poPhotoPlaceholder(ctx, zx + (zw - pw) / 2, zy + 6 * u, pw, zh - 10 * u, u, bg); }
       // Tracé
+      // Halo du tracé dans la couleur choisie (ressort mieux qu'un halo blanc)
+      const rc = poCol(d, '#ffffff');
+      const halo = rc === 'routes' ? 'routes' : /^#[0-9a-f]{6}$/i.test(rc) ? poMix(bg, rc, 0.42) : 'rgba(255,255,255,0.35)';
       ctx.save(); ctx.setLineDash([2 * u, 10 * u]);
-      stDrawRoutes(ctx, d.routes, proj, { color: 'rgba(255,255,255,0.35)', width: 18 * u, markers: false });
+      stDrawRoutes(ctx, d.routes, proj, { color: halo, width: 18 * u, markers: false });
       ctx.restore();
-      stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffffff'), width: 4 * u, markers: false });
-      poStartEnd(ctx, d, proj, u, '#ffffff', bg);
+      stDrawRoutes(ctx, d.routes, proj, { color: rc, width: 4 * u, markers: false });
+      poStartEnd(ctx, d, proj, u, rc === 'routes' ? '#ffffff' : rc, bg);
       // Nord + échelle
       poCompass(ctx, rx, ry, R, u, '#ffffff', bg);
       poScaleBar(ctx, d, proj, leftX, cy + 14 * u, Math.min(leftW, w * 0.22), '#fff', u);
@@ -1178,8 +1175,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 {!ready && <div className="absolute inset-0 grid place-items-center text-[12px] text-neutral-400 bg-neutral-900">Préparation…</div>}
                 {tpl.photoSlot && cfg.photoSlot !== false && !photos.length && ready && (
                   <button onClick={() => photosRef.current && photosRef.current.click()}
-                    className="absolute left-[7%] bottom-[5%] flex items-center gap-2 rounded-full pl-3 pr-3.5 h-9 text-[12.5px] font-semibold bg-white text-neutral-900 shadow-xl hover:scale-[1.03] transition-transform">
-                    <I.ImagePlus size={15} /> Ajouter une photo
+                    className="absolute left-[8%] bottom-[4%] flex items-center gap-1.5 rounded-full pl-2.5 pr-3 h-7 text-[11.5px] font-medium bg-black/55 text-white/90 ring-1 ring-white/20 backdrop-blur hover:bg-black/70 transition-colors">
+                    <I.ImagePlus size={13} /> Ajouter une photo
                   </button>
                 )}
                 {tpl.photoBg && !bgPhoto && ready && (
