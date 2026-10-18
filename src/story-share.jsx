@@ -776,7 +776,7 @@ const ST_CHECKER = { backgroundColor: '#2a2a2a', backgroundImage: 'linear-gradie
 
 function StorySwitch({ on }) {
   return (
-    <span className="shrink-0 relative rounded-full transition-colors" style={{ width: 28, height: 16, background: on ? '#3b82f6' : '#404040' }}>
+    <span className="shrink-0 relative block rounded-full transition-colors" style={{ width: 28, height: 16, background: on ? '#3b82f6' : '#404040' }}>
       <span className="absolute top-[2px] w-3 h-3 rounded-full bg-white transition-all" style={{ left: on ? 14 : 2 }}></span>
     </span>
   );

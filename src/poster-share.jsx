@@ -866,6 +866,11 @@ function RecStar() {
 }
 
 // Liste des infos : interrupteur, valeur, réordonnable au glisser (souris et tactile)
+// Réglages communs à tous les modèles : textes et infos affichées
+const PO_SHARED_KEYS = ['title', 'subtitle', 'showTitle', 'showSub', 'act', 'order', 'enabled', 'values'];
+function poPick(o, keys) { const r = {}; if (o) keys.forEach((k) => { if (k in o) r[k] = o[k]; }); return r; }
+function poOmit(o, keys) { const r = { ...(o || {}) }; keys.forEach((k) => delete r[k]); return r; }
+
 function MetricsList({ order, setOrder, enabled, onToggle, values, overrides = {}, onEdit }) {
   const listRef = usePoRef(null);
   const [editKey, setEditKey] = usePoState(null);
@@ -917,7 +922,7 @@ function MetricsList({ order, setOrder, enabled, onToggle, values, overrides = {
             {overrides[k] && editKey !== k && (
               <button onClick={() => onEdit && onEdit(k, '')} title="Revenir à la valeur calculée" className="w-5 h-5 grid place-items-center rounded text-neutral-500 hover:text-white"><I.X size={11} /></button>
             )}
-            <button onClick={() => onToggle(k)} aria-label={on ? 'Masquer' : 'Afficher'} className="shrink-0 pl-1"><StorySwitch on={on} /></button>
+            <button onClick={() => onToggle(k)} aria-label={on ? 'Masquer' : 'Afficher'} className="shrink-0 ml-1 h-full flex items-center"><StorySwitch on={on} /></button>
           </div>
         );
       })}
@@ -945,10 +950,15 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const photosRef = usePoRef(null);
 
   // Réglages de design PAR MODÈLE : modifier un modèle ne touche pas les autres.
+  // Exception : textes et infos affichées sont communs à tous les modèles (cfgs._shared).
   // Ils s'enregistrent automatiquement (navigateur) pour ce jeu de tracés.
   const storeKey = 'printrace_studio_' + poHash(allRoutes.map((r) => r.id).join('|'));
   const saved = usePoMemo(() => { try { return JSON.parse(localStorage.getItem(storeKey) || 'null'); } catch (e) { return null; } }, [storeKey]);
-  const [cfgs, setCfgs] = usePoState(() => (saved && saved.cfgs) || {});
+  const [cfgs, setCfgs] = usePoState(() => {
+    const c = (saved && saved.cfgs) || {};
+    if (c._shared || !saved || !saved.tplId || !c[saved.tplId]) return c;
+    return { ...c, _shared: poPick(c[saved.tplId], PO_SHARED_KEYS) };
+  });
   usePoEffect(() => { if (saved && saved.tplId) setTplId(saved.tplId); if (saved && saved.fmtId) setFmtId(saved.fmtId); if (saved && saved.actId) setActId(saved.actId); }, []);
   const [versions, setVersions] = usePoState(() => (saved && saved.versions) || []);
   usePoEffect(() => {
@@ -960,13 +970,17 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
     map: !!t.mapDefault, mapStyle: (t.rec && t.rec.mapStyle) || 'epure', mapOpacity: (t.rec && t.rec.mapOpacity) || 100, bg: (t.rec && t.rec.bg) || null,
     showTitle: true, showSub: true, subtitle: null, title: null, act: null, order: null, enabled: null, border: 'none', mock: 'noir',
   });
-  const cfgOf = (t) => ({ ...defaultsFor(t), ...(cfgs[t.id] || {}) });
+  const cfgOf = (t, all = cfgs) => ({ ...defaultsFor(t), ...poOmit(all[t.id], PO_SHARED_KEYS), ...(all._shared || {}) });
   const tpl = POSTER_TEMPLATES.find((t) => t.id === tplId) || POSTER_TEMPLATES[0];
   const cfg = cfgOf(tpl);
   const setCfg = (patch) => setCfgs((all) => {
-    const cur = { ...defaultsFor(tpl), ...(all[tpl.id] || {}) };
+    const cur = cfgOf(tpl, all);
     const pv = typeof patch === 'function' ? patch(cur) : patch;
-    return { ...all, [tpl.id]: { ...(all[tpl.id] || {}), ...pv } };
+    return {
+      ...all,
+      [tpl.id]: { ...(all[tpl.id] || {}), ...poOmit(pv, PO_SHARED_KEYS) },
+      _shared: { ...(all._shared || {}), ...poPick(pv, PO_SHARED_KEYS) },
+    };
   });
   const orderOf = (c) => (c.order && c.act === actId ? c.order : orderFor(act));
   const enabledOf = (c) => new Set(c.enabled && c.act === actId ? c.enabled : act.metrics);
@@ -1084,12 +1098,12 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   };
   // Versions enregistrées (design d'un modèle + format), réouvrables
   const saveVersion = () => {
-    const v = { id: Date.now(), at: Date.now(), tplId, fmtId, actId, cfg: cfgs[tplId] || {}, name: `${tpl.name} · ${fmt.name}` };
+    const v = { id: Date.now(), at: Date.now(), tplId, fmtId, actId, cfg: { ...(cfgs[tplId] || {}), ...(cfgs._shared || {}) }, name: `${tpl.name} · ${fmt.name}` };
     setVersions((vs) => [v, ...vs].slice(0, 12));
     onToast && onToast('Version enregistrée');
   };
   const openVersion = (v) => {
-    setCfgs((all) => ({ ...all, [v.tplId]: v.cfg }));
+    setCfgs((all) => ({ ...all, [v.tplId]: poOmit(v.cfg, PO_SHARED_KEYS), _shared: { ...(all._shared || {}), ...poPick(v.cfg, PO_SHARED_KEYS) } }));
     setTplId(v.tplId); setFmtId(v.fmtId); if (v.actId) setActId(v.actId);
     onToast && onToast('Version restaurée');
   };
