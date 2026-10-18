@@ -287,36 +287,44 @@ function poBlueprintPal(bg) {
 }
 // Fonds sombres proposés (rendu sûr à l'impression : blanc et tracé clair ressortent)
 const PO_DARK_BGS = [
-  { hex: '#103c6b', name: 'Bleu plan' }, { hex: '#0f1d33', name: 'Bleu nuit' }, { hex: '#1e2a33', name: 'Ardoise' },
-  { hex: '#15362b', name: 'Vert forêt' }, { hex: '#3a1420', name: 'Bordeaux' }, { hex: '#2b2140', name: 'Aubergine' }, { hex: '#141414', name: 'Noir' },
+  { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu plan' }, { hex: '#0f1d33', name: 'Bleu nuit' }, { hex: '#1e2a33', name: 'Ardoise' },
+  { hex: '#15362b', name: 'Vert forêt' }, { hex: '#3a1420', name: 'Bordeaux' }, { hex: '#2b2140', name: 'Aubergine' },
 ];
-// Rose des vents technique : 8 directions, graduations
-function poCompass(ctx, x, y, R, u, color) {
-  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineJoin = 'round';
-  ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 1 * u; ctx.beginPath(); ctx.arc(x, y, R * 0.86, 0, Math.PI * 2); ctx.stroke();
-  for (let a = 0; a < 360; a += 10) {
-    const r = a * Math.PI / 180, big = a % 45 === 0;
-    const r0 = big ? R * 0.78 : R * 0.86, r1 = R;
-    ctx.lineWidth = (big ? 1.6 : 0.9) * u;
-    ctx.beginPath(); ctx.moveTo(x + Math.sin(r) * r0, y - Math.cos(r) * r0); ctx.lineTo(x + Math.sin(r) * r1, y - Math.cos(r) * r1); ctx.stroke();
+// Rose des vents technique : 8 directions, graduations fines, branches bicolores
+function poCompass(ctx, x, y, R, u, color, bg) {
+  const fillBg = bg || '#000000';
+  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
+  // Couronne : deux cercles + graduations (5° / 15° / 45°)
+  ctx.lineWidth = 1.4 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.arc(x, y, R * 0.82, 0, Math.PI * 2); ctx.stroke();
+  for (let a = 0; a < 360; a += 5) {
+    const r = a * Math.PI / 180;
+    const len = a % 45 === 0 ? 0.18 : a % 15 === 0 ? 0.11 : 0.06;
+    ctx.lineWidth = (a % 45 === 0 ? 1.3 : 0.7) * u;
+    ctx.beginPath(); ctx.moveTo(x + Math.sin(r) * R, y - Math.cos(r) * R); ctx.lineTo(x + Math.sin(r) * R * (1 - len), y - Math.cos(r) * R * (1 - len)); ctx.stroke();
   }
-  // Étoile : 4 branches cardinales longues, 4 intercardinales courtes ; moitié pleine, moitié au trait
-  for (let k = 0; k < 8; k++) {
-    const r = k * Math.PI / 4, len = k % 2 ? R * 0.5 : R * 0.78, wid = k % 2 ? R * 0.09 : R * 0.13;
-    const tip = [x + Math.sin(r) * len, y - Math.cos(r) * len];
-    const side = (sgn) => [x + Math.sin(r + sgn * Math.PI / 2) * wid, y - Math.cos(r + sgn * Math.PI / 2) * wid];
-    const [l, rr] = [side(-1), side(1)];
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(l[0], l[1]); ctx.closePath(); ctx.fill();
-    ctx.lineWidth = 1 * u; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(rr[0], rr[1]); ctx.closePath(); ctx.stroke();
-  }
-  ctx.beginPath(); ctx.arc(x, y, 3 * u, 0, Math.PI * 2); ctx.fill();
+  // Étoile : branches intercardinales (fines) puis cardinales (longues), moitié pleine / moitié fond
+  [[1, 0.56, 0.07], [0, 0.95, 0.12]].forEach(([odd, len, wid]) => {
+    for (let k = odd; k < 8; k += 2) {
+      const r = k * Math.PI / 4;
+      const tip = [x + Math.sin(r) * R * len, y - Math.cos(r) * R * len];
+      const sd = (sgn) => [x + Math.sin(r + sgn * Math.PI / 2) * R * wid, y - Math.cos(r + sgn * Math.PI / 2) * R * wid];
+      const L = sd(-1), Rr = sd(1);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(L[0], L[1]); ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(Rr[0], Rr[1]); ctx.closePath(); ctx.fillStyle = fillBg; ctx.fill();
+      ctx.lineWidth = 0.8 * u; ctx.strokeStyle = color; ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(tip[0], tip[1]); ctx.lineTo(Rr[0], Rr[1]); ctx.lineTo(x, y); ctx.closePath(); ctx.stroke();
+    }
+  });
+  ctx.fillStyle = fillBg; ctx.beginPath(); ctx.arc(x, y, 3.2 * u, 0, Math.PI * 2); ctx.fill();
+  ctx.lineWidth = 1 * u; ctx.stroke();
   // Directions
+  ctx.fillStyle = color;
   ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'].forEach((t, k) => {
-    const r = k * Math.PI / 4, card = k % 2 === 0, d = R + (card ? 20 : 17) * u;
-    const sz = t === 'N' ? 22 * u : card ? 15 * u : 11.5 * u;
+    const r = k * Math.PI / 4, card = k % 2 === 0;
+    const sz = t === 'N' ? 17 * u : card ? 13 * u : 9.5 * u;
+    const d = R + (card ? 15 : 13) * u + (t === 'N' ? 2 * u : 0);
     ctx.font = stFont(t === 'N' ? 700 : 600, sz, ST_TXT); ctx.textAlign = 'center';
-    ctx.fillText(t, x + Math.sin(r) * d, y - Math.cos(r) * d + sz * 0.36);
+    stSpaced(ctx, t, x + Math.sin(r) * d, y - Math.cos(r) * d + sz * 0.36, card ? 0 : sz * 0.08, 'center');
   });
   ctx.restore();
 }
@@ -369,20 +377,20 @@ const POSTER_TEMPLATES = [
     // Plan technique : grille, cartouche, échelle, nord
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 100, map: true, bg: '#103c6b' },
+    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 100, map: true, bg: '#141414' },
     bgs: PO_DARK_BGS, photoSlot: true,
     async draw(ctx, d, w, h) {
-      const u = w / 1200, bg = d.bg || '#103c6b', line = 'rgba(255,255,255,0.85)';
+      const u = w / 1200, bg = d.bg || '#141414', line = 'rgba(255,255,255,0.85)';
       const M = 50 * u;
       const items = d.stats.map((s) => [s.label, s.value + (s.unit ? ' ' + s.unit : '')]);
       items.push(['Activité', d.activityLabel]);
       if (d.routes[0]) items.push(['Départ', poDms(d.routes[0].coords[0][0], 'N', 'S') + '  ' + poDms(d.routes[0].coords[0][1], 'E', 'O')]);
-      const cw = w * 0.5, rh = 50 * u, ch = 112 * u + items.length * rh;
+      const cw = w * 0.5, rh = 50 * u, hh = d.subtitle ? 124 * u : 104 * u, ch = hh + items.length * rh;
       const cx = w - M - 12 * u - cw, cy = h - M - 12 * u - ch;
       const proj = stFit(d.routes, { x: M + 110 * u, y: M + 130 * u, w: w - 2 * M - 220 * u, h: cy - M - 230 * u });
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       // Carte vectorielle dans le cadre, sous la grille
-      const rx = w - M - 120 * u, ry = M + 130 * u, R = 62 * u; // rose des vents
+      const rx = w - M - 100 * u, ry = M + 108 * u, R = 46 * u; // rose des vents
       await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, poBlueprintPal(bg),
         { u, labelRect: { x: M + 30 * u, y: M + 150 * u, w: w - 2 * M - 60 * u, h: cy - M - 170 * u },
           avoid: [{ x0: rx - R - 40 * u, x1: rx + R + 40 * u, y0: ry - R - 40 * u, y1: ry + R + 40 * u }] });
@@ -394,16 +402,21 @@ const POSTER_TEMPLATES = [
       // Cartouche
       ctx.fillStyle = bg; ctx.fillRect(cx, cy, cw, ch);
       ctx.strokeStyle = line; ctx.lineWidth = 2 * u; ctx.strokeRect(cx, cy, cw, ch);
-      poLine(ctx, d.title || 'Itinéraire', cx + 26 * u, cy + 60 * u, cw - 52 * u, 44 * u, '#fff', { upper: true, spacing: 0.06 });
-      if (d.subtitle) stLabel(ctx, d.subtitle, cx + 26 * u, cy + 94 * u, 16 * u, 'rgba(255,255,255,0.65)');
+      // En-tête du cartouche : titre (et sous-titre) centrés verticalement, marges égales
+      const tSize = 42 * u, pad = 30 * u;
+      const blockH = tSize * 0.74 + (d.subtitle ? 14 * u + 16 * u * 0.75 : 0);
+      const tBase = cy + (hh - blockH) / 2 + tSize * 0.74;
+      poLine(ctx, d.title || 'Itinéraire', cx + pad, tBase, cw - 2 * pad, tSize, '#fff', { upper: true, spacing: 0.06 });
+      if (d.subtitle) stLabel(ctx, d.subtitle, cx + pad, tBase + 14 * u + 16 * u * 0.75, 16 * u, 'rgba(255,255,255,0.65)');
+      const ip = 22 * u; // marges des lignes d'infos
       items.forEach(([k, v], i) => {
-        const y = cy + 112 * u + i * rh;
+        const y = cy + hh + i * rh;
         ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(cx, y, cw, 1.5 * u);
-        stLabel(ctx, k, cx + 26 * u, y + 32 * u, 15 * u, 'rgba(255,255,255,0.65)');
+        stLabel(ctx, k, cx + ip, y + rh / 2 + 5.5 * u, 15 * u, 'rgba(255,255,255,0.65)');
         ctx.font = stFont(700, 24 * u, ST_NUM); ctx.fillStyle = '#fff'; ctx.textAlign = 'right';
-        ctx.fillText(stWrap(ctx, v, cw * 0.55, 1)[0] || '', cx + cw - 26 * u, y + 34 * u);
+        ctx.fillText(stWrap(ctx, v, cw * 0.58, 1)[0] || '', cx + cw - ip, y + rh / 2 + 8.5 * u);
       });
-      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(cx + cw * 0.38, cy + 112 * u, 1.5 * u, ch - 112 * u);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(cx + cw * 0.36, cy + hh, 1.5 * u, ch - hh);
       // Photos punaisées à gauche du cartouche
       const leftX = M + 50 * u, leftW = cx - 40 * u - leftX;
       if (d.photos.length) poPhotos(ctx, d.photos.slice(0, 3), leftX, cy + 70 * u, leftW, ch - 110 * u, { gap: 18 * u, border: 8 * u, rotate: 2, shadow: 18 * u, maxRatio: 1.25, align: 'left', tape: true, u });
@@ -422,7 +435,7 @@ const POSTER_TEMPLATES = [
         stLabel(ctx, i ? 'B' : 'A', x + 30 * u, y - 22 * u, 18 * u, '#fff');
       });
       // Nord + échelle
-      poCompass(ctx, rx, ry, R, u, '#ffffff');
+      poCompass(ctx, rx, ry, R, u, '#ffffff', bg);
       poScaleBar(ctx, d, proj, leftX, cy + 14 * u, Math.min(leftW, w * 0.22), '#fff', u);
       await poDrawLogo(ctx, M + 50 * u, M + 60 * u, 26 * u, '#ffffff');
       if (d.coords && d.routes[0]) stLabel(ctx, poCoords(d), M + 50 * u, M + 120 * u, 14 * u, 'rgba(255,255,255,0.7)');
