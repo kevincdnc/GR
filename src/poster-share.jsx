@@ -292,6 +292,8 @@ const POSTER_TEMPLATES = [
   {
     // Plan technique : grille, cartouche, échelle, nord
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
+    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
+    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 100, map: true },
     async draw(ctx, d, w, h) {
       const u = w / 1200, bg = '#103c6b', line = 'rgba(255,255,255,0.85)';
       const M = 50 * u;
@@ -351,6 +353,8 @@ const POSTER_TEMPLATES = [
   {
     // Carte de nuit : fond sombre, tracé lumineux
     id: 'nuit', name: 'Nuit', kind: 'Carte', dark: true, maxPhotos: 3, mapDefault: true,
+    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
+    rec: { colors: ['#fc5200', '#ffffff'], mapStyle: 'routes', mapOpacity: 100, map: true },
     async draw(ctx, d, w, h) {
       const u = w / 1200;
       ctx.fillStyle = '#161616'; ctx.fillRect(0, 0, w, h);
@@ -381,6 +385,8 @@ const POSTER_TEMPLATES = [
   {
     // Satellite plein cadre
     id: 'satellite', name: 'Satellite', kind: 'Carte', dark: true, maxPhotos: 4,
+    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
+    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 100, map: true },
     async draw(ctx, d, w, h) {
       const u = w / 1200, M = 100 * u;
       { const bg = ctx.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#13202c'); bg.addColorStop(1, '#05080b'); ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
@@ -416,6 +422,8 @@ const POSTER_TEMPLATES = [
   {
     // Ancienne carte : papier vieilli, rose des vents, cartouche
     id: 'ancienne', name: 'Ancienne carte', kind: 'Vintage', maxPhotos: 3,
+    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
+    rec: { colors: [], mapStyle: 'nature', mapOpacity: 100, map: true },
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#3a2817', red = '#8e2a1b', paper = '#ead9b5';
       // Papier vieilli
@@ -539,6 +547,8 @@ const POSTER_TEMPLATES = [
   {
     // Relief : ombrage du terrain sur papier, typographie éditoriale
     id: 'relief', name: 'Éditorial', kind: 'Magazine', maxPhotos: 4,
+    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
+    rec: { colors: ['#fc5200', '#3b82f6'], mapStyle: 'nature', mapOpacity: 85, map: true },
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#1c1a17', mute = '#7d776c', M = 90 * u;
       ctx.fillStyle = '#f3f0ea'; ctx.fillRect(0, 0, w, h);
@@ -569,6 +579,8 @@ const POSTER_TEMPLATES = [
   {
     // Galerie : carte claire + photos du voyage, façon carnet
     id: 'galerie', name: 'Galerie', kind: 'Carnet', maxPhotos: 4,
+    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
+    rec: { colors: ['#3b82f6', '#fc5200'], mapStyle: 'routes', mapOpacity: 100, map: true },
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#161616', mute = '#8a857c', M = 80 * u;
       ctx.fillStyle = '#fbfaf7'; ctx.fillRect(0, 0, w, h);
@@ -599,6 +611,8 @@ const POSTER_TEMPLATES = [
   {
     // Photo plein cadre : ta photo en fond, tracé et chiffres par-dessus
     id: 'photo', name: 'Photo', kind: 'Ta photo', photoBg: true, dark: true, maxPhotos: 3,
+    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
+    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 60, map: false },
     async draw(ctx, d, w, h) {
       const u = w / 1200, M = 100 * u;
       poPhotoBg(ctx, d, 0, 0, w, h);
@@ -628,6 +642,8 @@ const POSTER_TEMPLATES = [
   {
     // Photo + carte : photo en haut, carte et chiffres en bas
     id: 'photocarte', name: 'Photo & carte', kind: 'Ta photo', photoBg: true, maxPhotos: 3,
+    // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
+    rec: { colors: ['#fc5200'], mapStyle: 'epure', mapOpacity: 100, map: true },
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#171614', mute = '#7f796f', M = 80 * u;
       const pH = Math.round(h * 0.54);
@@ -749,6 +765,11 @@ function StudioSection({ title, aside, children, defaultOpen = true }) {
   );
 }
 
+// Petite étoile « recommandé » posée sur une pastille
+function RecStar() {
+  return <span className="pointer-events-none absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 text-neutral-900 grid place-items-center text-[8px] leading-none ring-2 ring-neutral-950">★</span>;
+}
+
 // Liste des infos : interrupteur, valeur, réordonnable au glisser (souris et tactile)
 function MetricsList({ order, setOrder, enabled, onToggle, values }) {
   const listRef = usePoRef(null);
@@ -803,8 +824,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   // Parcours : 1 = design, 2 = « Imprimez votre tracé » (fichier ou tirage encadré)
   const [step, setStep] = usePoState(1);
   const [offer, setOffer] = usePoState('file');
-  const [mapStyle, setMapStyle] = usePoState('epure');
-  const [mapOpacity, setMapOpacity] = usePoState(100);
+  const [stylePref, setStylePref] = usePoState({}); // style de carte par modèle
+  const [opacityPref, setOpacityPref] = usePoState({}); // opacité par modèle
   const [mapLabels, setMapLabels] = usePoState(true);
   const [color, setColor] = usePoState('auto');
   const [customColor, setCustomColor] = usePoState('#ff6b35');
@@ -838,6 +859,13 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   const tpl = POSTER_TEMPLATES.find((t) => t.id === tplId) || POSTER_TEMPLATES[0];
   // Fond de carte : activé par défaut sur les 2 premiers modèles, modifiable sur tous
   const showMap = mapPref[tplId] != null ? mapPref[tplId] : !!tpl.mapDefault;
+  // Par défaut chaque modèle s'ouvre avec ses réglages recommandés
+  const rec = tpl.rec || { colors: [], mapStyle: 'epure', mapOpacity: 100 };
+  const styleOf = (t) => stylePref[t.id] || (t.rec && t.rec.mapStyle) || 'epure';
+  const opacityOf = (t) => (opacityPref[t.id] != null ? opacityPref[t.id] : (t.rec && t.rec.mapOpacity) || 100);
+  const mapStyle = styleOf(tpl), mapOpacity = opacityOf(tpl);
+  const setMapStyle = (v) => setStylePref((p) => ({ ...p, [tplId]: v }));
+  const setMapOpacity = (v) => setOpacityPref((p) => ({ ...p, [tplId]: v }));
   const setShowMap = (f) => setMapPref((m) => ({ ...m, [tplId]: f(showMap) }));
   const fmt = POSTER_FORMATS.find((f) => f.id === fmtId) || POSTER_FORMATS[1];
   const ratio = fmt.mm[1] / fmt.mm[0];
@@ -877,12 +905,12 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
         const tc = thumbRefs.current[tp.id];
         if (tc && my === token.current) {
           tc.width = 240; tc.height = Math.round(240 * ratio);
-          await renderPoster(tc, tp, { ...data, showMap: mapPref[tp.id] != null ? mapPref[tp.id] : !!tp.mapDefault }, fmt, 'none', 240 / PO_W);
+          await renderPoster(tc, tp, { ...data, showMap: mapPref[tp.id] != null ? mapPref[tp.id] : !!tp.mapDefault, mapStyle: styleOf(tp), mapOpacity: opacityOf(tp) / 100 }, fmt, 'none', 240 / PO_W);
         }
       }
     }, 80);
     return () => clearTimeout(t);
-  }, [data, tplId, fmtId, border, mapPref]);
+  }, [data, tplId, fmtId, border, mapPref, stylePref, opacityPref]);
 
   const addPhotos = async (files) => {
     const list = (await Promise.all([...files].slice(0, 4).map(readImageFile))).filter(Boolean);
@@ -1023,8 +1051,8 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
           {step === 1 && (<>
           {routeTools}
 
-          <StudioSection title="Activité et infos" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
-            <div className="relative mb-3">
+          <StudioSection title="Activité">
+            <div className="relative">
               <button onClick={() => setActOpen((v) => !v)}
                 className={`w-full h-10 flex items-center gap-2.5 rounded-lg px-3 text-[13px] font-medium transition-colors ${actOpen ? 'bg-white/[0.12]' : 'bg-white/[0.06] hover:bg-white/[0.1]'}`}>
                 {(() => { const Ico = I[act.icon] || I.Route; return <Ico size={16} />; })()}
@@ -1048,22 +1076,22 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 </div>
               )}
             </div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[12.5px] font-medium text-neutral-200">Infos affichées</span>
-              <span className="text-[11px] text-neutral-500">Glisse pour réordonner</span>
-            </div>
-            <MetricsList order={order} setOrder={setOrder} enabled={enabled} onToggle={toggleMetric} values={metricValues} />
-            <p className="mt-2.5 text-[11px] text-neutral-500 leading-snug">Proposées selon l'activité. Les durées sans GPS sont estimées pour {act.label.toLowerCase()}.</p>
           </StudioSection>
 
           <StudioSection title="Couleur du tracé">
             <div className="flex flex-wrap items-center gap-1.5">
-              <button title="Couleur du modèle" onClick={() => setColor('auto')}
-                className={`h-7 px-2.5 mr-0.5 rounded-full text-[11.5px] font-semibold bg-white/[0.06] ${color === 'auto' ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}>Auto</button>
+              <span className="relative">
+                <button title="Couleur du modèle" onClick={() => setColor('auto')}
+                  className={`h-7 px-2.5 mr-0.5 rounded-full text-[11.5px] font-semibold bg-white/[0.06] ${color === 'auto' ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}>Auto</button>
+                <RecStar />
+              </span>
               {SHARE_COLORS.filter((c) => c.value !== 'routes').map((c) => (
-                <button key={c.value} title={c.label} onClick={() => setColor(c.value)}
-                  className={`w-7 h-7 rounded-full transition-transform hover:scale-110 ${color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
-                  style={{ background: c.value }} />
+                <span key={c.value} className="relative">
+                  <button title={c.label + (rec.colors.includes(c.value) ? ' · recommandé' : '')} onClick={() => setColor(c.value)}
+                    className={`block w-7 h-7 rounded-full transition-transform hover:scale-110 ${color === c.value ? 'ring-2 ring-white ring-offset-2 ring-offset-neutral-950' : 'ring-1 ring-white/15'}`}
+                    style={{ background: c.value }} />
+                  {rec.colors.includes(c.value) && <RecStar />}
+                </span>
               ))}
               {/* Couleur personnalisée : sélecteur natif sous la pastille arc-en-ciel */}
               <label title="Choisir ma couleur"
@@ -1073,6 +1101,48 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
               </label>
             </div>
+            <p className="mt-2.5 text-[11px] text-neutral-500 flex items-center gap-1.5"><span className="text-amber-400">★</span> Recommandé pour l’impression avec {tpl.name}</p>
+          </StudioSection>
+
+          <StudioSection title="Carte">
+            <div className="-mx-2">
+              <ShareFieldRow dark label="Carte derrière le tracé" on={showMap} onToggle={() => setShowMap((v) => !v)} />
+            </div>
+            {!showMap && rec.map && <p className="text-[11px] text-neutral-500 flex items-center gap-1.5"><span className="text-amber-400">★</span> Recommandée sur ce modèle</p>}
+            {showMap && (
+              <>
+                {tpl.id !== 'satellite' ? (
+                  <>
+                    <div className="text-[12.5px] font-medium text-neutral-200 mt-3 mb-2">Style de carte</div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {PM_STYLES.map((m) => (
+                        <button key={m.id} onClick={() => setMapStyle(m.id)} className={`${chip(m.id === mapStyle)} h-auto py-1.5 flex flex-col items-center leading-tight`}>
+                          <span>{m.name}</span>
+                          <span className={`text-[9.5px] mt-0.5 ${m.id === rec.mapStyle ? (m.id === mapStyle ? 'text-amber-600' : 'text-amber-400') : 'opacity-0'}`}>★ Recommandé</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-[11px] text-neutral-500 leading-snug">
+                      {mapStyle === 'epure' ? 'Littoral, plans d’eau et grands axes.' : mapStyle === 'routes' ? 'Réseau routier détaillé, rivières et villages.' : 'Forêts, rivières, sentiers et sommets.'} Carte vectorielle aux couleurs du modèle.
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-[11px] text-neutral-500 leading-snug">Imagerie satellite (photo aérienne) avec noms de lieux vectoriels.</p>
+                )}
+                <div className="flex items-center gap-3 mt-4">
+                  <span className="text-[12.5px] font-medium text-neutral-200 w-16">Opacité</span>
+                  <input type="range" min={15} max={100} step={5} value={mapOpacity} onChange={(e) => setMapOpacity(Number(e.target.value))} className="flex-1 accent-white" />
+                  <span className="text-[12px] tabular-nums text-neutral-400 w-10 text-right">{mapOpacity} %</span>
+                </div>
+                <div className="mt-1 text-[11px] text-neutral-500 flex items-center gap-1.5">
+                  <span className="text-amber-400">★</span> Recommandé : {rec.mapOpacity} %
+                  {mapOpacity !== rec.mapOpacity && <button onClick={() => setMapOpacity(rec.mapOpacity)} className="ml-1 text-neutral-300 hover:text-white underline underline-offset-2">rétablir</button>}
+                </div>
+                <div className="-mx-2 mt-2">
+                  <ShareFieldRow dark label="Noms de lieux (hors tracé)" on={mapLabels} onToggle={() => setMapLabels((v) => !v)} />
+                </div>
+              </>
+            )}
           </StudioSection>
 
           <StudioSection title="Textes">
@@ -1083,6 +1153,12 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
               {showSub && <input value={subtitle == null ? defaultSub : subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="Ex. Bretagne · été 2026" maxLength={80} className={inputCls} />}
               <ShareFieldRow dark label="Coordonnées GPS" on={coords} onToggle={() => setCoords((v) => !v)} />
             </div>
+          </StudioSection>
+
+          <StudioSection title="Infos affichées" aside={<span className="text-[11px] text-neutral-500">{metrics.length}</span>}>
+            <div className="text-[11px] text-neutral-500 mb-2">Glisse pour réordonner, active ce que tu veux afficher.</div>
+            <MetricsList order={order} setOrder={setOrder} enabled={enabled} onToggle={toggleMetric} values={metricValues} />
+            <p className="mt-2.5 text-[11px] text-neutral-500 leading-snug">Proposées selon l'activité. Les durées sans GPS sont estimées pour {act.label.toLowerCase()}.</p>
           </StudioSection>
 
           <StudioSection title="Photos" aside={<span className="text-[11px] text-neutral-500">{Math.min(photos.length, tpl.maxPhotos)}/{tpl.maxPhotos}</span>}>
@@ -1136,37 +1212,6 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 </button>
               ))}
             </div>
-          </StudioSection>
-
-          <StudioSection title="Carte">
-            <div className="-mx-2">
-              <ShareFieldRow dark label="Carte derrière le tracé" on={showMap} onToggle={() => setShowMap((v) => !v)} />
-            </div>
-            {showMap && (
-              <>
-                {tpl.id !== 'satellite' ? (
-                  <>
-                    <div className="text-[12.5px] font-medium text-neutral-200 mt-3 mb-2">Style de carte</div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {PM_STYLES.map((m) => <button key={m.id} onClick={() => setMapStyle(m.id)} className={chip(m.id === mapStyle)}>{m.name}</button>)}
-                    </div>
-                    <p className="mt-2 text-[11px] text-neutral-500 leading-snug">
-                      {mapStyle === 'epure' ? 'Littoral, plans d’eau et grands axes.' : mapStyle === 'routes' ? 'Réseau routier détaillé, rivières et villages.' : 'Forêts, rivières, sentiers et sommets.'} Carte vectorielle aux couleurs du modèle.
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-2 text-[11px] text-neutral-500 leading-snug">Imagerie satellite (photo aérienne) avec noms de lieux vectoriels.</p>
-                )}
-                <div className="flex items-center gap-3 mt-4">
-                  <span className="text-[12.5px] font-medium text-neutral-200 w-16">Opacité</span>
-                  <input type="range" min={15} max={100} step={5} value={mapOpacity} onChange={(e) => setMapOpacity(Number(e.target.value))} className="flex-1 accent-white" />
-                  <span className="text-[12px] tabular-nums text-neutral-400 w-10 text-right">{mapOpacity} %</span>
-                </div>
-                <div className="-mx-2 mt-2">
-                  <ShareFieldRow dark label="Noms de lieux (hors tracé)" on={mapLabels} onToggle={() => setMapLabels((v) => !v)} />
-                </div>
-              </>
-            )}
           </StudioSection>
 
           <div className="p-5 pt-4" style={isMobile ? { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' } : undefined}>
