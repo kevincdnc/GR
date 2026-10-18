@@ -298,19 +298,38 @@ const PO_DARK_BGS = [
 ];
 // Boussole minimale : anneau fin, aiguille losange, points cardinaux
 function poCompass(ctx, x, y, R, u, color, bg) {
-  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.lineWidth = 1.2 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
-  // Aiguille : nord plein, sud au trait
-  const nl = R * 0.7, wd = R * 0.17;
-  ctx.beginPath(); ctx.moveTo(x, y - nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = bg || '#000000'; ctx.lineWidth = 1 * u;
-  ctx.beginPath(); ctx.moveTo(x, y + nl); ctx.lineTo(x + wd, y); ctx.lineTo(x - wd, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+  const BG = bg || '#000000';
+  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
+  // Double anneau gradué (style instrument ancien)
+  const ri = R - 5 * u;
+  ctx.lineWidth = 1.3 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.arc(x, y, ri, 0, Math.PI * 2); ctx.stroke();
+  for (let i = 0; i < 36; i++) {
+    const t = i * Math.PI / 18, c = i % 9 === 0, r0 = c ? ri - 3 * u : ri;
+    ctx.lineWidth = (c ? 1.1 : 0.6) * u; ctx.globalAlpha = c ? 1 : 0.7;
+    ctx.beginPath(); ctx.moveTo(x + Math.sin(t) * r0, y - Math.cos(t) * r0); ctx.lineTo(x + Math.sin(t) * R, y - Math.cos(t) * R); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  // Rose des vents : branches à demi ombrées (une moitié pleine, l'autre au trait)
+  const point = (ang, len, wd, alpha) => {
+    const tx = x + Math.sin(ang) * len, ty = y - Math.cos(ang) * len;
+    const lx = x + Math.sin(ang - Math.PI / 2) * wd, ly = y - Math.cos(ang - Math.PI / 2) * wd;
+    const rx = x + Math.sin(ang + Math.PI / 2) * wd, ry = y - Math.cos(ang + Math.PI / 2) * wd;
+    ctx.globalAlpha = alpha; ctx.lineWidth = 0.8 * u;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.lineTo(lx, ly); ctx.closePath(); ctx.fillStyle = color; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.lineTo(rx, ry); ctx.closePath(); ctx.fillStyle = BG; ctx.fill(); ctx.stroke();
+  };
+  for (let k = 0; k < 4; k++) point(Math.PI / 4 + k * Math.PI / 2, ri * 0.55, R * 0.1, 0.7);
+  for (let k = 0; k < 4; k++) point(k * Math.PI / 2, ri - 1.5 * u, R * 0.15, 1);
+  ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.arc(x, y, 2.2 * u, 0, Math.PI * 2); ctx.fillStyle = BG; ctx.fill(); ctx.lineWidth = 0.9 * u; ctx.stroke();
+  // Points cardinaux, en caractères anciens
   ctx.fillStyle = color;
   [['N', 0], ['E', 1], ['S', 2], ['O', 3]].forEach(([t, k]) => {
-    const r = k * Math.PI / 2, sz = t === 'N' ? 13 * u : 10.5 * u, dd = R + 12 * u;
-    ctx.globalAlpha = t === 'N' ? 1 : 0.75;
-    ctx.font = stFont(t === 'N' ? 700 : 600, sz, ST_TXT); ctx.textAlign = 'center';
-    ctx.fillText(t, x + Math.sin(r) * dd, y - Math.cos(r) * dd + sz * 0.36);
+    const r = k * Math.PI / 2, sz = t === 'N' ? 17 * u : 13 * u, dd = R + 13 * u;
+    ctx.globalAlpha = t === 'N' ? 1 : 0.8;
+    ctx.font = stFont(400, sz, PO_FELL); ctx.textAlign = 'center';
+    ctx.fillText(t, x + Math.sin(r) * dd, y - Math.cos(r) * dd + sz * 0.34);
   });
   ctx.restore();
 }
@@ -335,13 +354,32 @@ function poPhotoPlaceholder(ctx, x, y, w, h, u, bg, onSlot) {
   if (onSlot && ctx.getTransform) { const m = ctx.getTransform(); onSlot({ x: m.a * ox + m.e, y: m.d * oy + m.f, w: m.a * pw, h: m.d * ph }); }
   ctx.save();
   ctx.translate(ox + pw / 2, oy + ph / 2); ctx.rotate(-1.5 * Math.PI / 180); ctx.translate(-pw / 2, -ph / 2);
-  ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(0, 0, pw, ph);
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 1.4 * u;
+  // Tirage : marge blanche translucide, fenêtre photo en pointillés
+  ctx.fillStyle = 'rgba(255,255,255,0.035)'; ctx.fillRect(0, 0, pw, ph);
+  ctx.strokeStyle = 'rgba(255,255,255,0.26)'; ctx.lineWidth = 1.4 * u;
   ctx.setLineDash && ctx.setLineDash([6 * u, 5 * u]); ctx.strokeRect(0, 0, pw, ph); ctx.setLineDash && ctx.setLineDash([]);
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.6 * u; ctx.lineJoin = 'round';
-  // Croquis dans la moitié haute : le bouton « Ajouter une photo » se pose en dessous
-  ctx.beginPath(); ctx.arc(pw * 0.68, ph * 0.24, ph * 0.08, 0, Math.PI * 2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(pw * 0.2, ph * 0.64); ctx.lineTo(pw * 0.4, ph * 0.38); ctx.lineTo(pw * 0.54, ph * 0.52); ctx.lineTo(pw * 0.66, ph * 0.4); ctx.lineTo(pw * 0.8, ph * 0.64); ctx.stroke();
+  // Paysage stylisé dans la moitié haute (le bouton se pose en dessous)
+  const ix = pw * 0.14, iw = pw * 0.72, iy = ph * 0.12, ih = ph * 0.5;
+  ctx.save(); ctx.beginPath(); ctx.rect(ix, iy, iw, ih); ctx.clip();
+  const sky = ctx.createLinearGradient(0, iy, 0, iy + ih);
+  sky.addColorStop(0, 'rgba(255,255,255,0.07)'); sky.addColorStop(1, 'rgba(255,255,255,0.015)');
+  ctx.fillStyle = sky; ctx.fillRect(ix, iy, iw, ih);
+  const P = (fx, fy) => [ix + iw * fx, iy + ih * fy];
+  ctx.beginPath(); ctx.arc(...P(0.76, 0.27), ih * 0.11, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.fill();
+  const hill = (pts, fill, stroke) => {
+    ctx.beginPath(); ctx.moveTo(...P(pts[0][0], pts[0][1])); pts.slice(1).forEach((q) => ctx.lineTo(...P(q[0], q[1])));
+    ctx.lineTo(...P(1.02, 1.02)); ctx.lineTo(...P(-0.02, 1.02)); ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = stroke; ctx.lineWidth = 1.3 * u; ctx.lineJoin = 'round'; ctx.stroke();
+  };
+  hill([[-0.02, 0.78], [0.22, 0.42], [0.36, 0.58], [0.58, 0.3], [0.86, 0.66], [1.02, 0.56]], 'rgba(255,255,255,0.05)', 'rgba(255,255,255,0.2)');
+  hill([[-0.02, 0.92], [0.3, 0.6], [0.48, 0.78], [0.7, 0.52], [1.02, 0.86]], 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.32)');
+  // Petit sentier en pointillés qui grimpe : rappel du tracé
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1.4 * u; ctx.lineCap = 'round';
+  ctx.setLineDash && ctx.setLineDash([1 * u, 4.5 * u]);
+  ctx.beginPath(); ctx.moveTo(...P(0.12, 1.0)); ctx.lineTo(...P(0.3, 0.86)); ctx.lineTo(...P(0.24, 0.76)); ctx.lineTo(...P(0.4, 0.7)); ctx.lineTo(...P(0.3, 0.62)); ctx.stroke();
+  ctx.setLineDash && ctx.setLineDash([]);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1 * u; ctx.strokeRect(ix, iy, iw, ih);
   ctx.restore();
 }
 
@@ -443,33 +481,36 @@ const POSTER_TEMPLATES = [
       // Nord + échelle
       poCompass(ctx, rx, ry, R, u, '#ffffff', bg);
       if (legend) {
-        // Légende alignée sur la grille du cartouche : en-tête, tracé, départ/arrivée, échelle
-        const lw = Math.min(leftW, 360 * u), mk = rc === 'routes' ? '#ffffff' : rc;
+        // Légende discrète : colonne d'icônes calée sur le logo, bas aligné sur le cartouche
+        const mk = rc === 'routes' ? '#ffffff' : rc, ic = 44 * u, lh = 34 * u, txt = 'rgba(255,255,255,0.55)';
         const rows = [
-          ['Itinéraire', (x, y) => {
-            ctx.save(); ctx.setLineDash([2 * u, 10 * u]); ctx.lineCap = 'round';
-            ctx.strokeStyle = halo === 'routes' ? 'rgba(255,255,255,0.35)' : halo; ctx.lineWidth = 18 * u;
-            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 56 * u, y); ctx.stroke(); ctx.restore();
-            ctx.strokeStyle = mk; ctx.lineWidth = 4 * u; ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 56 * u, y); ctx.stroke();
+          ['Itinéraire', (cx0, y) => {
+            ctx.save(); ctx.setLineDash([1.5 * u, 7 * u]); ctx.lineCap = 'round';
+            ctx.strokeStyle = halo === 'routes' ? 'rgba(255,255,255,0.35)' : halo; ctx.lineWidth = 11 * u;
+            ctx.beginPath(); ctx.moveTo(cx0 - 14 * u, y); ctx.lineTo(cx0 + 14 * u, y); ctx.stroke(); ctx.restore();
+            ctx.strokeStyle = mk; ctx.lineWidth = 3 * u; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(cx0 - 14 * u, y); ctx.lineTo(cx0 + 14 * u, y); ctx.stroke();
           }],
-          ['Départ · arrivée', (x, y) => {
-            ctx.beginPath(); ctx.arc(x + 28 * u, y, 11 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill();
-            ctx.lineWidth = 3 * u; ctx.strokeStyle = mk; ctx.stroke();
-            ctx.beginPath(); ctx.arc(x + 28 * u, y, 4 * u, 0, Math.PI * 2); ctx.fillStyle = mk; ctx.fill();
+          ['Départ · arrivée', (cx0, y) => {
+            ctx.beginPath(); ctx.arc(cx0, y, 8 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill();
+            ctx.lineWidth = 2.2 * u; ctx.strokeStyle = mk; ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx0, y, 3 * u, 0, Math.PI * 2); ctx.fillStyle = mk; ctx.fill();
           }],
         ];
-        const ly = cy + ch - (rows.length + 1) * rh; // dernière ligne = échelle, alignée sur le bas du cartouche
-        stLabel(ctx, 'Légende', leftX, ly - 18 * u, 15 * u, 'rgba(255,255,255,0.65)');
+        // Dernière ligne de texte du cartouche → même ligne de base pour l'échelle
+        const base = cy + ch - rh / 2;
+        const sy = base - 3 * u, ly = sy - 26 * u - rows.length * lh;
+        ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = stFont(600, 12 * u, ST_TXT);
+        stLabel(ctx, 'Légende', leftX, ly - 14 * u, 12 * u, 'rgba(255,255,255,0.4)');
+        ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.fillRect(leftX, ly - 2 * u, 260 * u, 1 * u);
         rows.forEach(([label, icon], i) => {
-          const y = ly + i * rh;
-          ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(leftX, y, lw, 1.2 * u);
-          icon(leftX, y + rh / 2);
-          stLabel(ctx, label, leftX + 84 * u, y + rh / 2 + 5.5 * u, 15 * u, 'rgba(255,255,255,0.8)');
+          const y = ly + 12 * u + i * lh + lh / 2 - 6 * u;
+          icon(leftX + 14 * u, y);
+          stLabel(ctx, label, leftX + ic, y + 4.5 * u, 12.5 * u, txt);
         });
-        const sy = ly + rows.length * rh;
-        ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(leftX, sy, lw, 1.2 * u); ctx.fillRect(leftX, cy + ch, lw, 1.2 * u);
-        poScaleBar(ctx, d, proj, leftX, sy + rh / 2 - 3 * u, lw - 90 * u, '#fff', u);
+        ctx.save(); ctx.globalAlpha = 0.75;
+        poScaleBar(ctx, d, proj, leftX, sy - 3 * u, 180 * u, '#fff', u);
+        ctx.restore();
       } else poScaleBar(ctx, d, proj, leftX, cy + 14 * u, Math.min(leftW, w * 0.22), '#fff', u);
       await poDrawLogo(ctx, M + 50 * u, M + 60 * u, 26 * u, '#ffffff');
       if (d.coords && d.routes[0]) stLabel(ctx, poCoords(d), M + 50 * u, M + 120 * u, 14 * u, 'rgba(255,255,255,0.7)');
@@ -1101,7 +1142,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
 
       {/* Scène : le poster (au mur si un cadre est choisi) */}
       <div className={`min-w-0 relative flex flex-col items-center justify-center ${isMobile ? 'order-1 shrink-0 px-5 pt-5 pb-4' : 'flex-1 px-10 py-8'}`}
-        style={{ ...(isMobile ? { height: 'min(64vh, 620px)' } : {}), background: stageMock !== 'none' ? 'radial-gradient(ellipse at 50% 30%, #ebe6de 0%, #d8d1c6 65%, #c9c1b4 100%)' : 'radial-gradient(ellipse at 50% 40%, #1d1d1f 0%, #0b0b0c 75%)' }}>
+        style={{ ...(isMobile ? { height: 'min(64vh, 620px)' } : {}), background: stageMock !== 'none' ? 'radial-gradient(ellipse at 50% 30%, #ebe6de 0%, #d8d1c6 65%, #c9c1b4 100%)' : 'radial-gradient(ellipse at 50% 40%, #3a3a3e 0%, #2a2a2d 55%, #1f1f22 100%)' }}>
         <div className="relative min-h-0 flex-1 w-full grid place-items-center">
           <div className="relative h-full max-w-full" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, maxHeight: '100%' }}>
             <div className="absolute inset-0" style={ms ? {
@@ -1113,7 +1154,7 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
                 {!ready && <div className="absolute inset-0 grid place-items-center text-[12px] text-neutral-400 bg-neutral-900">Préparation…</div>}
                 {step === 1 && tpl.photoSlot && cfg.photoSlot !== false && !photos.length && ready && slot && (
                   <button onClick={() => photosRef.current && photosRef.current.click()}
-                    style={{ left: `${(slot.l + slot.w / 2) * 100}%`, top: `${(slot.t + slot.h * 0.82) * 100}%`, transform: 'translate(-50%, -50%)' }}
+                    style={{ left: `${(slot.l + slot.w / 2) * 100}%`, top: `${(slot.t + slot.h * 0.84) * 100}%`, transform: 'translate(-50%, -50%)' }}
                     className="absolute whitespace-nowrap flex items-center gap-1.5 rounded-full pl-2.5 pr-3 h-7 text-[11.5px] font-medium bg-black/55 text-white/90 ring-1 ring-white/20 backdrop-blur hover:bg-black/70 transition-colors">
                     <I.ImagePlus size={13} /> Ajouter une photo
                   </button>
