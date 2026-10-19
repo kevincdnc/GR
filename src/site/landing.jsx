@@ -43,7 +43,7 @@ const SITE_CASES = [
     poster: {
       // Vraies étapes du GR34 (gpx/, servies en data/gr34.js) : chiffres calculés
       tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR34', subtitle: 'Sentier des douaniers · Bretagne',
-      metrics: ['distance', 'ascent', 'stages'], values: {}, photos: 1, gr34: true,
+      metrics: ['distance', 'ascent', 'stages'], values: {}, photos: 2, gr34: true,
       route: { name: 'GR34', seed: 11, way: [[47.80, -3.79, 10], [47.87, -3.92, 20], [47.87, -4.10, 15], [47.80, -4.37, 20], [48.02, -4.70, 30]] },
     },
     unsplash: ['brittany coastal path', 'crozon peninsula beach'],
@@ -495,7 +495,7 @@ const SITE_LINE = 'rgba(255,255,255,0.14)';
 // Fond commun : grille de points qui s'efface sur les bords
 function SiteIllusFrame({ children }) {
   return (
-    <div className="relative aspect-[4/3] rounded-2xl overflow-hidden" style={{ background: 'radial-gradient(75% 75% at 50% 45%, #2a2a2f 0%, #1b1b1f 55%, #121214 100%)' }}>
+    <div className="relative aspect-[4/3]">
       <div className="absolute inset-0" style={{
         backgroundImage: 'radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)', backgroundSize: '16px 16px',
         maskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)', WebkitMaskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)' }} />
@@ -611,7 +611,7 @@ const SITE_STEPS = [
 
 function SiteHowItWorks({ c }) {
   return (
-    <section className="relative bg-[#0a0a0a] border-t border-white/[0.05]">
+    <section className="relative border-t border-white/[0.05]" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.045) 20%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.045) 80%, rgba(255,255,255,0) 100%)' }}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pt-20 sm:pt-28 pb-24 sm:pb-32">
         <div className="text-center">
           <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500">Comment ça marche</span>
@@ -659,8 +659,12 @@ function PrintraceSite() {
 
   return (
     <div className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
+     <div className="relative isolate min-h-full">
+      {/* Grille de plan très légère sur toute la page, derrière le contenu */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
       {/* Fond noir ; seule la zone du poster est éclairée */}
-      <div className="relative overflow-hidden bg-[#0a0a0a]">
+      <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 opacity-60" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
           backgroundSize: '48px 48px', maskImage: 'radial-gradient(30% 45% at 72% 48%, #000 15%, transparent 75%)', WebkitMaskImage: 'radial-gradient(30% 45% at 72% 48%, #000 15%, transparent 75%)' }} />
@@ -690,6 +694,7 @@ function PrintraceSite() {
         </section>
       </div>
       <SiteHowItWorks c={c} />
+     </div>
     </div>
   );
 }
