@@ -11,7 +11,7 @@ const { useState: useSiteState, useEffect: useSiteEffect, useRef: useSiteRef, us
 // Durée d'affichage de chaque cas d'usage en lecture automatique
 const SITE_ROTATE_MS = 7000;
 
-const SITE_PROOF = { rating: '4,9', label: 'aventuriers ravis', count: '2 400+' };
+const SITE_PROOF = { rating: '4,9', label: 'avis', count: '2 400+' };
 
 // ---------------------------------------------------------------- tracés d'exemple
 // Tracé d'exemple : points de passage réels, détail naturel ajouté par
@@ -142,16 +142,15 @@ function SiteAvatar({ i }) {
     </svg>
   );
 }
+// Note discrète façon avis en ligne : avatars, « 4,9 ★ (2 400+ avis) »
 function SiteProof() {
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex -space-x-2.5">{[0, 1, 2, 3, 4].map((i) => <span key={i} className={i > 2 ? 'hidden sm:block' : ''}><SiteAvatar i={i} /></span>)}</div>
-      <div className="leading-tight">
-        <div className="flex items-center gap-0.5 text-amber-300" aria-label={`Noté ${SITE_PROOF.rating} sur 5`}>
-          {[0, 1, 2, 3, 4].map((i) => <svg key={i} viewBox="0 0 20 20" className="w-3.5 h-3.5" fill="currentColor" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" /></svg>)}
-          <span className="ml-1.5 text-[12.5px] font-semibold text-white">{SITE_PROOF.rating}</span>
-        </div>
-        <div className="hidden sm:block text-[11.5px] text-neutral-400 mt-0.5"><span className="text-neutral-200 font-medium">{SITE_PROOF.count}</span> {SITE_PROOF.label}</div>
+    <div className="flex items-center gap-2.5" aria-label={`Noté ${SITE_PROOF.rating} sur 5 par ${SITE_PROOF.count} clients`}>
+      <div className="flex -space-x-2 scale-[0.85] origin-right">{[0, 1, 2].map((i) => <SiteAvatar key={i} i={i} />)}</div>
+      <div className="flex items-center gap-1 text-[13px] leading-none">
+        <span className="font-semibold text-neutral-100 tabular-nums">{SITE_PROOF.rating}</span>
+        <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 text-amber-400" fill="currentColor" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" /></svg>
+        <span className="hidden sm:inline text-neutral-500 tabular-nums">({SITE_PROOF.count} {SITE_PROOF.label})</span>
       </div>
     </div>
   );
