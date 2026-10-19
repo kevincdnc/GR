@@ -218,7 +218,7 @@ function SitePhoto({ c, i, className = '', rotate = 0, style }) {
 }
 
 // Poster d'exemple rendu par le moteur du studio, dans un cadre noir
-function SitePoster({ c }) {
+function SitePoster({ c, children }) {
   const ref = useSiteRef(null);
   const [ready, setReady] = useSiteState(false);
   const route = useSiteMemo(() => siteRouteOf(c), [c.id]);
@@ -237,15 +237,16 @@ function SitePoster({ c }) {
     return () => { live = false; };
   }, [c.id]);
   return (
-    <div className="relative mx-auto w-[min(480px,80vw)]">
+    <div className="relative mx-auto w-full">
       {/* Halo et ombre au sol : le poster se détache du fond */}
       <div className="pointer-events-none absolute -inset-x-[40%] -top-[12%] bottom-[10%] -z-10" style={{ background: `radial-gradient(50% 45% at 50% 45%, ${c.accent}24, transparent 70%)` }} />
-      <div className="relative p-[3.2%] bg-[#151515] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
+      {children}
+      <div className="relative z-10 p-[3.2%] bg-[#151515] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
         <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' }} />
         {!ready && <div className="absolute inset-[3.2%] grid place-items-center bg-neutral-900"><UiSpinner size={20} className="text-neutral-500" /></div>}
       </div>
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
-      <div className="mt-3 flex justify-center">
+      <div className="relative z-10 mt-3 flex justify-center">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300">
           <I.Poster size={13} /> Exemple · {c.poster.title} · A3
         </span>
@@ -281,7 +282,7 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
         </span>
       </button>
       {open && (
-        <div role="listbox" className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-40 w-[340px] max-w-[88vw] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 text-left animate-menu" style={{ fontFamily: 'var(--ds-font-site)', fontSize: 14, letterSpacing: 0, lineHeight: 1.3 }}>
+        <div role="listbox" className="absolute left-1/2 -translate-x-1/2 lg:left-0 lg:translate-x-0 top-full mt-3 z-40 w-[340px] max-w-[88vw] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 text-left animate-menu" style={{ fontFamily: 'var(--ds-font-site)', fontSize: 14, letterSpacing: 0, lineHeight: 1.3 }}>
           {SITE_CASES.map((x) => {
             const on = x.id === value, Ico = I[x.icon] || I.Route;
             return (
@@ -354,10 +355,10 @@ function SiteImport({ c }) {
   const pick = () => fileRef.current && fileRef.current.click();
 
   return (
-    <div className="w-full max-w-[780px] mx-auto">
+    <div className="w-full max-w-[520px] mx-auto lg:mx-0">
       <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => { importFiles(e.target.files); e.target.value = ''; }} />
-      {/* Fichier et lien Strava côte à côte, sur une seule ligne (empilés sur mobile) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* Fichier puis lien Strava, l'un au-dessus de l'autre */}
+      <div className="flex flex-col gap-3">
         <button onClick={pick}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
@@ -371,13 +372,13 @@ function SiteImport({ c }) {
         <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
           <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="24" height="24" className="rounded-[5px] shrink-0" />
           <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
-            placeholder="Ou colle ton lien Strava" aria-label="Lien d'activité Strava"
+            placeholder="Ou colle ton lien d’activité Strava" aria-label="Lien d'activité Strava"
             className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
           <UiButton variant="strava" size="md" className="h-12 rounded-xl px-5 text-[14.5px]" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
         </div>
       </div>
       {error ? <p className="mt-2.5 text-[13px] text-red-300">{error}</p> : (
-        <p className="mt-3.5 text-[13px] text-neutral-500">GPX, FIT, TCX, KML, GeoJSON · Aperçu gratuit, tu paies seulement au téléchargement</p>
+        <p className="mt-3.5 text-[13px] text-neutral-500">GPX, FIT, TCX, KML · Aperçu gratuit, tu ne paies qu’au téléchargement</p>
       )}
 
       {stravaRef && (
@@ -415,36 +416,47 @@ function PrintraceSite() {
   return (
     <div className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
       {/* Fond : noir en haut, plus clair vers le poster (dégradé linéaire) */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #0a0a0a 0%, #0c0c0d 38%, #1c1c1f 62%, #2e2e33 84%, #36363b 100%)' }}>
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(165deg, #0a0a0a 0%, #0c0c0d 35%, #1d1d21 65%, #303036 88%, #38383e 100%)' }}>
         {/* Décor : lueur, quadrillage de plan qui s'efface */}
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 50% at 50% 0%, rgba(255,255,255,0.08), rgba(255,255,255,0) 70%)' }} />
         <div className="pointer-events-none absolute inset-0 opacity-60" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '48px 48px', maskImage: 'radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%)', WebkitMaskImage: 'radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%)' }} />
+          backgroundSize: '48px 48px', maskImage: 'radial-gradient(60% 70% at 72% 45%, #000 25%, transparent 75%)', WebkitMaskImage: 'radial-gradient(60% 70% at 72% 45%, #000 25%, transparent 75%)' }} />
 
         <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={24} /></a>
           <SiteProof />
         </nav>
 
-        {/* Photos du cas d'usage, de part et d'autre (en dehors de la colonne de texte) */}
-        <SitePhoto c={c} i={0} rotate={-7} className="hidden lg:block z-0 top-[150px] w-[188px] h-[236px] xl:w-[214px] xl:h-[268px]" style={{ left: 'max(20px, calc(50% - 690px))' }} />
-        <SitePhoto c={c} i={1} rotate={6} className="hidden lg:block z-0 top-[420px] w-[180px] h-[226px] xl:w-[204px] xl:h-[256px]" style={{ right: 'max(20px, calc(50% - 690px))' }} />
+        {/* Deux colonnes : promesse + import à gauche, poster d'exemple et photos à droite */}
+        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-8 lg:pt-14 pb-20 lg:pb-28 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-14 lg:gap-10 items-center">
+          <div className="text-center lg:text-left">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/[0.05] ring-1 ring-white/10 pl-2 pr-3 h-7 text-[12.5px] text-neutral-300">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.accent }} /> Posters de tracés GPS, prêts à encadrer
+            </span>
+            {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
+            <h1 className="mt-6 font-display font-extrabold tracking-[-0.035em] leading-[1.02] text-[clamp(38px,5.2vw,72px)]">
+              <span className="block text-white/90">Print your</span>
+              <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
+            </h1>
+            <p key={c.id} className="ds-fade-up mt-5 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[500px] mx-auto lg:mx-0">
+              {c.pitch} <span className="text-neutral-200">Poster vectoriel, prêt à encadrer.</span>
+            </p>
+            <div className="mt-8"><SiteImport c={c} /></div>
+            <ul className="mt-7 flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 text-[13px] text-neutral-400">
+              {['PNG 300 dpi + SVG vectoriel', 'Du A4 au 50 × 70', 'Carte au style de ton choix'].map((t) => (
+                <li key={t} className="inline-flex items-center gap-1.5"><span className="text-neutral-200"><I.Check size={14} /></span>{t}</li>
+              ))}
+            </ul>
+          </div>
 
-        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-24 text-center">
-
-          {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
-          <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.02] text-[clamp(36px,5.4vw,76px)]">
-            <span className="block text-white/90">Print your</span>
-            <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
-          </h1>
-          <p key={c.id} className="ds-fade-up mt-6 text-[17px] sm:text-[19px] leading-relaxed text-neutral-400 max-w-[560px] mx-auto">
-            {c.pitch} <span className="text-neutral-200">Poster vectoriel, prêt à encadrer.</span>
-          </p>
-
-          <div className="mt-10"><SiteImport c={c} /></div>
-
-          <div className="mt-12 sm:mt-14"><SitePoster c={c} /></div>
+          <div className="relative w-full max-w-[440px] mx-auto lg:mr-6">
+            <SitePoster c={c}>
+              {/* Photos du trip glissées derrière le poster */}
+              <SitePhoto c={c} i={0} rotate={-8} className="hidden sm:block z-0 -left-[30%] xl:-left-[34%] top-[8%] w-[40%] xl:w-[44%] aspect-[4/5]" />
+              <SitePhoto c={c} i={1} rotate={7} className="hidden sm:block z-20 -right-[12%] xl:-right-[20%] bottom-[16%] w-[36%] xl:w-[40%] aspect-[4/5]" />
+            </SitePoster>
+          </div>
         </section>
       </div>
     </div>
