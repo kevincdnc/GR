@@ -316,10 +316,9 @@ function SitePoster({ c, photos, children }) {
   }, [c.id, photos && photos.map((p) => (p ? p.src : '')).join('|')]);
   return (
     <div className="relative mx-auto w-full">
-      {/* Éclairage : zone grise derrière le poster, faisceau venant du haut, légère teinte du cas d'usage */}
-      <div className="pointer-events-none absolute -inset-x-[60%] -top-[22%] -bottom-[20%] -z-10" style={{ background: 'radial-gradient(closest-side, #4a4a52 0%, #34343a 32%, #1e1e22 62%, rgba(10,10,10,0) 100%)' }} />
-      <div className="pointer-events-none absolute -inset-x-[30%] -top-[45%] bottom-[30%] -z-10 opacity-90" style={{ background: 'conic-gradient(from 180deg at 50% 0%, transparent 155deg, rgba(255,255,255,0.09) 170deg, rgba(255,255,255,0.16) 180deg, rgba(255,255,255,0.09) 190deg, transparent 205deg)', maskImage: 'linear-gradient(#000, transparent 85%)', WebkitMaskImage: 'linear-gradient(#000, transparent 85%)' }} />
-      <div className="pointer-events-none absolute -inset-x-[25%] -top-[8%] bottom-[5%] -z-10" style={{ background: `radial-gradient(45% 40% at 50% 45%, ${c.accent}1f, transparent 70%)` }} />
+      {/* Éclairage : halo doux et large derrière le poster (plusieurs paliers pour un fondu sans marches) */}
+      <div className="pointer-events-none absolute -inset-x-[90%] -top-[45%] -bottom-[40%] -z-10" style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.075) 0%, rgba(255,255,255,0.055) 22%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.012) 68%, rgba(255,255,255,0) 100%)' }} />
+      <div className="pointer-events-none absolute -inset-x-[30%] -top-[15%] bottom-[5%] -z-10" style={{ background: `radial-gradient(closest-side, ${c.accent}14, transparent)` }} />
       {children}
       <div className="relative z-10 p-[3.2%] bg-[#151515] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.95),0_20px_40px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
         <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' }} />
@@ -488,6 +487,9 @@ function SiteImport({ c }) {
   );
 }
 
+// Grain très fin (bruit SVG) : adoucit les dégradés sur écran Retina
+const SITE_GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>')}")`;
+
 // ---------------------------------------------------------------- comment ça marche
 // Illustrations sobres au trait (monochrome, une touche de couleur du cas d'usage)
 const SITE_LINE = 'rgba(255,255,255,0.14)';
@@ -611,7 +613,7 @@ const SITE_STEPS = [
 
 function SiteHowItWorks({ c }) {
   return (
-    <section className="relative border-t border-white/[0.05]" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.045) 20%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.045) 80%, rgba(255,255,255,0) 100%)' }}>
+    <section className="relative" style={{ background: 'radial-gradient(70% 60% at 50% 55%, rgba(255,255,255,0.045), rgba(255,255,255,0.015) 55%, transparent 80%)' }}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pt-20 sm:pt-28 pb-24 sm:pb-32">
         <div className="text-center">
           <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500">Comment ça marche</span>
@@ -660,15 +662,14 @@ function PrintraceSite() {
   return (
     <div className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
      <div className="relative isolate min-h-full">
-      {/* Grille de plan très légère sur toute la page, derrière le contenu */}
+      {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
+        backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)',
+        backgroundSize: '64px 64px', backgroundPosition: 'center top',
+        maskImage: 'radial-gradient(90% 60% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 45%, transparent 85%)', WebkitMaskImage: 'radial-gradient(90% 60% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 45%, transparent 85%)' }} />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
       {/* Fond noir ; seule la zone du poster est éclairée */}
       <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 opacity-60" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '48px 48px', maskImage: 'radial-gradient(30% 45% at 72% 48%, #000 15%, transparent 75%)', WebkitMaskImage: 'radial-gradient(30% 45% at 72% 48%, #000 15%, transparent 75%)' }} />
-
         <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
           <SiteProof />
