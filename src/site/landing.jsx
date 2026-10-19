@@ -8,6 +8,9 @@ const { useState: useSiteState, useEffect: useSiteEffect, useRef: useSiteRef, us
 
 // Preuve sociale affichée dans la navigation.
 // ⚠ Valeurs d'exemple : à remplacer par les vrais chiffres (avis, posters vendus).
+// Durée d'affichage de chaque cas d'usage en lecture automatique
+const SITE_ROTATE_MS = 7000;
+
 const SITE_PROOF = { rating: '4,9', label: 'aventuriers ravis', count: '2 400+' };
 
 // ---------------------------------------------------------------- tracés d'exemple
@@ -252,7 +255,7 @@ function SitePoster({ c }) {
 }
 
 // ---------------------------------------------------------------- titre dynamique
-function SiteUseCasePicker({ value, onChange, onInteract }) {
+function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
   const [open, setOpen] = useSiteState(false);
   const ref = useSiteRef(null);
   const c = SITE_CASES.find((x) => x.id === value);
@@ -267,8 +270,12 @@ function SiteUseCasePicker({ value, onChange, onInteract }) {
     <span ref={ref} className="relative inline-block">
       <button onClick={() => { setOpen((v) => !v); onInteract(); }} aria-haspopup="listbox" aria-expanded={open}
         className="group relative inline-flex items-baseline gap-[0.12em] text-white rounded-xl px-[0.08em] -mx-[0.08em] hover:bg-white/[0.04] transition-colors">
-        <span key={value} className="ds-fade-up underline decoration-dashed decoration-[0.045em] underline-offset-[0.14em] transition-colors"
-          style={{ color: c.accent, textDecorationColor: c.accent + '73' }}>{c.word}</span>
+        <span key={value} className="ds-fade-up relative inline-block" style={{ color: c.accent }}>
+          {c.word}
+          {/* Barre en pointillés animée : les tirets défilent ; en lecture auto, elle se remplit jusqu'au mot suivant */}
+          <span aria-hidden="true" className="site-dash absolute left-0 right-0 -bottom-[0.06em] h-[0.05em]" style={{ '--c': c.accent + '66' }} />
+          {auto && <span aria-hidden="true" className="site-dash site-dash-fill absolute left-0 -bottom-[0.06em] h-[0.05em]" style={{ '--c': c.accent, animationDuration: `1.6s, ${SITE_ROTATE_MS}ms` }} />}
+        </span>
         <span className="text-neutral-500 group-hover:text-white transition-colors self-center" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
           <svg viewBox="0 0 24 24" className="w-[0.32em] h-[0.32em]" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
         </span>
@@ -397,7 +404,7 @@ function PrintraceSite() {
   const c = SITE_CASES.find((x) => x.id === caseId);
   useSiteEffect(() => {
     if (!auto) return;
-    const t = setTimeout(() => setCaseId((id) => SITE_CASES[(SITE_CASES.findIndex((x) => x.id === id) + 1) % SITE_CASES.length].id), 4200);
+    const t = setTimeout(() => setCaseId((id) => SITE_CASES[(SITE_CASES.findIndex((x) => x.id === id) + 1) % SITE_CASES.length].id), SITE_ROTATE_MS);
     return () => clearTimeout(t);
   }, [caseId, auto]);
   const stop = () => setAuto(false);
@@ -426,7 +433,7 @@ function PrintraceSite() {
           {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
           <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.02] text-[clamp(44px,7.4vw,104px)]">
             <span className="block text-white/90">Print your</span>
-            <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
+            <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
           </h1>
           <p key={c.id} className="ds-fade-up mt-6 text-[17px] sm:text-[19px] leading-relaxed text-neutral-400 max-w-[560px] mx-auto">
             {c.pitch} <span className="text-neutral-200">Poster vectoriel, prêt à encadrer.</span>
