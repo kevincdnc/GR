@@ -416,6 +416,9 @@ function SiteImport({ c }) {
   const [link, setLink] = useSiteState('');
   const [stravaRef, setStravaRef] = useSiteState(null); // lien valide, en attente du fichier (sans relais)
   const [stravaBusy, setStravaBusy] = useSiteState(false);
+  // Tracés ajoutés (lus dans le navigateur), affichés en liste avant de créer la carte
+  const [items, setItems] = useSiteState([]);
+  const [opening, setOpening] = useSiteState(false);
 
   const importFiles = async (list, source) => {
     setError('');
@@ -424,10 +427,25 @@ function SiteImport({ c }) {
     setBusy(true);
     const res = await Promise.all(files.map((f) => readTrackFile(f).then((st) => ({ st, name: f.name })).catch(() => null)));
     const ok = res.filter((r) => r && r.st && r.st.coords && r.st.coords.length > 1);
-    if (!ok.length) { setBusy(false); setError('Impossible de lire ce fichier.'); return; }
-    try { await siteOpenStudio(ok, c, source); } catch (e) { setError('Ouverture du studio impossible.'); }
     setBusy(false);
+    if (!ok.length) { setError('Impossible de lire ce fichier.'); return; }
+    if (ok.length < files.length) setError(`${files.length - ok.length} fichier(s) illisible(s) ignoré(s).`);
+    setItems((prev) => {
+      const same = (a, b) => a.name === b.name && Math.abs((a.st.distanceKm || 0) - (b.st.distanceKm || 0)) < 0.01;
+      const fresh = ok.filter((r) => !prev.some((p) => same(p, r))).map((r, i) => ({ ...r, id: Date.now() + '_' + i, source }));
+      return [...prev, ...fresh];
+    });
   };
+  const removeItem = (id) => setItems((l) => l.filter((x) => x.id !== id));
+  const createMap = async () => {
+    if (!items.length) return;
+    setOpening(true);
+    try { await siteOpenStudio(items, c, items.every((x) => x.source === 'strava') ? 'strava' : undefined); }
+    catch (e) { setError('Ouverture du studio impossible.'); }
+    setOpening(false);
+  };
+  const total = items.reduce((a, x) => a + (x.st.distanceKm || 0), 0);
+  const fileLabel = (x) => (x.st.to ? x.st.from + ' → ' + x.st.to : x.st.from) || x.name.replace(/\.[^.]+$/, '');
   const submitStrava = async () => {
     setError('');
     const r = ptParseStrava(link);
@@ -449,13 +467,13 @@ function SiteImport({ c }) {
         <button onClick={pick}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
-          className={`group h-16 rounded-2xl border-[1.5px] border-dashed flex items-center gap-3 pl-2.5 pr-2.5 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
-          <span className={`w-11 h-11 shrink-0 rounded-xl grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
+          className={`group min-h-[84px] rounded-2xl border-[1.5px] border-dashed flex items-center gap-4 px-4 py-4 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
+          <span className={`w-12 h-12 shrink-0 rounded-xl grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
             {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
           </span>
           <span className="flex-1 min-w-0">
-            <span className="block text-[15px] font-semibold text-white leading-tight">{busy ? 'Lecture du tracé…' : over ? 'Déposez votre tracé' : 'Importez votre ou vos tracés'}</span>
-            <span className="block text-[12px] text-neutral-500 mt-1 tracking-[0.04em]">GPX · FIT · TCX · KML</span>
+            <span className="block text-[15.5px] font-semibold text-white leading-snug">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : items.length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
+            <span className="block text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em]">GPX · FIT · TCX · KML</span>
           </span>
           {!busy && <span className="shrink-0 h-10 px-3.5 rounded-lg grid place-items-center text-[13px] font-medium text-neutral-200 bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors">Parcourir</span>}
         </button>
@@ -469,13 +487,36 @@ function SiteImport({ c }) {
       </div>
       {error && <p className="mt-2.5 text-[13px] text-red-300">{error}</p>}
 
+      {/* Tracés ajoutés : supprimables, puis création de la carte */}
+      {items.length > 0 && (
+        <div className="mt-4 text-left ds-fade-up">
+          <ul className="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
+            {items.map((x) => (
+              <li key={x.id} className="flex items-center gap-3 pl-3.5 pr-2 h-14">
+                <span className="w-8 h-8 shrink-0 rounded-lg grid place-items-center bg-white/[0.06] text-neutral-300">
+                  {x.source === 'strava' ? <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="18" height="18" className="rounded-[4px]" /> : <I.Route size={15} />}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[13.5px] font-medium text-white truncate">{fileLabel(x)}</span>
+                  <span className="block text-[11.5px] text-neutral-500 tabular-nums">{ptKm(x.st.distanceKm || 0)} · {ptM(x.st.elevationGain)} D+</span>
+                </span>
+                <UiIconButton icon="X" label={'Retirer ' + fileLabel(x)} size="sm" onClick={() => removeItem(x.id)} />
+              </li>
+            ))}
+          </ul>
+          <UiButton variant="primary" size="lg" block iconRight="ChevronRight" loading={opening} onClick={createMap} className="mt-3">
+            Créer ma carte{items.length > 1 ? ` · ${items.length} tracés, ${ptKm(total)}` : ''}
+          </UiButton>
+        </div>
+      )}
+
       {stravaRef && (
         <div className="mt-4 text-left rounded-2xl bg-[#fc4c02]/[0.07] ring-1 ring-[#fc4c02]/25 p-4 ds-fade-up">
           <div className="flex items-start gap-3">
             <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="28" height="28" className="rounded-md shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-[14px] font-semibold text-white">Activité Strava n° {stravaRef.id}</div>
-              <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">Téléchargez le GPX depuis votre compte Strava, puis déposez-le ici : votre poster s'ouvre aussitôt.</p>
+              <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">Téléchargez le GPX depuis votre compte Strava, puis déposez-le ici : il s'ajoute à vos tracés.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <a href={ptStravaExportUrl(stravaRef)} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white bg-[#fc4c02] hover:brightness-110"><I.Download size={15} /> Télécharger le GPX</a>
                 <UiButton icon="Upload" onClick={pick}>Déposer le fichier</UiButton>
