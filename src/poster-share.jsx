@@ -658,10 +658,12 @@ const POSTER_TEMPLATES = [
     async draw(ctx, d, w, h) {
       const u = w / 1200, M = 100 * u;
       poPhotoBg(ctx, d, 0, 0, w, h);
-      let g = ctx.createLinearGradient(0, 0, 0, h * 0.4); g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      // d.photoShade (0 à 1) : voile renforcé pour garder le texte lisible sur une photo claire
+      const sh = Math.max(0, Math.min(1, d.photoShade || 0)), gy = h * (0.42 - 0.1 * sh);
+      let g = ctx.createLinearGradient(0, 0, 0, h * 0.4); g.addColorStop(0, `rgba(0,0,0,${0.55 + 0.15 * sh})`); g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h * 0.4);
-      g = ctx.createLinearGradient(0, h * 0.42, 0, h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.5, 'rgba(0,0,0,0.5)'); g.addColorStop(1, 'rgba(0,0,0,0.85)');
-      ctx.fillStyle = g; ctx.fillRect(0, h * 0.42, w, h * 0.58);
+      g = ctx.createLinearGradient(0, gy, 0, h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.5, `rgba(0,0,0,${0.5 + 0.25 * sh})`); g.addColorStop(1, `rgba(0,0,0,${0.85 + 0.1 * sh})`);
+      ctx.fillStyle = g; ctx.fillRect(0, gy, w, h - gy);
       await poDrawLogo(ctx, M, 80 * u, 32 * u, '#ffffff');
       if (d.coords) stLabel(ctx, poCoords(d), w - M, 104 * u, 16 * u, 'rgba(255,255,255,0.8)', 'right');
       const L = stStatsLayout(ctx, d.stats, w - 2 * M, { maxSize: 72 * u, labelSize: 20 * u, cols: poCols(d.stats.length) });

@@ -105,13 +105,13 @@ const SITE_CASES = [
     id: 'gpx', heroBg: 0, accent: '#2dd4bf', word: 'GPX', label: 'N’importe quel tracé', example: 'Un tour d’île, une sortie vélo, une balade…', icon: 'Route', activity: 'hiking',
     pitch: 'N’importe quel fichier GPX devient un poster prêt à encadrer.',
     poster: {
-      // Modèle « Photo » : la photo d'Ouessant sert de fond à la carte
-      tpl: 'photo', bgPhoto: true, color: '#ffffff', mapStyle: 'epure', mapOpacity: 60, title: 'Ouessant', subtitle: 'Le tour de l’île · Finistère',
+      // Modèle « Photo » : la photo du phare de la Jument (Ouessant) sert de fond à la carte, voile renforcé (écume claire)
+      tpl: 'photo', bgPhoto: true, photoShade: 1, color: '#ffffff', mapStyle: 'epure', mapOpacity: 60, title: 'Ouessant', subtitle: 'Le tour de l’île · Finistère',
       photos: 1, metrics: ['distance', 'ascent', 'duration'], values: { distance: '45 km', ascent: '620 m', duration: '11 h 30' },
       route: { name: 'Tour de Ouessant', seed: 4, rough: 0.2, depth: 5, way: [[48.4565, -5.0990, 15], [48.4465, -5.1080, 30], [48.4455, -5.1420, 25], [48.4600, -5.1305, 20], [48.4740, -5.1150, 35], [48.4795, -5.0950, 40], [48.4750, -5.0560, 20], [48.4580, -5.0380, 30], [48.4430, -5.0700, 45], [48.4430, -5.0900, 30], [48.4565, -5.0990, 15]] },
     },
     unsplash: ['ouessant lighthouse', 'brittany island coast'],
-    photos: [{ src: null, caption: 'Phare du Créac’h' }],
+    photos: [{ src: ptRes('siteGpx1', 'assets/site/gpx-1.webp'), caption: 'Phare de la Jument' }],
   },
 ];
 
@@ -136,7 +136,7 @@ function sitePosterData(c, routes, photos = []) {
   return {
     routes, agg, color: p.color, coords: true, activityLabel: act.label, title: p.title, subtitle: p.subtitle, stats,
     photoSlot: false, photos: p.bgPhoto ? photos.slice(1) : photos, bgPhoto: p.bgPhoto && photos[0] ? photos[0].img : null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
-    bg: p.bg || null, preview: false, typeScale: p.typeScale, marginColor: p.marginColor,
+    bg: p.bg || null, preview: false, typeScale: p.typeScale, marginColor: p.marginColor, photoShade: p.photoShade,
   };
 }
 
