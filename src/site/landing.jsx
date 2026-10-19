@@ -38,7 +38,7 @@ function siteTrace(way, { seed = 7, rough = 0.22, depth = 6 } = {}) {
 // ~800 × 1000 px) ; tant qu'elles manquent, une illustration prend leur place.
 const SITE_CASES = [
   {
-    id: 'trek', heroBg: 1, accent: '#34d399', word: 'trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, GR34…', icon: 'Footprints', activity: 'hiking',
+    id: 'trek', heroBg: 1, accent: '#60a5fa', word: 'trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, GR34…', icon: 'Footprints', activity: 'hiking',
     pitch: 'Votre trek de plusieurs jours, en poster prêt à encadrer.',
     poster: {
       // GR20 (Corse, Calenzana → Conca) : 16 étapes de refuge en refuge, tracées par
@@ -91,7 +91,7 @@ const SITE_CASES = [
     photos: [{ src: ptRes('siteRoad1', 'assets/site/roadtrip-1.jpg'), caption: 'Big Sur' }, { src: 'assets/site/roadtrip-2.jpg', caption: 'Highway 1' }],
   },
   {
-    id: 'moto', heroBg: 0, accent: '#60a5fa', word: 'moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
+    id: 'moto', heroBg: 0, accent: '#f87171', word: 'moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
     pitch: 'Chaque col et chaque virage de votre virée, au mur.',
     poster: {
       tpl: 'nuit', color: '#ffffff', mapStyle: 'routes', mapOpacity: 100, title: 'Route des Grandes Alpes', subtitle: 'Thonon → Menton · 16 cols',
@@ -100,6 +100,18 @@ const SITE_CASES = [
     },
     unsplash: ['motorcycle mountain pass', 'alps hairpin road'],
     photos: [{ src: ptRes('siteMoto1', 'assets/site/moto-1.jpg'), caption: 'Col alpin' }, { src: 'assets/site/moto-2.jpg', caption: 'Lacets du Galibier' }],
+  },
+  {
+    id: 'gpx', heroBg: 0, accent: '#2dd4bf', word: 'GPX', label: 'N’importe quel tracé', example: 'Un tour d’île, une sortie vélo, une balade…', icon: 'Route', activity: 'hiking',
+    pitch: 'N’importe quel fichier GPX devient un poster prêt à encadrer.',
+    poster: {
+      // Modèle « Photo » : la photo d'Ouessant sert de fond à la carte
+      tpl: 'photo', bgPhoto: true, color: '#ffffff', mapStyle: 'epure', mapOpacity: 60, title: 'Ouessant', subtitle: 'Le tour de l’île · Finistère',
+      photos: 1, metrics: ['distance', 'ascent', 'duration'], values: { distance: '45 km', ascent: '620 m', duration: '11 h 30' },
+      route: { name: 'Tour de Ouessant', seed: 4, rough: 0.2, depth: 5, way: [[48.4565, -5.0990, 15], [48.4465, -5.1080, 30], [48.4455, -5.1420, 25], [48.4600, -5.1305, 20], [48.4740, -5.1150, 35], [48.4795, -5.0950, 40], [48.4750, -5.0560, 20], [48.4580, -5.0380, 30], [48.4430, -5.0700, 45], [48.4430, -5.0900, 30], [48.4565, -5.0990, 15]] },
+    },
+    unsplash: ['ouessant lighthouse', 'brittany island coast'],
+    photos: [{ src: 'assets/site/gpx-1.jpg', caption: 'Phare du Créac’h' }],
   },
 ];
 
@@ -123,7 +135,7 @@ function sitePosterData(c, routes, photos = []) {
     .map((st) => (p.values[st.key] ? { ...st, value: p.values[st.key], unit: '' } : st));
   return {
     routes, agg, color: p.color, coords: true, activityLabel: act.label, title: p.title, subtitle: p.subtitle, stats,
-    photoSlot: false, photos, bgPhoto: null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
+    photoSlot: false, photos: p.bgPhoto ? photos.slice(1) : photos, bgPhoto: p.bgPhoto && photos[0] ? photos[0].img : null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
     bg: p.bg || null, preview: false, typeScale: p.typeScale, marginColor: p.marginColor,
   };
 }
@@ -234,6 +246,9 @@ function SiteScene({ kind, alt }) {
     roadtrip: alt
       ? { sky: ['#f7c48a', '#e67b5c'], sun: '#fff0cf', far: '#c46b4f', mid: '#8c4434', near: '#3b2220', accent: '#facc15' }
       : { sky: ['#ffcf9e', '#ff8f70'], sun: '#fff3d9', far: '#5d87a8', mid: '#2f5d7c', near: '#1d3245', accent: '#facc15' },
+    gpx: alt
+      ? { sky: ['#f6c38f', '#e98a6a'], sun: '#fff1d6', far: '#5b6f86', mid: '#34465a', near: '#1b2531', accent: '#e11d2e' }
+      : { sky: ['#8fb8d8', '#dfeaf1'], sun: '#fffbe9', far: '#5f8aa8', mid: '#3d6680', near: '#24323d', accent: '#e11d2e' },
     moto: alt
       ? { sky: ['#a7c6df', '#e9eef2'], sun: '#ffffff', far: '#9db0c0', mid: '#5f7383', near: '#2c3a45', accent: '#ffffff' }
       : { sky: ['#f9b98c', '#fbe2c0'], sun: '#fff6e5', far: '#b08a8f', mid: '#6d5463', near: '#2e2633', accent: '#ffffff' },
@@ -278,6 +293,21 @@ function SiteScene({ kind, alt }) {
           <path d="M150 360 C170 330 200 300 300 280 L300 360z" fill={S.near} />
           <path d="M0 260 h40 M10 275 h60 M0 292 h30" stroke="#fff" strokeOpacity="0.35" strokeWidth="2" />
         </>)}
+      </>)}
+      {kind === 'gpx' && (<>
+        {/* Ouessant : mer, côte rocheuse et phare du Créac'h (rayé noir et blanc) */}
+        <path d="M0 236 h300 v124 h-300z" fill={S.far} />
+        <path d="M0 252 h300 M0 270 h300 M0 292 h300" stroke="#fff" strokeOpacity="0.18" strokeWidth="1.5" strokeDasharray="14 10" />
+        <path d="M120 236 L150 214 L196 206 L240 216 L300 212 L300 360 L90 360 C110 320 96 280 120 236z" fill={S.mid} />
+        <path d="M150 360 C170 320 200 296 300 286 L300 360z" fill={S.near} />
+        <g transform="translate(214 120)">
+          <path d="M-9 0 h18 l6 92 h-30z" fill="#f4f4f4" />
+          {[14, 40, 66].map((y) => <path key={y} d={`M${-9 - y * 0.065} ${y} h${18 + y * 0.13} l${1.6} 13 h${-21.2 - y * 0.13}z`} fill="#1c1c1c" />)}
+          <rect x="-11" y="-14" width="22" height="14" rx="2" fill="#1c1c1c" />
+          <rect x="-7" y="-11" width="14" height="8" fill={S.sun} />
+          <path d="M-11 -14 L0 -24 L11 -14z" fill={S.accent} />
+        </g>
+        <path d="M30 360 C60 320 100 330 120 300 C140 270 170 262 214 212" stroke="#fff" strokeWidth="2.4" strokeDasharray="1 7" strokeLinecap="round" fill="none" opacity="0.9" />
       </>)}
       {kind === 'moto' && (<>
         <path d="M0 210 L80 120 L140 170 L210 90 L300 170 L300 360 L0 360z" fill={S.far} />
@@ -372,7 +402,9 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
   return (
     <span ref={ref} className="relative inline-block">
       <button onClick={() => { setOpen((v) => !v); onInteract(); }} aria-haspopup="listbox" aria-expanded={open}
-        className="group relative inline-flex items-baseline gap-[0.12em] text-white rounded-xl px-[0.08em] -mx-[0.08em] hover:bg-white/[0.04] transition-colors">
+        className="group relative inline-flex items-baseline gap-[0.12em] text-white">
+        {/* Fond du survol : déborde du mot (marges égales) sans changer la hauteur de ligne */}
+        <span aria-hidden="true" className="absolute -left-[0.2em] -right-[0.16em] -top-[0.08em] -bottom-[0.22em] rounded-[0.2em] transition-colors group-hover:bg-white/[0.045]" />
         <span key={value} className="ds-fade-up relative inline-block italic pr-[0.06em]" style={{ color: c.accent }}>
           {c.word}
           {/* Trait discret en pointillés ; en lecture auto, il se remplit jusqu'au mot suivant */}
@@ -383,7 +415,7 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
               : <span className="block h-full w-full" style={{ background: c.accent + '66' }} />}
           </span>
         </span>
-        <span className="text-neutral-500 group-hover:text-white transition-colors self-center" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
+        <span className="relative text-neutral-500 group-hover:text-white transition-colors self-center" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
           <svg viewBox="0 0 24 24" className="w-[0.32em] h-[0.32em]" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
         </span>
       </button>
