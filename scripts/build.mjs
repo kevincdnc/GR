@@ -14,6 +14,10 @@
 //   printrace.html      -> dist/printrace/studio/index.html (studio Printrace)
 //   design-system.html  -> dist/design-system/index.html  (documentation du design system)
 //
+// Performances (dist/) : un seul script minifié par page (esbuild), chargé en
+// « defer » ; site Printrace et hub pré-rendus en HTML (React côté serveur),
+// puis « hydratés » dans le navigateur ; ds.css minifié ; sitemap.xml et robots.txt.
+//
 //   node scripts/build.mjs                -> dist/ (site GitHub Pages)
 //   node scripts/build.mjs --single-file  -> preview/*.html (une page = un fichier, tout inline)
 
@@ -22,10 +26,12 @@ import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import vm from 'node:vm'
 import { buildStage } from '../lib/gpx.mjs'
 
 const require = createRequire(import.meta.url)
 const Babel = require('@babel/standalone')
+const esbuild = require('esbuild')
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const singleFile = process.argv.includes('--single-file')
@@ -70,16 +76,60 @@ function compileJsx(relPath) {
   }).code
 }
 
-const MIME = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg' }
+const MIME = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' }
 const dataUri = (path) => `data:${MIME[extname(path)] || 'application/octet-stream'};base64,${readFileSync(path).toString('base64')}`
+
+/* ---------- Pré-rendu (SSR) ---------- */
+
+// Exécute le bundle de la page dans un bac à sable Node avec un faux navigateur
+// minimal : l'appel final ReactDOM.createRoot(...).render(<Page />) est
+// intercepté, et l'élément est rendu en HTML par react-dom/server. Les effets
+// (canvas, photos, minuteries) ne tournent pas : le navigateur les lance ensuite.
+function prerender(bundle, label) {
+  const React = require('react')
+  const ReactDOMServer = require('react-dom/server')
+  let element = null
+  const noop = () => {}
+  // Objet « tout-terrain » : toute propriété est une fonction inerte qui renvoie l'objet
+  const inert = new Proxy(function () {}, { get: (t, k) => (k === Symbol.toPrimitive ? () => '' : k === 'then' ? undefined : inert), apply: () => inert, construct: () => inert })
+  const store = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) } }
+  const sandbox = {
+    console: { ...console, log: noop, warn: noop, error: noop },
+    setTimeout: () => 0, clearTimeout: noop, setInterval: () => 0, clearInterval: noop, requestAnimationFrame: () => 0, cancelAnimationFrame: noop,
+    URL, URLSearchParams, TextEncoder, TextDecoder, Intl, Promise, Math, JSON, Date,
+    localStorage: store(), sessionStorage: store(),
+    location: { href: 'https://kevincdnc.github.io/GR/printrace/', hash: '', search: '', pathname: '/GR/printrace/', origin: 'https://kevincdnc.github.io' },
+    navigator: { userAgent: 'prerender', language: 'fr-FR', languages: ['fr-FR'] },
+    matchMedia: () => ({ matches: false, addEventListener: noop, removeEventListener: noop, addListener: noop, removeListener: noop }),
+    addEventListener: noop, removeEventListener: noop, fetch: () => new Promise(noop),
+    Image: function () { return inert }, devicePixelRatio: 1, innerWidth: 1440, innerHeight: 900,
+    document: new Proxy({ getElementById: () => inert, createElement: () => inert, querySelector: () => null, querySelectorAll: () => [], addEventListener: noop, removeEventListener: noop, fonts: { ready: new Promise(noop), load: () => new Promise(noop), add: noop } }, { get: (t, k) => (k in t ? t[k] : inert) }),
+  }
+  sandbox.window = sandbox; sandbox.self = sandbox; sandbox.globalThis = sandbox
+  vm.createContext(sandbox)
+  // React UMD du bundle remplacé par les modules Node, ReactDOM intercepté
+  sandbox.React = React
+  const ReactDOM = { createRoot: () => ({ render: (el) => { element = el }, unmount: noop }), hydrateRoot: (c, el) => { element = el }, flushSync: (f) => f && f(), createPortal: () => null }
+  Object.defineProperty(sandbox, 'ReactDOM', { get: () => ReactDOM, set: noop })
+  Object.defineProperty(sandbox, 'React', { get: () => React, set: noop })
+  try {
+    vm.runInContext(bundle, sandbox, { filename: label })
+  } catch (e) {
+    console.warn(`[prerender] ${label} : ${e.message}`)
+    return ''
+  }
+  if (!element) { console.warn(`[prerender] ${label} : aucune page rendue`); return '' }
+  const err = console.error; console.error = noop
+  try { return ReactDOMServer.renderToString(element) } catch (e) { console.warn(`[prerender] ${label} : ${e.message}`); return '' } finally { console.error = err }
+}
 
 /* ---------- Build ---------- */
 
 // Pages du site : source, sortie dans dist/, fichier unique de preview
 const PAGES = [
-  { src: 'hub.html', out: 'index.html', preview: 'hub.html' },
+  { src: 'hub.html', out: 'index.html', preview: 'hub.html', prerender: true },
   { src: 'routdoor.html', out: 'routdoor/index.html', preview: 'gr34.html' },
-  { src: 'printrace-site.html', out: 'printrace/index.html', preview: 'printrace-site.html' },
+  { src: 'printrace-site.html', out: 'printrace/index.html', preview: 'printrace-site.html', prerender: true },
   { src: 'printrace.html', out: 'printrace/studio/index.html', preview: 'printrace.html' },
   { src: 'design-system.html', out: 'design-system/index.html', preview: 'design-system.html' },
 ]
@@ -143,17 +193,38 @@ export function build({ single = false } = {}) {
     mkdirSync(join(out, 'vendor'), { recursive: true })
     for (const [dest, src] of Object.entries(vendor)) cpSync(src, join(out, dest))
     writeFileSync(join(out, 'tailwind.css'), tailwindCss)
-    writeFileSync(join(out, 'ds.css'), dsCss)
+    writeFileSync(join(out, 'ds.css'), esbuild.transformSync(dsCss, { loader: 'css', minify: true }).code)
     mkdirSync(join(out, 'fonts'), { recursive: true })
     for (const f of fontFiles) cpSync(f.path, join(out, 'fonts', f.name))
     for (const p of pages) {
-      let html = p.html.replace(babelRe, (_, src) => `<script src="js/${src.replace(/\.jsx$/, '.js')}"></script>`)
+      // Tous les scripts classiques de la page (vendor, données, JSX compilé), dans
+      // l'ordre, réunis en un seul fichier minifié chargé en « defer » : une seule
+      // requête, rien ne bloque l'affichage. Les noms globaux partagés entre fichiers
+      // sont gardés (pas de renommage au niveau supérieur hors module).
+      const classicRe = /<script(?: type="text\/babel")? src="([^"]+)"><\/script>\n?/g
+      const parts = [...p.html.matchAll(classicRe)].map((m) => m[1])
+      const sources = { 'js/gpx.js': gpxLib, 'data/gr34.js': data }
+      const vendorCode = parts.filter((src) => vendor[src]).map((src) => readFileSync(vendor[src], 'utf8')).join('\n;\n')
+      const appCode = esbuild.transformSync(parts.filter((src) => !vendor[src]).map((src) => compiled.get(src) ?? sources[src]).join('\n;\n'),
+        { minify: true, target: 'es2019', legalComments: 'none', charset: 'utf8' }).code
+      const name = 'js/' + p.src.replace(/\.html$/, '') + '.min.js'
+      writeFileSync(join(out, name), vendorCode + '\n;\n' + appCode)
+      let html = p.html.replace(classicRe, '')
+        .replace('</head>', `<script defer src="${name}"></script>\n</head>`)
+      // Pré-rendu : le HTML de la page est calculé ici (React côté serveur), pour
+      // un affichage immédiat avant le JavaScript et un contenu lisible par les moteurs
+      if (p.prerender) html = html.replace('<div id="root"></div>', () => `<div id="root">${prerender(appCode, p.src)}</div>`)
       // Page dans un sous-dossier : les chemins relatifs repartent de la racine du site
       const depth = p.out.split('/').length - 1
       if (depth) html = html.replace(/<head>/i, `<head>\n<base href="${'../'.repeat(depth)}" />`)
       mkdirSync(dirname(join(out, p.out)), { recursive: true })
       writeFileSync(join(out, p.out), html)
     }
+    // Moteurs de recherche : sitemap des pages publiques
+    const SITE = 'https://kevincdnc.github.io/GR/'
+    const urls = ['', 'printrace/', 'routdoor/']
+    writeFileSync(join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE}${u}</loc></url>`).join('\n')}\n</urlset>\n`)
+    writeFileSync(join(out, 'robots.txt'), `User-agent: *\nDisallow: /GR/design-system/\nSitemap: ${SITE}sitemap.xml\n`)
     // Carte intégrable (iframe) : page légère, sans React
     writeFileSync(join(out, 'embed.html'), readFileSync(join(ROOT, 'embed.html'), 'utf8'))
     console.log(`dist/ prêt en ${Date.now() - t0} ms (${pages.length} pages, ${scripts.length} scripts)`)
@@ -184,6 +255,8 @@ export function build({ single = false } = {}) {
       .replace(babelRe, (_, src) => inline(compiled.get(src)))
       .replace(/<meta name="ext-resource-dependency"[^>]*\/>\n?/g, '')
       .replace(/<link rel="icon"[^>]*\/>\n?/, '')
+      // Préchargements inutiles en fichier unique (polices déjà intégrées)
+      .replace(/<link rel="(?:preload|preconnect)"[^>]*\/>\n?/g, '')
       .replace(/<template id="__bundler_thumbnail"[\s\S]*?<\/template>\n?/, '')
       .replace('<div id="root"></div>', () => `<div id="root"></div>\n${inline(`window.__resources = ${JSON.stringify(resources)};`)}`)
       // La preview fournit son propre squelette <html>/<head>/<body>

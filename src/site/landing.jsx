@@ -11,7 +11,7 @@ const { useState: useSiteState, useEffect: useSiteEffect, useRef: useSiteRef, us
 // Durée d'affichage de chaque cas d'usage en lecture automatique
 const SITE_ROTATE_MS = 7000;
 
-const SITE_PROOF = { rating: '4,9', label: 'avis', count: '2 400+' };
+const SITE_PROOF = { rating: '4,9' };
 
 // ---------------------------------------------------------------- tracés d'exemple
 // Tracé d'exemple : points de passage réels, détail naturel ajouté par
@@ -34,7 +34,7 @@ function siteTrace(way, { seed = 7, rough = 0.22, depth = 6 } = {}) {
 }
 
 // Cas d'usage : mot du titre (et sa couleur), activité du studio, poster d'exemple, photos.
-// Photos : vraies photos du trip dans assets/site/<cas>-1.jpg et -2.jpg (portrait,
+// Photos : vraies photos du trip dans assets/site/<cas>-1.webp et -2.webp, à renseigner dans photos[].src (portrait,
 // ~800 × 1000 px) ; tant qu'elles manquent, une illustration prend leur place.
 const SITE_CASES = [
   {
@@ -66,7 +66,7 @@ const SITE_CASES = [
       ],
     },
     unsplash: ['corsica mountains hiking', 'gr20 corsica'],
-    photos: [{ src: ptRes('siteTrek1', 'assets/site/trek-1.jpg'), caption: 'Balisage' }, { src: ptRes('siteTrek2', 'assets/site/trek-2.jpg'), caption: 'En chemin' }],
+    photos: [{ src: ptRes('siteTrek1', 'assets/site/trek-1.webp'), caption: 'Balisage' }, { src: ptRes('siteTrek2', 'assets/site/trek-2.webp'), caption: 'En chemin' }],
   },
   {
     id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
@@ -77,7 +77,7 @@ const SITE_CASES = [
       route: { name: 'Marathon de Paris', seed: 5, rough: 0.12, depth: 5, way: [[48.8738, 2.2950], [48.8656, 2.3212], [48.8606, 2.3376], [48.8566, 2.3522], [48.8530, 2.3690], [48.8443, 2.3920], [48.8390, 2.4100], [48.8335, 2.4330], [48.8290, 2.4440], [48.8225, 2.4320], [48.8300, 2.4050], [48.8410, 2.3790], [48.8505, 2.3570], [48.8580, 2.3360], [48.8610, 2.3150], [48.8580, 2.2945], [48.8510, 2.2780], [48.8460, 2.2560], [48.8575, 2.2470], [48.8680, 2.2550], [48.8715, 2.2760]] },
     },
     unsplash: ['marathon runners city', 'marathon finish line'],
-    photos: [{ src: 'assets/site/marathon-1.jpg', caption: 'Ligne d’arrivée' }, { src: 'assets/site/marathon-2.jpg', caption: 'Km 30, le mur' }],
+    photos: [{ src: null, caption: 'Ligne d’arrivée' }, { src: null, caption: 'Km 30, le mur' }],
   },
   {
     id: 'roadtrip', heroBg: 0, accent: '#facc15', word: 'road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
@@ -88,7 +88,7 @@ const SITE_CASES = [
       route: { name: 'Pacific Coast Highway', seed: 3, rough: 0.14, depth: 5, way: [[37.7749, -122.4194, 20], [37.50, -122.47, 30], [37.25, -122.40, 40], [36.97, -122.03, 10], [36.60, -121.89, 20], [36.27, -121.81, 200], [35.95, -121.48, 300], [35.66, -121.25, 80], [35.37, -120.85, 20], [35.28, -120.66, 70], [34.95, -120.43, 100], [34.42, -119.70, 15], [34.27, -119.23, 10], [34.03, -118.78, 20], [34.05, -118.24, 90]] },
     },
     unsplash: ['big sur highway coast', 'desert road trip'],
-    photos: [{ src: ptRes('siteRoad1', 'assets/site/roadtrip-1.jpg'), caption: 'Big Sur' }, { src: 'assets/site/roadtrip-2.jpg', caption: 'Highway 1' }],
+    photos: [{ src: ptRes('siteRoad1', 'assets/site/roadtrip-1.webp'), caption: 'Big Sur' }, { src: null, caption: 'Highway 1' }],
   },
   {
     id: 'moto', heroBg: 0, accent: '#f87171', word: 'moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
@@ -99,7 +99,7 @@ const SITE_CASES = [
       route: { name: 'Route des Grandes Alpes', seed: 9, rough: 0.2, way: [[46.37, 6.48, 380], [46.20, 6.55, 900], [45.99, 6.47, 1613], [45.87, 6.47, 1486], [45.69, 6.69, 1967], [45.55, 6.88, 800], [45.42, 7.03, 2764], [45.24, 6.68, 1100], [45.06, 6.41, 2642], [44.89, 6.64, 1300], [44.82, 6.73, 2360], [44.62, 6.75, 1100], [44.39, 6.65, 1132], [44.32, 6.81, 2802], [44.10, 7.10, 900], [43.90, 7.35, 500], [43.77, 7.50, 10]] },
     },
     unsplash: ['motorcycle mountain pass', 'alps hairpin road'],
-    photos: [{ src: ptRes('siteMoto1', 'assets/site/moto-1.jpg'), caption: 'Col alpin' }, { src: 'assets/site/moto-2.jpg', caption: 'Lacets du Galibier' }],
+    photos: [{ src: ptRes('siteMoto1', 'assets/site/moto-1.webp'), caption: 'Col alpin' }, { src: null, caption: 'Lacets du Galibier' }],
   },
   {
     id: 'gpx', heroBg: 0, accent: '#2dd4bf', word: 'GPX', label: 'N’importe quel tracé', example: 'Un tour d’île, une sortie vélo, une balade…', icon: 'Route', activity: 'hiking',
@@ -111,7 +111,7 @@ const SITE_CASES = [
       route: { name: 'Tour de Ouessant', seed: 4, rough: 0.2, depth: 5, way: [[48.4565, -5.0990, 15], [48.4465, -5.1080, 30], [48.4455, -5.1420, 25], [48.4600, -5.1305, 20], [48.4740, -5.1150, 35], [48.4795, -5.0950, 40], [48.4750, -5.0560, 20], [48.4580, -5.0380, 30], [48.4430, -5.0700, 45], [48.4430, -5.0900, 30], [48.4565, -5.0990, 15]] },
     },
     unsplash: ['ouessant lighthouse', 'brittany island coast'],
-    photos: [{ src: 'assets/site/gpx-1.jpg', caption: 'Phare du Créac’h' }],
+    photos: [{ src: null, caption: 'Phare du Créac’h' }],
   },
 ];
 
@@ -141,7 +141,7 @@ function sitePosterData(c, routes, photos = []) {
 }
 
 // Photos des cas d'usage, par ordre de priorité :
-//  1. vraies photos du trip dans assets/site/<cas>-N.jpg
+//  1. vraies photos du trip dans assets/site/<cas>-N.webp
 //  2. photos Unsplash (clé d'accès gratuite : PRINTRACE_CONFIG.unsplashKey),
 //     chargées par le navigateur et créditées comme le demande Unsplash
 //  3. illustration dessinée
@@ -221,13 +221,11 @@ function SiteAvatar({ i }) {
 function SiteProof() {
   return (
     <div className="inline-flex items-center gap-2.5 h-10 rounded-full bg-white/[0.04] ring-1 ring-white/[0.09] pl-1.5 pr-3.5"
-      aria-label={`Noté ${SITE_PROOF.rating} sur 5 par ${SITE_PROOF.count} clients`}>
+      aria-label={`Noté ${SITE_PROOF.rating} sur 5 par nos clients`}>
       <div className="flex -space-x-2 [&_svg]:w-7 [&_svg]:h-7 [&_svg]:ring-[#141414]">{[0, 1, 2].map((i) => <SiteAvatar key={i} i={i} />)}</div>
       <div className="flex items-center gap-1.5 text-[13.5px] leading-none">
         <svg viewBox="0 0 20 20" className="w-[15px] h-[15px] text-amber-400 -mt-px" fill="currentColor" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" /></svg>
         <span className="font-semibold text-white">{SITE_PROOF.rating}</span>
-        <span className="hidden sm:inline w-1 h-1 rounded-full bg-neutral-600 mx-0.5" />
-        <span className="hidden sm:inline text-neutral-400">{SITE_PROOF.count} {SITE_PROOF.label}</span>
       </div>
     </div>
   );
@@ -330,7 +328,7 @@ function SitePhoto({ c, i, photo, className = '', rotate = 0, style }) {
   return (
     <figure className={`absolute pointer-events-none select-none rounded-[14px] p-[5px] bg-white/[0.07] ring-1 ring-white/[0.08] backdrop-blur-sm shadow-[0_30px_60px_-20px_rgba(0,0,0,0.85)] ${className}`} style={{ ...style, transform: `rotate(${rotate}deg)` }}>
       <div key={c.id} className="relative w-full h-full rounded-[10px] overflow-hidden ds-fade-up bg-neutral-800">
-        {ph.src && !broken ? <img src={ph.src} alt={ph.caption || ''} className="w-full h-full object-cover" onError={() => setBroken(true)} /> : <SiteScene kind={c.id} alt={i === 1} />}
+        {ph.src && !broken ? <img src={ph.src} loading="lazy" decoding="async" alt={ph.caption || ''} className="w-full h-full object-cover" onError={() => setBroken(true)} /> : <SiteScene kind={c.id} alt={i === 1} />}
         {ph.credit && (
           <figcaption className="pointer-events-auto absolute inset-x-0 bottom-0 px-2 pb-1.5 pt-5 text-[9px] text-white/80 bg-gradient-to-t from-black/60 to-transparent" style={{ fontFamily: 'var(--ds-font-site)' }}>
             Photo <a href={ph.link} target="_blank" rel="noopener" className="underline">{ph.credit}</a> · <a href={'https://unsplash.com/' + SITE_UTM} target="_blank" rel="noopener" className="underline">Unsplash</a>
@@ -352,7 +350,7 @@ function SitePoster({ c, photos, children }) {
     setReady(false);
     if (!photos) return; // photos du cas d'usage encore en cours de résolution
     (async () => {
-      await storyFontsReady();
+      await storyFontsReady({ vintage: false }); // modèles du site : pas d'italique « ancienne carte »
       const cv = ref.current; if (!cv || !live) return;
       const tpl = POSTER_TEMPLATES.find((t) => t.id === c.poster.tpl) || POSTER_TEMPLATES[0];
       const w = 900; cv.width = w; cv.height = Math.round(w * fmt.mm[1] / fmt.mm[0]);
@@ -780,7 +778,7 @@ function PrintraceSite() {
             {c.heroBg != null && photos[c.heroBg] && (
               <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
                 maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
-                <img src={photos[c.heroBg].src} alt="" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
+                <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
               </div>
             )}
             <SitePoster c={c} photos={photoSet[caseId] || null} />
@@ -794,4 +792,7 @@ function PrintraceSite() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<PrintraceSite />);
+// Page pré-rendue au build (HTML déjà là) : React s'y raccroche sans tout redessiner
+const siteRootEl = document.getElementById('root');
+if (siteRootEl.firstElementChild) ReactDOM.hydrateRoot(siteRootEl, <PrintraceSite />);
+else ReactDOM.createRoot(siteRootEl).render(<PrintraceSite />);

@@ -167,4 +167,7 @@ function Hub() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<Hub />);
+// Page pré-rendue au build : React se raccroche au HTML déjà affiché
+const hubRootEl = document.getElementById('root');
+if (hubRootEl.firstElementChild) ReactDOM.hydrateRoot(hubRootEl, <Hub />);
+else ReactDOM.createRoot(hubRootEl).render(<Hub />);

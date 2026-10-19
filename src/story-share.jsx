@@ -747,13 +747,15 @@ async function renderStory(canvas, tpl, d, scale = 1) {
   try { await tpl.draw(ctx, d); } catch (e) { console.warn('story render', e); }
 }
 
-async function storyFontsReady() {
+// vintage : italique « ancienne carte » (IM Fell English, ~60 Ko), inutile si aucun modèle ne l'emploie
+// (le romain reste chargé : points cardinaux de la boussole)
+async function storyFontsReady({ vintage = true } = {}) {
   try {
     await Promise.all([
       document.fonts.load(`700 40px "Barlow Semi Condensed"`), document.fonts.load(`600 40px "Barlow Semi Condensed"`),
       document.fonts.load(`700 40px Barlow`), document.fonts.load(`500 40px Barlow`), document.fonts.load(`800 40px Unbounded`),
       document.fonts.load(`700 40px "Playfair Display"`), document.fonts.load(`italic 400 40px "Playfair Display"`), document.fonts.load(`400 40px "Playfair Display"`),
-      document.fonts.load(`400 40px "IM Fell English"`), document.fonts.load(`italic 400 40px "IM Fell English"`),
+      document.fonts.load(`400 40px "IM Fell English"`), ...(vintage ? [document.fonts.load(`italic 400 40px "IM Fell English"`)] : []),
     ]);
   } catch (e) {}
 }
