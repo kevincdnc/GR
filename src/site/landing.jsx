@@ -316,12 +316,16 @@ function SitePoster({ c, photos, children }) {
   }, [c.id, photos && photos.map((p) => (p ? p.src : '')).join('|')]);
   return (
     <div className="relative mx-auto w-full">
-      {/* Halo et ombre au sol : le poster se détache du fond */}
-      <div className="pointer-events-none absolute -inset-x-[40%] -top-[12%] bottom-[10%] -z-10" style={{ background: `radial-gradient(50% 45% at 50% 45%, ${c.accent}24, transparent 70%)` }} />
+      {/* Éclairage : zone grise derrière le poster, faisceau venant du haut, légère teinte du cas d'usage */}
+      <div className="pointer-events-none absolute -inset-x-[60%] -top-[22%] -bottom-[20%] -z-10" style={{ background: 'radial-gradient(closest-side, #4a4a52 0%, #34343a 32%, #1e1e22 62%, rgba(10,10,10,0) 100%)' }} />
+      <div className="pointer-events-none absolute -inset-x-[30%] -top-[45%] bottom-[30%] -z-10 opacity-90" style={{ background: 'conic-gradient(from 180deg at 50% 0%, transparent 155deg, rgba(255,255,255,0.09) 170deg, rgba(255,255,255,0.16) 180deg, rgba(255,255,255,0.09) 190deg, transparent 205deg)', maskImage: 'linear-gradient(#000, transparent 85%)', WebkitMaskImage: 'linear-gradient(#000, transparent 85%)' }} />
+      <div className="pointer-events-none absolute -inset-x-[25%] -top-[8%] bottom-[5%] -z-10" style={{ background: `radial-gradient(45% 40% at 50% 45%, ${c.accent}1f, transparent 70%)` }} />
       {children}
-      <div className="relative z-10 p-[3.2%] bg-[#151515] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
+      <div className="relative z-10 p-[3.2%] bg-[#151515] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.95),0_20px_40px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
         <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' }} />
         {!ready && <div className="absolute inset-[3.2%] grid place-items-center bg-neutral-900"><UiSpinner size={20} className="text-neutral-500" /></div>}
+        {/* Reflet léger sur le verre, en diagonale */}
+        <div className="pointer-events-none absolute inset-[3.2%]" style={{ background: 'linear-gradient(125deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 28%, transparent 45%)' }} />
       </div>
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
       <div className="relative z-10 mt-3 flex justify-center">
@@ -607,7 +611,7 @@ const SITE_STEPS = [
 
 function SiteHowItWorks({ c }) {
   return (
-    <section className="relative" style={{ background: 'linear-gradient(180deg, #36363b 0%, #18181b 22%, #0c0c0d 60%, #0a0a0a 100%)' }}>
+    <section className="relative bg-[#0a0a0a] border-t border-white/[0.05]">
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pt-20 sm:pt-28 pb-24 sm:pb-32">
         <div className="text-center">
           <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500">Comment ça marche</span>
@@ -654,13 +658,11 @@ function PrintraceSite() {
 
   return (
     <div className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
-      {/* Fond : noir en haut, plus clair vers le poster (dégradé linéaire) */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #0a0a0a 0%, #0c0c0d 38%, #1c1c1f 62%, #2e2e33 84%, #36363b 100%)' }}>
-        {/* Décor : lueur, quadrillage de plan qui s'efface */}
-        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 50% at 50% 0%, rgba(255,255,255,0.08), rgba(255,255,255,0) 70%)' }} />
+      {/* Fond noir ; seule la zone du poster est éclairée */}
+      <div className="relative overflow-hidden bg-[#0a0a0a]">
         <div className="pointer-events-none absolute inset-0 opacity-60" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '48px 48px', maskImage: 'radial-gradient(55% 65% at 70% 45%, #000 25%, transparent 75%)', WebkitMaskImage: 'radial-gradient(55% 65% at 70% 45%, #000 25%, transparent 75%)' }} />
+          backgroundSize: '48px 48px', maskImage: 'radial-gradient(30% 45% at 72% 48%, #000 15%, transparent 75%)', WebkitMaskImage: 'radial-gradient(30% 45% at 72% 48%, #000 15%, transparent 75%)' }} />
 
         <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
@@ -682,11 +684,7 @@ function PrintraceSite() {
           </div>
 
           <div className="relative w-full max-w-[400px] xl:max-w-[430px] mx-auto">
-            <SitePoster c={c} photos={photoSet[caseId] || null}>
-              {/* Photos du trip glissées derrière et devant le poster */}
-              <SitePhoto c={c} i={0} photo={photos[0]} rotate={-8} className="hidden sm:block z-0 -left-[30%] top-[10%] w-[40%] aspect-[4/5]" />
-              <SitePhoto c={c} i={1} photo={photos[1]} rotate={7} className="hidden sm:block z-20 -right-[16%] bottom-[18%] w-[36%] aspect-[4/5]" />
-            </SitePoster>
+            <SitePoster c={c} photos={photoSet[caseId] || null} />
           </div>
         </section>
       </div>
