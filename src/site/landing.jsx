@@ -293,7 +293,7 @@ function SitePhoto({ c, i, photo, className = '', rotate = 0, style }) {
 }
 
 // Poster d'exemple rendu par le moteur du studio, dans un cadre noir
-function SitePoster({ c, photos }) {
+function SitePoster({ c, photos, children }) {
   const ref = useSiteRef(null);
   const [ready, setReady] = useSiteState(false);
   const routes = useSiteMemo(() => siteRoutesOf(c), [c.id]);
@@ -315,15 +315,16 @@ function SitePoster({ c, photos }) {
     return () => { live = false; };
   }, [c.id, photos && photos.map((p) => (p ? p.src : '')).join('|')]);
   return (
-    <div className="relative mx-auto w-[min(360px,72vw)]">
+    <div className="relative mx-auto w-full">
       {/* Halo et ombre au sol : le poster se détache du fond */}
       <div className="pointer-events-none absolute -inset-x-[40%] -top-[12%] bottom-[10%] -z-10" style={{ background: `radial-gradient(50% 45% at 50% 45%, ${c.accent}24, transparent 70%)` }} />
-      <div className="relative p-[3.2%] bg-[#151515] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
+      {children}
+      <div className="relative z-10 p-[3.2%] bg-[#151515] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
         <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' }} />
         {!ready && <div className="absolute inset-[3.2%] grid place-items-center bg-neutral-900"><UiSpinner size={20} className="text-neutral-500" /></div>}
       </div>
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
-      <div className="mt-3 flex justify-center">
+      <div className="relative z-10 mt-3 flex justify-center">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300">
           <I.Poster size={13} /> Exemple · {c.poster.title} · A3
         </span>
@@ -363,7 +364,7 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
         </span>
       </button>
       {open && (
-        <div role="listbox" className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-40 w-[340px] max-w-[88vw] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 text-left animate-menu" style={{ fontFamily: 'var(--ds-font-site)', fontSize: 14, letterSpacing: 0, lineHeight: 1.3 }}>
+        <div role="listbox" className="absolute left-1/2 -translate-x-1/2 lg:left-0 lg:translate-x-0 top-full mt-3 z-40 w-[340px] max-w-[88vw] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 text-left animate-menu" style={{ fontFamily: 'var(--ds-font-site)', fontSize: 14, letterSpacing: 0, lineHeight: 1.3 }}>
           {SITE_CASES.map((x) => {
             const on = x.id === value, Ico = I[x.icon] || I.Route;
             return (
@@ -436,10 +437,10 @@ function SiteImport({ c }) {
   const pick = () => fileRef.current && fileRef.current.click();
 
   return (
-    <div className="w-full max-w-[780px] mx-auto">
+    <div className="w-full max-w-[520px] mx-auto lg:mx-0">
       <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => { importFiles(e.target.files); e.target.value = ''; }} />
       {/* Fichier et lien Strava côte à côte, sur une seule ligne (empilés sur mobile) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="flex flex-col gap-3">
         <button onClick={pick}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
@@ -484,115 +485,117 @@ function SiteImport({ c }) {
 }
 
 // ---------------------------------------------------------------- comment ça marche
-// Mini poster vectoriel (illustrations des étapes)
-function SiteMiniPoster({ accent = '#ffffff', bg = '#0f1d33', className = '' }) {
+// Illustrations sobres au trait (monochrome, une touche de couleur du cas d'usage)
+const SITE_LINE = 'rgba(255,255,255,0.14)';
+
+// Fond commun : grille de points qui s'efface sur les bords
+function SiteIllusFrame({ children }) {
   return (
-    <svg viewBox="0 0 120 170" className={className} aria-hidden="true">
-      <rect width="120" height="170" fill={bg} />
-      {[...Array(9)].map((_, i) => <path key={'v' + i} d={`M${i * 15} 0V170`} stroke="#fff" strokeOpacity="0.04" />)}
-      {[...Array(12)].map((_, i) => <path key={'h' + i} d={`M0 ${i * 15}H120`} stroke="#fff" strokeOpacity="0.04" />)}
-      <rect x="6" y="6" width="108" height="158" fill="none" stroke="#fff" strokeOpacity="0.75" strokeWidth="0.8" />
-      <path d="M22 52 C30 44 34 58 42 60 S56 72 60 86 S74 96 80 92 S92 104 98 110" stroke={accent} strokeOpacity="0.35" strokeWidth="5" fill="none" strokeLinecap="round" />
-      <path d="M22 52 C30 44 34 58 42 60 S56 72 60 86 S74 96 80 92 S92 104 98 110" stroke={accent} strokeWidth="1.8" fill="none" strokeLinecap="round" />
-      <circle cx="22" cy="52" r="2.6" fill={bg} stroke={accent} strokeWidth="1.2" /><circle cx="98" cy="110" r="2.6" fill={bg} stroke={accent} strokeWidth="1.2" />
-      <rect x="12" y="14" width="22" height="3" rx="1" fill="#fff" />
-      <circle cx="102" cy="18" r="5" fill="none" stroke="#fff" strokeOpacity="0.8" strokeWidth="0.7" />
-      <rect x="62" y="128" width="46" height="30" fill={bg} stroke="#fff" strokeOpacity="0.75" strokeWidth="0.6" />
-      <rect x="66" y="133" width="24" height="3" rx="1" fill="#fff" />
-      {[0, 1, 2].map((i) => <g key={i}><rect x="66" y={141 + i * 5.5} width="10" height="1.6" rx="0.8" fill="#fff" fillOpacity="0.45" /><rect x="94" y={141 + i * 5.5} width="10" height="1.6" rx="0.8" fill="#fff" /></g>)}
-    </svg>
+    <div className="relative aspect-[4/3]">
+      <div className="absolute inset-0" style={{
+        backgroundImage: 'radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)', backgroundSize: '16px 16px',
+        maskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)', WebkitMaskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)' }} />
+      <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full" fill="none" aria-hidden="true">{children}</svg>
+    </div>
   );
 }
+// Tracé type utilisé dans les illustrations
+const SITE_ROUTE_D = 'M0 34 C10 26 16 40 26 40 S38 52 42 64 S56 72 62 68 S74 80 80 86';
 
-// 1 · Import : fichier au centre, sources autour
+// 1 · Import : le fichier au centre, les sources reliées par des traits fins
 function SiteIllusImport({ c }) {
-  const src = [
-    { id: 'strava', logo: ptRes('stravaLogo', 'assets/strava.svg'), name: 'Strava', pos: 'left-[5%] top-[9%]', rot: -6 },
-    { id: 'garmin', logo: ptRes('garminLogo', 'assets/garmin.svg'), name: 'Garmin', pos: 'right-[5%] top-[7%]', rot: 5 },
-    { id: 'komoot', logo: ptRes('komootLogo', 'assets/komoot.svg'), name: 'Komoot', pos: 'right-[6%] bottom-[9%]', rot: -4 },
+  const nodes = [
+    { x: 78, y: 82, logo: ptRes('stravaLogo', 'assets/strava.svg') },
+    { x: 78, y: 218, logo: ptRes('garminLogo', 'assets/garmin.svg') },
+    { x: 322, y: 150, logo: ptRes('komootLogo', 'assets/komoot.svg') },
   ];
   return (
-    <div className="relative h-full">
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M95 85 C150 95 160 130 200 150 M305 75 C250 90 240 125 200 150 M290 225 C250 215 235 175 200 150" stroke="#fff" strokeOpacity="0.16" strokeWidth="1.5" strokeDasharray="3 6" fill="none" />
-      </svg>
-      {src.map((x) => (
-        <div key={x.id} className={`absolute ${x.pos} flex items-center gap-2 rounded-xl bg-[#18181b] ring-1 ring-white/10 pl-1.5 pr-3 py-1.5 shadow-[0_12px_30px_-10px_rgba(0,0,0,0.8)]`} style={{ transform: `rotate(${x.rot}deg)` }}>
-          <img src={x.logo} alt="" width="26" height="26" className="rounded-md" />
-          <span className="text-[12px] font-medium text-neutral-200">{x.name}</span>
-        </div>
+    <SiteIllusFrame>
+      <defs>
+        <linearGradient id="siteFadeL" x1="0" x2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.02" /><stop offset="1" stopColor="#fff" stopOpacity="0.22" /></linearGradient>
+        <linearGradient id="siteFadeR" x1="1" x2="0"><stop offset="0" stopColor="#fff" stopOpacity="0.02" /><stop offset="1" stopColor="#fff" stopOpacity="0.22" /></linearGradient>
+      </defs>
+      <path d="M100 82 C140 82 140 132 152 140" stroke="url(#siteFadeL)" />
+      <path d="M100 218 C140 218 140 168 152 160" stroke="url(#siteFadeL)" />
+      <path d="M300 150 H248" stroke="url(#siteFadeR)" />
+      {nodes.map((n, i) => (
+        <g key={i}>
+          <circle cx={n.x} cy={n.y} r="22" fill="#0e0e10" stroke={SITE_LINE} />
+          <image href={n.logo} x={n.x - 11} y={n.y - 11} width="22" height="22" opacity="0.85" style={{ filter: 'grayscale(1)' }} />
+        </g>
       ))}
-      {/* Fichier GPX déposé au centre */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] rounded-2xl border-[1.5px] border-dashed border-white/25 bg-white/[0.04] backdrop-blur-sm px-3 py-4 text-center">
-        <div className="mx-auto w-10 h-10 rounded-xl grid place-items-center bg-white text-neutral-900"><I.Upload size={18} /></div>
-        <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.08] px-2 h-7 text-[11.5px] font-medium text-white">
-          <I.FileGpx size={13} /> mon-{c.word.replace(/\s+/g, '-')}.gpx
-        </div>
-        <div className="mx-auto mt-2.5 h-1 w-[70%] rounded-full bg-white/10 overflow-hidden"><div className="h-full w-[72%] rounded-full" style={{ background: c.accent }} /></div>
-      </div>
-      <div className="absolute left-[6%] bottom-[10%] inline-flex items-center gap-1.5 rounded-lg bg-[#18181b] ring-1 ring-white/10 px-2.5 h-8 text-[11.5px] text-neutral-300 shadow-[0_12px_30px_-10px_rgba(0,0,0,0.8)]" style={{ transform: 'rotate(3deg)' }}>
-        <span className="font-semibold text-white">.FIT</span> · <span className="font-semibold text-white">.GPX</span> · .TCX
-      </div>
-    </div>
+      {/* Fichier */}
+      <rect x="152" y="106" width="96" height="88" rx="12" fill="#0e0e10" stroke="rgba(255,255,255,0.2)" />
+      <path d="M152 130 H248" stroke={SITE_LINE} />
+      <circle cx="164" cy="118" r="2" fill="rgba(255,255,255,0.35)" /><circle cx="172" cy="118" r="2" fill="rgba(255,255,255,0.2)" />
+      <g transform="translate(160 138)"><path d={SITE_ROUTE_D} stroke={c.accent} strokeWidth="1.6" strokeLinecap="round" opacity="0.9" transform="scale(0.98 0.5)" /></g>
+      <text x="200" y="184" textAnchor="middle" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" fontSize="9.5" fill="rgba(255,255,255,0.55)">trace.gpx</text>
+      <circle cx="248" cy="106" r="8" fill={c.accent} /><path d="M244.5 106 l2.5 2.5 l4.5 -5" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </SiteIllusFrame>
   );
 }
 
-// 2 · Personnalisation : studio simplifié (modèles, poster, réglages)
+// 2 · Personnalisation : poster au trait et réglages simplifiés
 function SiteIllusCustomize({ c }) {
   return (
-    <div className="absolute inset-x-[7%] top-[12%] bottom-[-6%] rounded-t-xl bg-[#111112] ring-1 ring-white/10 shadow-[0_24px_50px_-16px_rgba(0,0,0,0.9)] overflow-hidden flex">
-      <div className="w-[22%] border-r border-white/[0.06] p-2 flex flex-col gap-1.5">
-        {['#0f1d33', '#141414', '#2b2140'].map((b, i) => (
-          <div key={b} className={`rounded-[4px] overflow-hidden ${i === 0 ? 'ring-2 ring-white' : 'ring-1 ring-white/10 opacity-70'}`}><SiteMiniPoster bg={b} accent={i === 1 ? '#facc15' : '#ffffff'} className="block w-full" /></div>
+    <SiteIllusFrame>
+      {/* Poster */}
+      <rect x="92" y="46" width="132" height="190" rx="3" fill="#0e0e10" stroke="rgba(255,255,255,0.22)" />
+      <rect x="100" y="54" width="116" height="174" stroke={SITE_LINE} />
+      <g transform="translate(112 80) scale(1.15)"><path d={SITE_ROUTE_D} stroke={c.accent} strokeOpacity="0.25" strokeWidth="5" strokeLinecap="round" /><path d={SITE_ROUTE_D} stroke={c.accent} strokeWidth="1.6" strokeLinecap="round" /></g>
+      <rect x="160" y="190" width="48" height="30" stroke={SITE_LINE} />
+      <path d="M166 200 H190 M166 208 H182 M166 214 H186" stroke="rgba(255,255,255,0.25)" />
+      <path d="M108 64 H128" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+      {/* Réglages */}
+      <g transform="translate(246 70)">
+        <rect width="104" height="26" rx="8" stroke={SITE_LINE} />
+        <rect x="3" y="3" width="49" height="20" rx="6" fill="rgba(255,255,255,0.08)" />
+        <path d="M14 13 H40 M66 13 H90" stroke="rgba(255,255,255,0.3)" />
+        {[0, 1, 2, 3].map((i) => <circle key={i} cx={10 + i * 22} cy="54" r="7" fill={i === 0 ? c.accent : 'transparent'} stroke={i === 0 ? 'none' : SITE_LINE} />)}
+        <circle cx="10" cy="54" r="10.5" stroke={c.accent} strokeOpacity="0.5" />
+        <path d="M0 88 H104" stroke={SITE_LINE} strokeWidth="2" strokeLinecap="round" />
+        <path d="M0 88 H62" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="62" cy="88" r="5" fill="#0e0e10" stroke="rgba(255,255,255,0.6)" />
+        {[0, 1].map((i) => (
+          <g key={i} transform={`translate(0 ${110 + i * 22})`}>
+            <path d="M0 6 H56" stroke="rgba(255,255,255,0.18)" strokeWidth="2" strokeLinecap="round" />
+            <rect x="80" y="0" width="24" height="12" rx="6" fill={i === 0 ? 'rgba(255,255,255,0.75)' : 'transparent'} stroke={i === 0 ? 'none' : SITE_LINE} />
+            <circle cx={i === 0 ? 98 : 86} cy="6" r="4" fill={i === 0 ? '#0a0a0a' : 'rgba(255,255,255,0.35)'} />
+          </g>
         ))}
-      </div>
-      <div className="flex-1 grid place-items-center bg-[#2a2a2d]">
-        <div className="w-[62%] p-[3%] bg-[#151515] shadow-[0_14px_30px_-10px_rgba(0,0,0,0.9)]"><SiteMiniPoster accent={c.accent} className="block w-full" /></div>
-      </div>
-      <div className="w-[30%] border-l border-white/[0.06] p-2.5 flex flex-col gap-2.5">
-        <div className="flex items-center gap-1">
-          {[1, 2, 3].map((n) => <span key={n} className={`w-3.5 h-3.5 rounded-full grid place-items-center text-[7px] font-bold ${n === 2 ? 'bg-white text-neutral-900' : 'ring-1 ring-white/25 text-neutral-400'}`}>{n}</span>)}
-        </div>
-        <div className="h-1.5 w-[60%] rounded-full bg-white/20" />
-        <div className="flex flex-wrap gap-1">
-          {[c.accent, '#ffffff', '#fc5200', '#3b82f6'].map((col, i) => <span key={i} className={`w-3.5 h-3.5 rounded-full ${i === 0 ? 'ring-2 ring-white ring-offset-1 ring-offset-[#111112]' : ''}`} style={{ background: col }} />)}
-        </div>
-        {[true, true, false].map((on, i) => (
-          <div key={i} className="flex items-center justify-between">
-            <span className="h-1.5 w-[55%] rounded-full bg-white/15" />
-            <span className="relative w-5 h-3 rounded-full" style={{ background: on ? '#3b82f6' : '#404040' }}><span className="absolute top-[2px] w-2 h-2 rounded-full bg-white" style={{ left: on ? 10 : 2 }} /></span>
-          </div>
-        ))}
-        <div className="mt-auto h-5 rounded-md bg-white" />
-      </div>
-    </div>
+      </g>
+    </SiteIllusFrame>
   );
 }
 
-// 3 · Impression : poster encadré au mur + fichier HD
+// 3 · Impression : dessin technique du poster encadré avec ses cotes
 function SiteIllusPrint({ c }) {
+  const mono = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 9.5, fill: 'rgba(255,255,255,0.5)' };
   return (
-    <div className="relative h-full" style={{ background: 'radial-gradient(70% 70% at 50% 40%, #ebe6de14, transparent 70%)' }}>
-      <div className="absolute left-1/2 top-[12%] -translate-x-[62%] w-[34%] p-[2.4%] bg-[#151515] shadow-[0_26px_40px_-14px_rgba(0,0,0,0.95),0_0_0_1px_rgba(255,255,255,0.06)]">
-        <SiteMiniPoster accent={c.accent} className="block w-full" />
-      </div>
-      <div className="absolute right-[7%] top-[24%] w-[44%] rounded-xl bg-[#18181b] ring-1 ring-white/10 p-3 shadow-[0_16px_34px_-12px_rgba(0,0,0,0.9)]" style={{ transform: 'rotate(3deg)' }}>
-        <div className="flex items-center gap-2">
-          <span className="w-7 h-7 rounded-lg grid place-items-center bg-white/[0.08] text-white"><I.Download size={14} /></span>
-          <span className="min-w-0">
-            <span className="block text-[11.5px] font-semibold text-white leading-tight">Fichier HD</span>
-            <span className="block text-[10px] text-neutral-500 whitespace-nowrap">PNG 300 dpi · SVG</span>
-          </span>
-        </div>
-        <div className="mt-2.5 h-1 rounded-full bg-white/10 overflow-hidden"><div className="h-full w-full rounded-full" style={{ background: c.accent }} /></div>
-      </div>
-      <div className="absolute right-[13%] bottom-[16%] inline-flex items-center gap-2 rounded-xl bg-white text-neutral-900 pl-2 pr-3 h-9 text-[12px] font-semibold shadow-[0_16px_34px_-12px_rgba(0,0,0,0.9)]" style={{ transform: 'rotate(-3deg)' }}>
-        <span className="w-6 h-6 rounded-md grid place-items-center bg-neutral-900 text-white"><I.Poster size={13} /></span> Livré encadré
-      </div>
-      <div className="absolute left-[14%] bottom-[10%] flex gap-1.5">
-        {['A4', 'A3', '50×70'].map((f, i) => <span key={f} className={`h-6 px-2 rounded-md grid place-items-center text-[10.5px] font-semibold ${i === 1 ? 'bg-white text-neutral-900' : 'bg-white/[0.07] text-neutral-300 ring-1 ring-white/10'}`}>{f}</span>)}
-      </div>
-    </div>
+    <SiteIllusFrame>
+      {/* Cadre + poster */}
+      <rect x="128" y="58" width="144" height="200" rx="2" fill="#0e0e10" stroke="rgba(255,255,255,0.32)" strokeWidth="5" />
+      <rect x="140" y="70" width="120" height="176" stroke={SITE_LINE} />
+      <g transform="translate(152 96) scale(1.2)"><path d={SITE_ROUTE_D} stroke={c.accent} strokeOpacity="0.25" strokeWidth="5" strokeLinecap="round" /><path d={SITE_ROUTE_D} stroke={c.accent} strokeWidth="1.6" strokeLinecap="round" /></g>
+      <path d="M150 80 H170" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+      {/* Cotes */}
+      <path d="M128 40 H272 M128 36 V44 M272 36 V44" stroke="rgba(255,255,255,0.3)" />
+      <rect x="176" y="33" width="48" height="14" fill="#0a0a0a" />
+      <text x="200" y="43.5" textAnchor="middle" {...mono}>297 mm</text>
+      <path d="M296 58 V258 M292 58 H300 M292 258 H300" stroke="rgba(255,255,255,0.3)" />
+      <text x="304" y="161" {...mono}>420 mm</text>
+      {/* Sorties */}
+      <g transform="translate(64 120)">
+        {['PNG · 300 dpi', 'SVG vectoriel'].map((t, i) => (
+          <g key={t} transform={`translate(0 ${i * 26})`}>
+            <rect width="54" height="18" rx="5" stroke={SITE_LINE} fill="#0e0e10" />
+            <text x="27" y="12.5" textAnchor="middle" {...mono} fontSize="7.5">{t.split(' · ')[0].split(' ')[0]}</text>
+          </g>
+        ))}
+        <path d="M54 9 C62 9 62 30 64 30 M54 35 C60 35 60 30 64 30" stroke={SITE_LINE} />
+      </g>
+      <circle cx="272" cy="258" r="8" fill={c.accent} /><path d="M268.5 258 l2.5 2.5 l4.5 -5" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </SiteIllusFrame>
   );
 }
 
@@ -607,27 +610,19 @@ function SiteHowItWorks({ c }) {
     <section className="relative" style={{ background: 'linear-gradient(180deg, #36363b 0%, #18181b 22%, #0c0c0d 60%, #0a0a0a 100%)' }}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pt-20 sm:pt-28 pb-24 sm:pb-32">
         <div className="text-center">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-400">Comment ça marche</span>
+          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500">Comment ça marche</span>
           <h2 className="mt-3 font-display font-extrabold tracking-[-0.03em] leading-[1.1] text-[clamp(30px,3.6vw,48px)] text-white">De votre tracé au mur,<br className="hidden sm:block" /> en trois étapes</h2>
         </div>
-        <ol className="mt-14 sm:mt-16 grid gap-5 lg:gap-6 lg:grid-cols-3">
+        <ol className="mt-12 sm:mt-16 grid gap-12 lg:gap-10 lg:grid-cols-3">
           {SITE_STEPS.map((st, i) => (
-            <li key={st.title} className="relative">
-             <div className="h-full flex flex-col rounded-3xl bg-white/[0.025] ring-1 ring-white/[0.07] overflow-hidden">
-              <div className="relative aspect-[4/3] overflow-hidden border-b border-white/[0.06]" style={{ background: 'radial-gradient(80% 80% at 50% 0%, rgba(255,255,255,0.05), transparent 70%)' }}>
-                <st.Illus c={c} />
+            <li key={st.title}>
+              <st.Illus c={c} />
+              <div className="mt-4 flex items-center gap-3">
+                <span className="text-[12px] text-neutral-500 tabular-nums" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>0{i + 1}</span>
+                <span className="flex-1 h-px bg-gradient-to-r from-white/15 to-transparent" />
               </div>
-              <div className="p-6 sm:p-7">
-                <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full grid place-items-center text-[13px] font-bold text-neutral-900 bg-white">{i + 1}</span>
-                  <h3 className="text-[19px] font-semibold text-white" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '-0.01em' }}>{st.title}</h3>
-                </div>
-                <p className="mt-3 text-[14.5px] leading-relaxed text-neutral-400">{st.text}</p>
-              </div>
-             </div>
-              {i < SITE_STEPS.length - 1 && (
-                <span aria-hidden="true" className="hidden lg:grid absolute -right-[19px] top-[calc(37.5%-14px)] z-10 w-8 h-8 rounded-full place-items-center bg-[#141416] ring-1 ring-white/10 text-neutral-400"><I.ChevronRight size={15} /></span>
-              )}
+              <h3 className="mt-3 text-[18px] font-semibold text-white" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '-0.01em' }}>{st.title}</h3>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-neutral-400 max-w-[360px]">{st.text}</p>
             </li>
           ))}
         </ol>
@@ -665,32 +660,34 @@ function PrintraceSite() {
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 50% at 50% 0%, rgba(255,255,255,0.08), rgba(255,255,255,0) 70%)' }} />
         <div className="pointer-events-none absolute inset-0 opacity-60" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '48px 48px', maskImage: 'radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%)', WebkitMaskImage: 'radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%)' }} />
+          backgroundSize: '48px 48px', maskImage: 'radial-gradient(55% 65% at 70% 45%, #000 25%, transparent 75%)', WebkitMaskImage: 'radial-gradient(55% 65% at 70% 45%, #000 25%, transparent 75%)' }} />
 
         <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
           <SiteProof />
         </nav>
 
-        {/* Photos du cas d'usage, de part et d'autre (en dehors de la colonne de texte) */}
-        <SitePhoto c={c} i={0} photo={photos[0]} rotate={-7} className="hidden lg:block z-0 top-[300px] w-[188px] h-[236px] xl:w-[214px] xl:h-[268px]" style={{ left: 'max(20px, calc(50% - 690px))' }} />
-        <SitePhoto c={c} i={1} photo={photos[1]} rotate={6} className="hidden lg:block z-0 top-[540px] w-[180px] h-[226px] xl:w-[204px] xl:h-[256px]" style={{ right: 'max(20px, calc(50% - 690px))' }} />
+        {/* Deux colonnes : promesse + import à gauche, poster d'exemple à droite (visible dès l'arrivée) */}
+        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-6 lg:pt-10 pb-20 lg:pb-24 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-14 lg:gap-12 items-center">
+          <div className="text-center lg:text-left">
+            {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
+            <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.1] text-[clamp(36px,5vw,72px)]">
+              <span className="block text-white/90">Imprimez votre</span>
+              <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
+            </h1>
+            <p key={c.id} className="ds-fade-up mt-6 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[520px] mx-auto lg:mx-0">
+              {c.pitch}
+            </p>
+            <div className="mt-10 sm:mt-12"><SiteImport c={c} /></div>
+          </div>
 
-        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-24 text-center">
-
-          {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
-          <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.1] text-[clamp(36px,5.4vw,76px)]">
-            <span className="block text-white/90">Imprimez votre</span>
-            <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
-          </h1>
-          {/* Description sur une seule ligne */}
-          <p key={c.id} className="ds-fade-up mt-6 text-[17px] sm:text-[19px] leading-relaxed text-neutral-400 sm:whitespace-nowrap">
-            {c.pitch}
-          </p>
-
-          <div className="mt-16 sm:mt-20"><SiteImport c={c} /></div>
-
-          <div className="mt-12 sm:mt-14"><SitePoster c={c} photos={photoSet[caseId] || null} /></div>
+          <div className="relative w-full max-w-[400px] xl:max-w-[430px] mx-auto">
+            <SitePoster c={c} photos={photoSet[caseId] || null}>
+              {/* Photos du trip glissées derrière et devant le poster */}
+              <SitePhoto c={c} i={0} photo={photos[0]} rotate={-8} className="hidden sm:block z-0 -left-[30%] top-[10%] w-[40%] aspect-[4/5]" />
+              <SitePhoto c={c} i={1} photo={photos[1]} rotate={7} className="hidden sm:block z-20 -right-[16%] bottom-[18%] w-[36%] aspect-[4/5]" />
+            </SitePoster>
+          </div>
         </section>
       </div>
       <SiteHowItWorks c={c} />
