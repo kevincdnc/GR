@@ -145,12 +145,14 @@ function SiteAvatar({ i }) {
 // Note discrète façon avis en ligne : avatars, « 4,9 ★ (2 400+ avis) »
 function SiteProof() {
   return (
-    <div className="flex items-center gap-2.5" aria-label={`Noté ${SITE_PROOF.rating} sur 5 par ${SITE_PROOF.count} clients`}>
-      <div className="flex -space-x-2 scale-[0.85] origin-right">{[0, 1, 2].map((i) => <SiteAvatar key={i} i={i} />)}</div>
-      <div className="flex items-center gap-1 text-[13px] leading-none">
-        <span className="font-semibold text-neutral-100 tabular-nums">{SITE_PROOF.rating}</span>
-        <svg viewBox="0 0 20 20" className="w-3.5 h-3.5 text-amber-400" fill="currentColor" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" /></svg>
-        <span className="hidden sm:inline text-neutral-500 tabular-nums">({SITE_PROOF.count} {SITE_PROOF.label})</span>
+    <div className="inline-flex items-center gap-2.5 h-10 rounded-full bg-white/[0.04] ring-1 ring-white/[0.09] pl-1.5 pr-3.5"
+      aria-label={`Noté ${SITE_PROOF.rating} sur 5 par ${SITE_PROOF.count} clients`}>
+      <div className="flex -space-x-2 [&_svg]:w-7 [&_svg]:h-7 [&_svg]:ring-[#141414]">{[0, 1, 2].map((i) => <SiteAvatar key={i} i={i} />)}</div>
+      <div className="flex items-center gap-1.5 text-[13.5px] leading-none">
+        <svg viewBox="0 0 20 20" className="w-[15px] h-[15px] text-amber-400 -mt-px" fill="currentColor" aria-hidden="true"><path d="M10 1.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.6 7.7l5.8-.8z" /></svg>
+        <span className="font-semibold text-white">{SITE_PROOF.rating}</span>
+        <span className="hidden sm:inline w-1 h-1 rounded-full bg-neutral-600 mx-0.5" />
+        <span className="hidden sm:inline text-neutral-400">{SITE_PROOF.count} {SITE_PROOF.label}</span>
       </div>
     </div>
   );
@@ -402,7 +404,7 @@ function SiteImport({ c }) {
           {!busy && <span className="shrink-0 h-10 px-3.5 rounded-lg grid place-items-center text-[13px] font-medium text-neutral-200 bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors">Parcourir</span>}
         </button>
         <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
-          <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="24" height="24" className="rounded-[5px] shrink-0" />
+          <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="30" height="30" className="rounded-[6px] shrink-0" />
           <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
             placeholder="Ou collez votre lien Strava" aria-label="Lien d'activité Strava"
             className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
@@ -454,7 +456,7 @@ function PrintraceSite() {
           backgroundSize: '48px 48px', maskImage: 'radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%)', WebkitMaskImage: 'radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%)' }} />
 
         <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
-          <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={24} /></a>
+          <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
           <SiteProof />
         </nav>
 
@@ -474,7 +476,7 @@ function PrintraceSite() {
             {c.pitch}
           </p>
 
-          <div className="mt-10"><SiteImport c={c} /></div>
+          <div className="mt-12 sm:mt-14"><SiteImport c={c} /></div>
 
           <div className="mt-12 sm:mt-14"><SitePoster c={c} /></div>
         </section>
