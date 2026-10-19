@@ -516,7 +516,7 @@ function PrintraceSite() {
         <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-24 text-center">
 
           {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
-          <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.02] text-[clamp(36px,5.4vw,76px)]">
+          <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.1] text-[clamp(36px,5.4vw,76px)]">
             <span className="block text-white/90">Imprimez votre</span>
             <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
           </h1>
