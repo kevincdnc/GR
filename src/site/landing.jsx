@@ -369,7 +369,7 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
         </span>
       </button>
       {open && (
-        <div role="listbox" className="absolute left-1/2 -translate-x-1/2 lg:left-0 lg:translate-x-0 top-full mt-3 z-40 w-[340px] max-w-[88vw] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 text-left animate-menu" style={{ fontFamily: 'var(--ds-font-site)', fontSize: 14, letterSpacing: 0, lineHeight: 1.3 }}>
+        <div role="listbox" className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-40 w-[340px] max-w-[88vw] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 text-left animate-menu" style={{ fontFamily: 'var(--ds-font-site)', fontSize: 14, letterSpacing: 0, lineHeight: 1.3 }}>
           {SITE_CASES.map((x) => {
             const on = x.id === value, Ico = I[x.icon] || I.Route;
             return (
@@ -454,7 +454,7 @@ function SiteImport({ c }) {
             {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
           </span>
           <span className="flex-1 min-w-0">
-            <span className="block text-[15px] font-semibold text-white leading-tight">{busy ? 'Lecture du tracé…' : over ? 'Déposez votre tracé' : 'Importez votre tracé'}</span>
+            <span className="block text-[15px] font-semibold text-white leading-tight">{busy ? 'Lecture du tracé…' : over ? 'Déposez votre tracé' : 'Importez votre ou vos tracés'}</span>
             <span className="block text-[12px] text-neutral-500 mt-1 tracking-[0.04em]">GPX · FIT · TCX · KML</span>
           </span>
           {!busy && <span className="shrink-0 h-10 px-3.5 rounded-lg grid place-items-center text-[13px] font-medium text-neutral-200 bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors">Parcourir</span>}
@@ -462,7 +462,7 @@ function SiteImport({ c }) {
         <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
           <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="30" height="30" className="rounded-[6px] shrink-0" />
           <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
-            placeholder="Ou collez votre lien Strava" aria-label="Lien d'activité Strava"
+            placeholder="Collez le lien d’une activité Strava" aria-label="Lien d'activité Strava"
             className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
           <UiButton variant="strava" size="md" className="h-12 rounded-lg px-5 text-[14.5px]" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
         </div>
@@ -667,21 +667,22 @@ function PrintraceSite() {
           <SiteProof />
         </nav>
 
-        {/* Deux colonnes : promesse + import à gauche, poster d'exemple à droite (visible dès l'arrivée) */}
-        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-6 lg:pt-10 pb-20 lg:pb-24 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-14 lg:gap-12 items-center">
-          <div className="text-center lg:text-left">
+        {/* Titre centré en haut, puis deux colonnes : import à gauche, poster d'exemple à droite */}
+        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-4 lg:pt-6 pb-20 lg:pb-24">
+          <div className="text-center">
             {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
-            <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.1] text-[clamp(36px,5vw,72px)]">
+            <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.08] text-[clamp(34px,4.4vw,62px)]">
               <span className="block text-white/90">Imprimez votre</span>
               <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
             </h1>
-            <p key={c.id} className="ds-fade-up mt-6 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[520px] mx-auto lg:mx-0 min-h-[3.4em]">
+            <p key={c.id} className="ds-fade-up mt-5 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[560px] mx-auto">
               {c.pitch}
             </p>
-            <div className="mt-10 sm:mt-12"><SiteImport c={c} /></div>
           </div>
+          <div className="mt-10 lg:mt-12 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-14 lg:gap-16 items-center">
+          <div className="w-full max-w-[520px] mx-auto lg:mr-0 lg:ml-auto"><SiteImport c={c} /></div>
 
-          <div className="relative w-full max-w-[400px] xl:max-w-[430px] mx-auto">
+          <div className="relative w-full max-w-[340px] xl:max-w-[360px] mx-auto lg:ml-0">
             {/* Photo du trip fondue dans le fond, derrière le cadre */}
             {c.heroBg != null && photos[c.heroBg] && (
               <div key={c.id} aria-hidden="true" className="pointer-events-none absolute -inset-x-[55%] -top-[18%] -bottom-[14%] ds-fade-up" style={{
@@ -690,6 +691,7 @@ function PrintraceSite() {
               </div>
             )}
             <SitePoster c={c} photos={photoSet[caseId] || null} />
+          </div>
           </div>
         </section>
       </div>
