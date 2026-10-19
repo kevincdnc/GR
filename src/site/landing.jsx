@@ -38,7 +38,7 @@ function siteTrace(way, { seed = 7, rough = 0.22, depth = 6 } = {}) {
 // ~800 × 1000 px) ; tant qu'elles manquent, une illustration prend leur place.
 const SITE_CASES = [
   {
-    id: 'trek', accent: '#34d399', word: 'trek', label: 'Trek & randonnée', example: 'GR34, GR20, Tour du Mont-Blanc…', icon: 'Footprints', activity: 'hiking',
+    id: 'trek', heroBg: 1, accent: '#34d399', word: 'trek', label: 'Trek & randonnée', example: 'GR34, GR20, Tour du Mont-Blanc…', icon: 'Footprints', activity: 'hiking',
     pitch: 'Votre trek de plusieurs jours, en poster prêt à encadrer.',
     poster: {
       // Vraies étapes du GR34 (gpx/, servies en data/gr34.js) : chiffres calculés
@@ -318,11 +318,13 @@ function SitePoster({ c, photos, children }) {
     <div className="relative mx-auto w-full">
       {/* Éclairage : halo doux et large derrière le poster (plusieurs paliers pour un fondu sans marches) */}
       <div className="pointer-events-none absolute -inset-x-[90%] -top-[45%] -bottom-[40%] -z-10" style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.075) 0%, rgba(255,255,255,0.055) 22%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.012) 68%, rgba(255,255,255,0) 100%)' }} />
-      <div className="pointer-events-none absolute -inset-x-[30%] -top-[15%] bottom-[5%] -z-10" style={{ background: `radial-gradient(closest-side, ${c.accent}14, transparent)` }} />
       {children}
       <div className="relative z-10 p-[3.2%] bg-[#151515] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.95),0_20px_40px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
         <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' }} />
         {!ready && <div className="absolute inset-[3.2%] grid place-items-center bg-neutral-900"><UiSpinner size={20} className="text-neutral-500" /></div>}
+        {/* Spot de galerie : lumière qui tombe du haut sur le cadre et la vitre */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 50%, transparent)' }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 35% at 50% 0%, rgba(255,255,255,0.10), transparent 70%)', mixBlendMode: 'screen' }} />
         {/* Reflet léger sur le verre, en diagonale */}
         <div className="pointer-events-none absolute inset-[3.2%]" style={{ background: 'linear-gradient(125deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 28%, transparent 45%)' }} />
       </div>
@@ -655,7 +657,7 @@ function PrintraceSite() {
       {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
         backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)',
-        backgroundSize: '64px 64px', backgroundPosition: 'center top',
+        backgroundSize: '32px 32px', backgroundPosition: 'center top',
         maskImage: 'radial-gradient(90% 60% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 45%, transparent 85%)', WebkitMaskImage: 'radial-gradient(90% 60% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 45%, transparent 85%)' }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
       {/* Fond noir ; seule la zone du poster est éclairée */}
@@ -680,6 +682,13 @@ function PrintraceSite() {
           </div>
 
           <div className="relative w-full max-w-[400px] xl:max-w-[430px] mx-auto">
+            {/* Photo du trip fondue dans le fond, derrière le cadre */}
+            {c.heroBg != null && photos[c.heroBg] && (
+              <div key={c.id} aria-hidden="true" className="pointer-events-none absolute -inset-x-[55%] -top-[18%] -bottom-[14%] ds-fade-up" style={{
+                maskImage: 'radial-gradient(closest-side, #000 25%, rgba(0,0,0,0.45) 60%, transparent 100%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 25%, rgba(0,0,0,0.45) 60%, transparent 100%)' }}>
+                <img src={photos[c.heroBg].src} alt="" className="w-full h-full object-cover opacity-[0.32] saturate-[0.8]" />
+              </div>
+            )}
             <SitePoster c={c} photos={photoSet[caseId] || null} />
           </div>
         </section>
