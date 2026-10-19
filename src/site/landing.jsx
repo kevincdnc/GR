@@ -38,15 +38,16 @@ function siteTrace(way, { seed = 7, rough = 0.22, depth = 6 } = {}) {
 // ~800 × 1000 px) ; tant qu'elles manquent, une illustration prend leur place.
 const SITE_CASES = [
   {
-    id: 'trek', accent: '#34d399', word: 'trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, Compostelle…', icon: 'Footprints', activity: 'hiking',
+    id: 'trek', accent: '#34d399', word: 'trek', label: 'Trek & randonnée', example: 'GR34, GR20, Tour du Mont-Blanc…', icon: 'Footprints', activity: 'hiking',
     pitch: 'Votre trek de plusieurs jours, en poster prêt à encadrer.',
     poster: {
-      tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR20', subtitle: 'Corse · Calenzana → Conca',
-      metrics: ['distance', 'ascent', 'duration'], values: { distance: '180 km', ascent: '12 000 m', duration: '15 jours' }, photos: 1,
-      route: { name: 'GR20', seed: 11, way: [[42.508, 8.855, 270], [42.455, 8.905, 1520], [42.405, 8.93, 1980], [42.355, 8.965, 2130], [42.33, 9.01, 1640], [42.285, 9.045, 2225], [42.235, 9.075, 1600], [42.2, 9.12, 1450], [42.15, 9.135, 2350], [42.09, 9.16, 1190], [42.03, 9.19, 1580], [41.975, 9.18, 1800], [41.9, 9.215, 1350], [41.86, 9.25, 2134], [41.82, 9.295, 1240], [41.775, 9.33, 1500], [41.733, 9.343, 250]] },
+      // Vraies étapes du GR34 (gpx/, servies en data/gr34.js) : chiffres calculés
+      tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR34', subtitle: 'Sentier des douaniers · Bretagne',
+      metrics: ['distance', 'ascent', 'stages'], values: {}, photos: 1, gr34: true,
+      route: { name: 'GR34', seed: 11, way: [[47.80, -3.79, 10], [47.87, -3.92, 20], [47.87, -4.10, 15], [47.80, -4.37, 20], [48.02, -4.70, 30]] },
     },
-    unsplash: ['corsica mountains hiking', 'alpine lake hiker'],
-    photos: [{ src: 'assets/site/trek-1.jpg', caption: 'GR20 · jour 6' }, { src: 'assets/site/trek-2.jpg', caption: 'Lac de Nino' }],
+    unsplash: ['brittany coastal path', 'crozon peninsula beach'],
+    photos: [{ src: 'assets/site/trek-1.jpg', caption: 'Balisage du GR34' }, { src: 'assets/site/trek-2.jpg', caption: 'Presqu’île de Crozon' }],
   },
   {
     id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
@@ -84,18 +85,25 @@ const SITE_CASES = [
 ];
 
 // Données de rendu du poster d'exemple (même forme que dataFor du studio)
-function siteRouteOf(c) {
+// Tracés du poster d'exemple : les vraies étapes du GR34 pour le trek, sinon un tracé dessiné
+function siteRoutesOf(c) {
+  const base = { color: '#ffffff', durationReal: false, activity: c.activity, date: '' };
+  if (c.poster.gr34 && (window.GR34_STAGES || []).length) {
+    return window.GR34_STAGES.map((st, i) => ({
+      ...base, id: 'demo_gr34_' + i, name: st.from + ' → ' + st.to, coords: st.coords,
+      distance: st.distanceKm, ascent: st.elevationGain, descent: st.elevationLoss, durationMin: 0, altMax: st.altMax,
+    }));
+  }
   const r = c.poster.route;
-  const coords = siteTrace(r.way, r);
-  return { id: 'demo_' + c.id, name: r.name, color: '#ffffff', coords, distance: 0, ascent: 0, descent: 0, durationMin: 0, durationReal: false, altMax: null, activity: c.activity, date: '' };
+  return [{ ...base, id: 'demo_' + c.id, name: r.name, coords: siteTrace(r.way, r), distance: 0, ascent: 0, descent: 0, durationMin: 0, altMax: null }];
 }
-function sitePosterData(c, route, photos = []) {
+function sitePosterData(c, routes, photos = []) {
   const p = c.poster, act = poActivity(c.activity);
-  const agg = poAggregate([route], act);
-  const stats = poStats(agg, p.metrics, { activity: act.label, start: route.coords[0] })
+  const agg = poAggregate(routes, act);
+  const stats = poStats(agg, p.metrics, { activity: act.label, start: routes[0].coords[0] })
     .map((st) => (p.values[st.key] ? { ...st, value: p.values[st.key], unit: '' } : st));
   return {
-    routes: [route], agg, color: p.color, coords: true, activityLabel: act.label, title: p.title, subtitle: p.subtitle, stats,
+    routes, agg, color: p.color, coords: true, activityLabel: act.label, title: p.title, subtitle: p.subtitle, stats,
     photoSlot: false, photos, bgPhoto: null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
     bg: p.bg || null, preview: false,
   };
@@ -286,7 +294,7 @@ function SitePhoto({ c, i, photo, className = '', rotate = 0, style }) {
 function SitePoster({ c, photos }) {
   const ref = useSiteRef(null);
   const [ready, setReady] = useSiteState(false);
-  const route = useSiteMemo(() => siteRouteOf(c), [c.id]);
+  const routes = useSiteMemo(() => siteRoutesOf(c), [c.id]);
   const fmt = POSTER_FORMATS[1]; // A3
   useSiteEffect(() => {
     let live = true;
@@ -299,7 +307,7 @@ function SitePoster({ c, photos }) {
       const w = 900; cv.width = w; cv.height = Math.round(w * fmt.mm[1] / fmt.mm[0]);
       const ph = await sitePosterPhotos(c, photos);
       if (!live) return;
-      await renderPoster(cv, tpl, sitePosterData(c, route, ph), fmt, 'none', w / PO_W);
+      await renderPoster(cv, tpl, sitePosterData(c, routes, ph), fmt, 'none', w / PO_W);
       if (live) setReady(true);
     })();
     return () => { live = false; };
