@@ -354,26 +354,25 @@ function SiteImport({ c }) {
   const pick = () => fileRef.current && fileRef.current.click();
 
   return (
-    <div className="w-full max-w-[600px] mx-auto">
+    <div className="w-full max-w-[780px] mx-auto">
       <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => { importFiles(e.target.files); e.target.value = ''; }} />
-      {/* Fichier puis lien Strava, l'un au-dessus de l'autre */}
-      <div className="flex flex-col">
+      {/* Fichier et lien Strava côte à côte, sur une seule ligne (empilés sur mobile) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <button onClick={pick}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
-          className={`min-h-[96px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 px-6 py-4 transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/20 bg-white/[0.03] hover:border-white/45 hover:bg-white/[0.05]'}`}>
-          <span className="w-9 h-9 rounded-lg grid place-items-center bg-white text-neutral-900">{busy ? <UiSpinner size={17} /> : <I.Upload size={17} />}</span>
-          <span className="text-[16px] font-semibold text-white">{busy ? 'Lecture du tracé…' : 'Importe ton GPX ou FIT'}</span>
-          {!busy && <span className="text-[13px] text-neutral-400">Glisse tes fichiers ici ou <span className="text-white underline underline-offset-2 decoration-white/30">parcours ton ordinateur</span></span>}
+          className={`h-16 rounded-2xl border-2 border-dashed flex items-center gap-3 pl-3 pr-5 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/20 bg-white/[0.03] hover:border-white/45 hover:bg-white/[0.05]'}`}>
+          <span className="w-10 h-10 shrink-0 rounded-xl grid place-items-center bg-white text-neutral-900">{busy ? <UiSpinner size={17} /> : <I.Upload size={18} />}</span>
+          <span className="min-w-0">
+            <span className="block text-[15px] font-semibold text-white leading-tight">{busy ? 'Lecture du tracé…' : 'Importe ton GPX ou FIT'}</span>
+            {!busy && <span className="block text-[12.5px] text-neutral-400 mt-0.5 truncate">Glisse tes fichiers ou <span className="text-white underline underline-offset-2 decoration-white/30">parcours</span></span>}
+          </span>
         </button>
-        <div className="flex items-center gap-3 my-3.5 text-[12px] uppercase tracking-[0.12em] text-neutral-500">
-          <span className="flex-1 h-px bg-white/[0.08]" /> ou <span className="flex-1 h-px bg-white/[0.08]" />
-        </div>
         <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
           <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="24" height="24" className="rounded-[5px] shrink-0" />
           <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
-            placeholder="Colle ton lien d’activité Strava" aria-label="Lien d'activité Strava"
-            className="flex-1 min-w-0 bg-transparent outline-none text-[15.5px] text-white placeholder:text-neutral-500" />
+            placeholder="Ou colle ton lien Strava" aria-label="Lien d'activité Strava"
+            className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
           <UiButton variant="strava" size="md" className="h-12 rounded-xl px-5 text-[14.5px]" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
         </div>
       </div>
@@ -445,7 +444,7 @@ function PrintraceSite() {
 
           <div className="mt-10"><SiteImport c={c} /></div>
 
-          <div className="mt-16 sm:mt-20"><SitePoster c={c} /></div>
+          <div className="mt-12 sm:mt-14"><SitePoster c={c} /></div>
         </section>
       </div>
     </div>
