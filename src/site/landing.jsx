@@ -513,57 +513,56 @@ function SiteIllusImport({ c }) {
   const mono = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' };
   return (
     <SiteIllusFrame>
-      {/* Champ fichier : zone en pointillés, fichier déposé */}
-      <rect x="56" y="62" width="288" height="78" rx="14" fill="#0e0e10" stroke="rgba(255,255,255,0.24)" strokeDasharray="4 4" />
-      <rect x="70" y="80" width="42" height="42" rx="10" fill="rgba(255,255,255,0.06)" stroke={SITE_LINE} />
-      <path d="M91 108 V92 M84 98 L91 91 L98 98 M82 112 H100" stroke="rgba(255,255,255,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="126" y="86" width="96" height="7" rx="3.5" fill="rgba(255,255,255,0.55)" />
-      <text x="126" y="113" {...mono} fontSize="10" fill="rgba(255,255,255,0.45)">trace.gpx · 179 km</text>
-      <rect x="250" y="113" width="78" height="4" rx="2" fill="rgba(255,255,255,0.1)" />
-      <rect x="250" y="113" width="78" height="4" rx="2" fill={c.accent} />
-      <circle cx="320" cy="90" r="8" fill={c.accent} /><path d="M316.5 90 l2.5 2.5 l4.5 -5" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Champ fichier (même gabarit que le hero) : 280 × 76, rayon 16, marges 16 */}
+      <rect x="60" y="66" width="280" height="76" rx="16" fill="#0e0e10" stroke="rgba(255,255,255,0.22)" strokeDasharray="4 4" />
+      <rect x="76" y="82" width="44" height="44" rx="11" fill="rgba(255,255,255,0.06)" stroke={SITE_LINE} />
+      <path d="M98 110 V94 M91.5 100.5 L98 94 L104.5 100.5 M90 114 H106" stroke="rgba(255,255,255,0.75)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="134" y="90" width="92" height="7" rx="3.5" fill="rgba(255,255,255,0.55)" />
+      <text x="134" y="117" {...mono} fontSize="9.5" fill="rgba(255,255,255,0.45)">trace.gpx · 179 km</text>
+      <circle cx="316" cy="104" r="9" fill={c.accent} /><path d="M312 104 l3 3 l5 -5.5" stroke="#0a0a0a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
       {/* Séparateur « ou » */}
-      <path d="M56 170 H180 M220 170 H344" stroke={SITE_LINE} />
-      <text x="200" y="174" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.4)" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '0.12em' }}>OU</text>
-      {/* Champ lien Strava */}
-      <rect x="56" y="198" width="288" height="52" rx="14" fill="#0e0e10" stroke="rgba(255,255,255,0.18)" />
-      <image href={ptRes('stravaLogo', 'assets/strava.svg')} x="70" y="212" width="24" height="24" />
-      <text x="104" y="228" {...mono} fontSize="10" fill="rgba(255,255,255,0.55)">strava.com/activities/…</text>
-      <rect x="272" y="208" width="62" height="32" rx="8" fill="#fc4c02" />
-      <text x="303" y="228" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff" style={{ fontFamily: 'var(--ds-font-site)' }}>Importer</text>
+      <path d="M60 172 H184 M216 172 H340" stroke={SITE_LINE} />
+      <text x="200" y="175.5" textAnchor="middle" fontSize="9.5" fill="rgba(255,255,255,0.4)" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '0.14em' }}>OU</text>
+      {/* Champ lien Strava : 280 × 60, rayon 16, bouton rayon 8 */}
+      <rect x="60" y="202" width="280" height="60" rx="16" fill="#0e0e10" stroke="rgba(255,255,255,0.16)" />
+      <image href={ptRes('stravaLogo', 'assets/strava.svg')} x="76" y="219" width="26" height="26" />
+      <text x="114" y="236" {...mono} fontSize="9.5" fill="rgba(255,255,255,0.5)">strava.com/activities/…</text>
+      <rect x="258" y="214" width="70" height="36" rx="8" fill="#fc4c02" />
+      <text x="293" y="236" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff" style={{ fontFamily: 'var(--ds-font-site)' }}>Importer</text>
     </SiteIllusFrame>
   );
 }
 
 // 2 · Personnalisation : poster au trait et réglages simplifiés
 function SiteIllusCustomize({ c }) {
+  // Poster à gauche (x 60..192), panneau de réglages à droite (x 212..340), mêmes hauts et bas que l'étape 1
+  const rows = [96, 140, 184, 228]; // centres des 4 lignes de réglages
   return (
     <SiteIllusFrame>
-      {/* Poster */}
-      <rect x="92" y="46" width="132" height="190" rx="3" fill="#0e0e10" stroke="rgba(255,255,255,0.22)" />
-      <rect x="100" y="54" width="116" height="174" stroke={SITE_LINE} />
-      <g transform="translate(112 80) scale(1.15)"><path d={SITE_ROUTE_D} stroke={c.accent} strokeOpacity="0.25" strokeWidth="5" strokeLinecap="round" /><path d={SITE_ROUTE_D} stroke={c.accent} strokeWidth="1.6" strokeLinecap="round" /></g>
-      <rect x="160" y="190" width="48" height="30" stroke={SITE_LINE} />
-      <path d="M166 200 H190 M166 208 H182 M166 214 H186" stroke="rgba(255,255,255,0.25)" />
-      <path d="M108 64 H128" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
-      {/* Réglages */}
-      <g transform="translate(246 70)">
-        <rect width="104" height="26" rx="8" stroke={SITE_LINE} />
-        <rect x="3" y="3" width="49" height="20" rx="6" fill="rgba(255,255,255,0.08)" />
-        <path d="M14 13 H40 M66 13 H90" stroke="rgba(255,255,255,0.3)" />
-        {[0, 1, 2, 3].map((i) => <circle key={i} cx={10 + i * 22} cy="54" r="7" fill={i === 0 ? c.accent : 'transparent'} stroke={i === 0 ? 'none' : SITE_LINE} />)}
-        <circle cx="10" cy="54" r="10.5" stroke={c.accent} strokeOpacity="0.5" />
-        <path d="M0 88 H104" stroke={SITE_LINE} strokeWidth="2" strokeLinecap="round" />
-        <path d="M0 88 H62" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round" />
-        <circle cx="62" cy="88" r="5" fill="#0e0e10" stroke="rgba(255,255,255,0.6)" />
-        {[0, 1].map((i) => (
-          <g key={i} transform={`translate(0 ${110 + i * 22})`}>
-            <path d="M0 6 H56" stroke="rgba(255,255,255,0.18)" strokeWidth="2" strokeLinecap="round" />
-            <rect x="80" y="0" width="24" height="12" rx="6" fill={i === 0 ? 'rgba(255,255,255,0.75)' : 'transparent'} stroke={i === 0 ? 'none' : SITE_LINE} />
-            <circle cx={i === 0 ? 98 : 86} cy="6" r="4" fill={i === 0 ? '#0a0a0a' : 'rgba(255,255,255,0.35)'} />
-          </g>
-        ))}
-      </g>
+      <rect x="60" y="66" width="136" height="196" rx="3" fill="#0e0e10" stroke="rgba(255,255,255,0.22)" />
+      <rect x="68" y="74" width="120" height="180" stroke={SITE_LINE} />
+      <path d="M76 84 H96" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+      <g transform="translate(82 104) scale(1.15)"><path d={SITE_ROUTE_D} stroke={c.accent} strokeOpacity="0.25" strokeWidth="5" strokeLinecap="round" /><path d={SITE_ROUTE_D} stroke={c.accent} strokeWidth="1.6" strokeLinecap="round" /></g>
+      <rect x="132" y="218" width="48" height="28" stroke={SITE_LINE} />
+      <path d="M138 227 H164 M138 234 H156 M138 240 H160" stroke="rgba(255,255,255,0.25)" />
+      {/* Panneau de réglages */}
+      <rect x="212" y="66" width="128" height="196" rx="16" fill="#0e0e10" stroke="rgba(255,255,255,0.16)" />
+      {rows.slice(1).map((y) => <path key={y} d={`M224 ${y - 22} H328`} stroke="rgba(255,255,255,0.06)" />)}
+      {/* 1 · onglets */}
+      <rect x="224" y={rows[0] - 12} width="104" height="24" rx="8" stroke={SITE_LINE} />
+      <rect x="227" y={rows[0] - 9} width="49" height="18" rx="6" fill="rgba(255,255,255,0.09)" />
+      <path d={`M238 ${rows[0]} H264 M290 ${rows[0]} H316`} stroke="rgba(255,255,255,0.3)" strokeLinecap="round" />
+      {/* 2 · couleurs */}
+      {[0, 1, 2, 3].map((i) => <circle key={i} cx={233 + i * 26} cy={rows[1]} r="8" fill={i === 0 ? c.accent : ['', '#ffffff', '#fc5200', '#3b82f6'][i]} fillOpacity={i === 0 ? 1 : 0.18} stroke={i === 0 ? 'none' : SITE_LINE} />)}
+      <circle cx="233" cy={rows[1]} r="11.5" stroke={c.accent} strokeOpacity="0.55" />
+      {/* 3 · curseur */}
+      <path d={`M224 ${rows[2]} H328`} stroke={SITE_LINE} strokeWidth="2" strokeLinecap="round" />
+      <path d={`M224 ${rows[2]} H290`} stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="290" cy={rows[2]} r="6" fill="#0e0e10" stroke="rgba(255,255,255,0.7)" />
+      {/* 4 · interrupteur */}
+      <path d={`M224 ${rows[3]} H276`} stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeLinecap="round" />
+      <rect x="302" y={rows[3] - 7} width="26" height="14" rx="7" fill="rgba(255,255,255,0.8)" />
+      <circle cx="321" cy={rows[3]} r="4.5" fill="#0a0a0a" />
     </SiteIllusFrame>
   );
 }
@@ -614,8 +613,8 @@ function SiteHowItWorks({ c }) {
           {SITE_STEPS.map((st, i) => (
             <li key={st.title} className="flex flex-col">
               <div className="flex items-center gap-3">
-                <span className="w-9 h-9 shrink-0 rounded-full grid place-items-center bg-white text-neutral-900 text-[15px] font-bold" style={{ fontFamily: 'var(--ds-font-site)' }}>{i + 1}</span>
-                <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Étape {i + 1}</span>
+                <span className="h-7 px-2.5 shrink-0 rounded-lg grid place-items-center bg-white/[0.06] ring-1 ring-white/[0.12] text-[12px] font-semibold text-white tabular-nums" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>0{i + 1}</span>
+                <span className="text-[12px] font-medium uppercase tracking-[0.12em] text-neutral-500" style={{ fontFamily: 'var(--ds-font-site)' }}>Étape {i + 1}</span>
                 <span className="flex-1 h-px bg-gradient-to-r from-white/15 to-transparent" />
               </div>
               <h3 className="mt-4 text-[18px] font-semibold text-white" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '-0.01em' }}>{st.title}</h3>
