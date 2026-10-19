@@ -464,7 +464,7 @@ function SiteImport({ c }) {
           <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
             placeholder="Collez le lien d’une activité Strava" aria-label="Lien d'activité Strava"
             className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
-          <UiButton variant="strava" size="md" className="h-12 rounded-lg px-5 text-[14.5px]" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
+          <UiButton variant="strava" size="md" className="h-11 rounded-lg px-4 text-[14px] shrink-0" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
         </div>
       </div>
       {error && <p className="mt-2.5 text-[13px] text-red-300">{error}</p>}
@@ -668,7 +668,7 @@ function PrintraceSite() {
         </nav>
 
         {/* Titre centré en haut, puis deux colonnes : import à gauche, poster d'exemple à droite */}
-        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-4 lg:pt-6 pb-20 lg:pb-24">
+        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-12 lg:pt-20 pb-20 lg:pb-24">
           <div className="text-center">
             {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
             <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.08] text-[clamp(34px,4.4vw,62px)]">
@@ -679,10 +679,11 @@ function PrintraceSite() {
               {c.pitch}
             </p>
           </div>
-          <div className="mt-10 lg:mt-12 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-14 lg:gap-16 items-center">
-          <div className="w-full max-w-[520px] mx-auto lg:mr-0 lg:ml-auto"><SiteImport c={c} /></div>
+          {/* Poster centré sous le titre ; champs dans la colonne de gauche (la droite reste libre pour l'équilibre) */}
+          <div className="mt-10 lg:mt-14 lg:-mx-10 xl:-mx-20 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-14 lg:gap-10 items-center">
+          <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto lg:self-start lg:pt-[150px]"><SiteImport c={c} /></div>
 
-          <div className="relative w-full max-w-[340px] xl:max-w-[360px] mx-auto lg:ml-0">
+          <div className="relative w-full max-w-[400px] lg:w-[400px] xl:w-[440px] lg:max-w-none mx-auto">
             {/* Photo du trip fondue dans le fond, derrière le cadre */}
             {c.heroBg != null && photos[c.heroBg] && (
               <div key={c.id} aria-hidden="true" className="pointer-events-none absolute -inset-x-[55%] -top-[18%] -bottom-[14%] ds-fade-up" style={{
