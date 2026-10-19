@@ -20,12 +20,11 @@
 <script src="vendor/react-dom.js"></script>
 <style>
   body { background: #0a0a0a; color: #fff; overflow: hidden; }
-  /* Barre en pointillés sous le mot du titre : tirets qui défilent (+ remplissage du minuteur) */
-  .site-dash { border-radius: 99px; background-image: repeating-linear-gradient(90deg, var(--c) 0 0.22em, transparent 0.22em 0.36em); background-size: 0.36em 100%; animation: siteDash 1.6s linear infinite; }
-  .site-dash-fill { width: 0; animation-name: siteDash, siteFill; animation-timing-function: linear, linear; animation-iteration-count: infinite, 1; animation-fill-mode: none, forwards; }
-  @keyframes siteDash { to { background-position: 0.36em 0; } }
+  /* Trait discret sous le mot du titre ; en lecture auto, il se remplit jusqu'au mot suivant */
+  .site-dash { border-radius: 99px; background-image: repeating-linear-gradient(90deg, var(--c) 0 0.2em, transparent 0.2em 0.34em); }
+  .site-dash-fill { width: 0; animation: siteFill linear 1 forwards; }
   @keyframes siteFill { from { width: 0; } to { width: 100%; } }
-  @media (prefers-reduced-motion: reduce) { .site-dash { animation: none; } .site-dash-fill { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .site-dash-fill { display: none; } }
 </style>
 <link rel="stylesheet" href="tailwind.css" />
 </head>

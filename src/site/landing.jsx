@@ -272,9 +272,9 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
         className="group relative inline-flex items-baseline gap-[0.12em] text-white rounded-xl px-[0.08em] -mx-[0.08em] hover:bg-white/[0.04] transition-colors">
         <span key={value} className="ds-fade-up relative inline-block" style={{ color: c.accent }}>
           {c.word}
-          {/* Barre en pointillés animée : les tirets défilent ; en lecture auto, elle se remplit jusqu'au mot suivant */}
-          <span aria-hidden="true" className="site-dash absolute left-0 right-0 -bottom-[0.06em] h-[0.05em]" style={{ '--c': c.accent + '66' }} />
-          {auto && <span aria-hidden="true" className="site-dash site-dash-fill absolute left-0 -bottom-[0.06em] h-[0.05em]" style={{ '--c': c.accent, animationDuration: `1.6s, ${SITE_ROTATE_MS}ms` }} />}
+          {/* Trait discret en pointillés ; en lecture auto, il se remplit jusqu'au mot suivant */}
+          <span aria-hidden="true" className="site-dash absolute left-0 right-0 -bottom-[0.05em] h-[0.028em] min-h-[2px]" style={{ '--c': c.accent + '38' }} />
+          {auto && <span aria-hidden="true" className="site-dash site-dash-fill absolute left-0 -bottom-[0.05em] h-[0.028em] min-h-[2px]" style={{ '--c': c.accent + 'b3', animationDuration: `${SITE_ROTATE_MS}ms` }} />}
         </span>
         <span className="text-neutral-500 group-hover:text-white transition-colors self-center" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
           <svg viewBox="0 0 24 24" className="w-[0.32em] h-[0.32em]" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
