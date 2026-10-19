@@ -42,7 +42,7 @@ const SITE_CASES = [
     pitch: 'Votre trek de plusieurs jours, en poster prêt à encadrer.',
     poster: {
       tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR20', subtitle: 'Corse · Calenzana → Conca',
-      metrics: ['distance', 'ascent', 'duration'], values: { distance: '180 km', ascent: '12 000 m', duration: '15 jours' },
+      metrics: ['distance', 'ascent', 'duration'], values: { distance: '180 km', ascent: '12 000 m', duration: '15 jours' }, photos: 1,
       route: { name: 'GR20', seed: 11, way: [[42.508, 8.855, 270], [42.455, 8.905, 1520], [42.405, 8.93, 1980], [42.355, 8.965, 2130], [42.33, 9.01, 1640], [42.285, 9.045, 2225], [42.235, 9.075, 1600], [42.2, 9.12, 1450], [42.15, 9.135, 2350], [42.09, 9.16, 1190], [42.03, 9.19, 1580], [41.975, 9.18, 1800], [41.9, 9.215, 1350], [41.86, 9.25, 2134], [41.82, 9.295, 1240], [41.775, 9.33, 1500], [41.733, 9.343, 250]] },
     },
     photos: [{ src: 'assets/site/trek-1.jpg', caption: 'GR20 · jour 6' }, { src: 'assets/site/trek-2.jpg', caption: 'Lac de Nino' }],
@@ -59,10 +59,10 @@ const SITE_CASES = [
   },
   {
     id: 'roadtrip', accent: '#facc15', word: 'road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
-    pitch: 'Des milliers de kilomètres réunis sur un seul poster.',
+    pitch: 'Toutes les étapes de votre road trip, réunies sur un seul poster.',
     poster: {
       tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Pacific Coast Hwy', subtitle: 'San Francisco → Los Angeles',
-      metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '7 jours' },
+      metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '7 jours' }, photos: 2,
       route: { name: 'Pacific Coast Highway', seed: 3, rough: 0.14, depth: 5, way: [[37.7749, -122.4194, 20], [37.50, -122.47, 30], [37.25, -122.40, 40], [36.97, -122.03, 10], [36.60, -121.89, 20], [36.27, -121.81, 200], [35.95, -121.48, 300], [35.66, -121.25, 80], [35.37, -120.85, 20], [35.28, -120.66, 70], [34.95, -120.43, 100], [34.42, -119.70, 15], [34.27, -119.23, 10], [34.03, -118.78, 20], [34.05, -118.24, 90]] },
     },
     photos: [{ src: 'assets/site/roadtrip-1.jpg', caption: 'Big Sur' }, { src: 'assets/site/roadtrip-2.jpg', caption: 'Highway 1' }],
@@ -85,16 +85,41 @@ function siteRouteOf(c) {
   const coords = siteTrace(r.way, r);
   return { id: 'demo_' + c.id, name: r.name, color: '#ffffff', coords, distance: 0, ascent: 0, descent: 0, durationMin: 0, durationReal: false, altMax: null, activity: c.activity, date: '' };
 }
-function sitePosterData(c, route) {
+function sitePosterData(c, route, photos = []) {
   const p = c.poster, act = poActivity(c.activity);
   const agg = poAggregate([route], act);
   const stats = poStats(agg, p.metrics, { activity: act.label, start: route.coords[0] })
     .map((st) => (p.values[st.key] ? { ...st, value: p.values[st.key], unit: '' } : st));
   return {
     routes: [route], agg, color: p.color, coords: true, activityLabel: act.label, title: p.title, subtitle: p.subtitle, stats,
-    photoSlot: false, photos: [], bgPhoto: null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
+    photoSlot: false, photos, bgPhoto: null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
     bg: p.bg || null, preview: false,
   };
+}
+
+// Photos posées sur le poster d'exemple : les vraies photos du trip
+// (assets/site/<cas>-N.jpg) ou, à défaut, l'illustration rendue en image.
+const siteImgCache = {};
+function siteLoadImg(src) {
+  if (!src) return Promise.resolve(null);
+  if (!siteImgCache[src]) siteImgCache[src] = new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  return siteImgCache[src];
+}
+function siteSceneImg(kind, alt) {
+  const host = document.createElement('div');
+  const root = ReactDOM.createRoot(host);
+  ReactDOM.flushSync(() => root.render(<SiteScene kind={kind} alt={alt} />));
+  const svg = host.innerHTML.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="720" ');
+  root.unmount();
+  return siteLoadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
+}
+async function sitePosterPhotos(c) {
+  const out = [];
+  for (let i = 0; i < (c.poster.photos || 0); i++) {
+    const img = (await siteLoadImg((c.photos[i] || {}).src)) || (await siteSceneImg(c.id, i === 1));
+    if (img) out.push({ img, url: img.src });
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------- visuels
@@ -231,7 +256,9 @@ function SitePoster({ c }) {
       const cv = ref.current; if (!cv || !live) return;
       const tpl = POSTER_TEMPLATES.find((t) => t.id === c.poster.tpl) || POSTER_TEMPLATES[0];
       const w = 900; cv.width = w; cv.height = Math.round(w * fmt.mm[1] / fmt.mm[0]);
-      await renderPoster(cv, tpl, sitePosterData(c, route), fmt, 'none', w / PO_W);
+      const photos = await sitePosterPhotos(c);
+      if (!live) return;
+      await renderPoster(cv, tpl, sitePosterData(c, route, photos), fmt, 'none', w / PO_W);
       if (live) setReady(true);
     })();
     return () => { live = false; };
@@ -361,19 +388,22 @@ function SiteImport({ c }) {
         <button onClick={pick}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
-          className={`h-16 rounded-2xl border-2 border-dashed flex items-center gap-3 pl-3 pr-5 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/20 bg-white/[0.03] hover:border-white/45 hover:bg-white/[0.05]'}`}>
-          <span className="w-10 h-10 shrink-0 rounded-xl grid place-items-center bg-white text-neutral-900">{busy ? <UiSpinner size={17} /> : <I.Upload size={18} />}</span>
-          <span className="min-w-0">
-            <span className="block text-[15px] font-semibold text-white leading-tight">{busy ? 'Lecture du tracé…' : 'Importez votre GPX ou FIT'}</span>
-            {!busy && <span className="block text-[12.5px] text-neutral-400 mt-0.5 truncate">Glissez vos fichiers ou <span className="text-white underline underline-offset-2 decoration-white/30">parcours</span></span>}
+          className={`group h-16 rounded-2xl border-[1.5px] border-dashed flex items-center gap-3 pl-2.5 pr-2.5 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
+          <span className={`w-11 h-11 shrink-0 rounded-xl grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
+            {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
           </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[15px] font-semibold text-white leading-tight">{busy ? 'Lecture du tracé…' : over ? 'Déposez votre tracé' : 'Importez votre tracé'}</span>
+            <span className="block text-[12px] text-neutral-500 mt-1 tracking-[0.04em]">GPX · FIT · TCX · KML</span>
+          </span>
+          {!busy && <span className="shrink-0 h-10 px-3.5 rounded-lg grid place-items-center text-[13px] font-medium text-neutral-200 bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors">Parcourir</span>}
         </button>
         <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
           <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="24" height="24" className="rounded-[5px] shrink-0" />
           <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
             placeholder="Ou collez votre lien Strava" aria-label="Lien d'activité Strava"
             className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
-          <UiButton variant="strava" size="md" className="h-12 rounded-xl px-5 text-[14.5px]" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
+          <UiButton variant="strava" size="md" className="h-12 rounded-lg px-5 text-[14.5px]" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
         </div>
       </div>
       {error && <p className="mt-2.5 text-[13px] text-red-300">{error}</p>}
