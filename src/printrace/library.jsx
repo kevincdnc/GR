@@ -55,13 +55,13 @@ function ptFromStage(st, fileName, extra = {}) {
   };
 }
 // Partie reçue de Routdoor (lien #t=…) -> tracé de bibliothèque
-function ptFromShared(p) {
+function ptFromShared(p, o = {}) {
   const coords = p.coords || [];
   const distance = p.distance || 0, ascent = p.ascent || 0;
   return {
     id: ptId(), name: p.name || 'Tracé Routdoor', color: p.color || null, coords, distance, ascent, descent: p.descent || 0,
     durationMin: p.durationMin || estimateDurationMin(distance, ascent, 'hiking'), durationReal: !!p.durationMin,
-    altMax: ptAltMax(coords), activity: 'hiking', date: p.date || '', visible: true, source: 'routdoor', sourceRef: '', addedAt: Date.now(),
+    altMax: ptAltMax(coords), activity: o.activity || 'hiking', date: p.date || '', visible: true, source: o.source || 'routdoor', sourceRef: o.sourceRef || '', addedAt: Date.now(),
   };
 }
 // Même tracé déjà présent ? (nom + distance + premier point)
@@ -116,19 +116,22 @@ async function ptFetchStravaGpx(ref) {
 }
 
 // ---------------------------------------------------------------- Routdoor
-// Tracés envoyés par Routdoor (« Envoyer sur Printrace ») : lien #t=…
+// Tracés envoyés par Routdoor (« Envoyer sur Printrace ») ou par le site
+// Printrace : lien #t=… (+ a = activité, src = provenance)
 async function ptReadInbox() {
   const L = window.RoutdoorLink;
   if (!L) return null;
   const h = L.readHash(location.hash);
   if (!h || !h.data) return null;
   const d = await L.decodeShare(h.data);
-  return d && d.parts && d.parts.length ? d : null;
+  if (!d || !d.parts || !d.parts.length) return null;
+  const q = new URLSearchParams(location.hash.replace(/^#/, ''));
+  return { ...d, activity: q.get('a') || 'hiking', from: q.get('src') || 'routdoor', source: q.get('from') || '' };
 }
 // Adresse de Routdoor (même site) pour créer ou modifier un itinéraire
 function ptRoutdoorUrl() {
   const b = window.RoutdoorLink ? window.RoutdoorLink.siteBase() : './';
-  return b.replace(/printrace\/?$/, '');
+  return b.replace(/printrace\/(studio\/)?$/, '');
 }
 
 Object.assign(window, {

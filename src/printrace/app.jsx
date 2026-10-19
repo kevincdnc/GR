@@ -162,7 +162,9 @@ function PrintraceApp() {
       if (!d) return;
       history.replaceState(null, '', location.pathname + location.search);
       if (d.title) setProjectTitle(d.title);
-      addTraces(d.parts.map(ptFromShared), d.parts.length > 1 ? `${d.parts.length} tracés reçus de Routdoor` : `« ${d.parts[0].name} » reçu de Routdoor`);
+      const site = d.from === 'site';
+      const items = d.parts.map((p) => ptFromShared(p, { activity: d.activity, source: site ? (d.source || 'file') : 'routdoor' }));
+      addTraces(items, d.parts.length > 1 ? `${d.parts.length} tracés ${site ? 'importés' : 'reçus de Routdoor'}` : `« ${d.parts[0].name} » ${site ? 'importé' : 'reçu de Routdoor'}`);
     }).catch(() => showToast('Ce lien de tracé est incomplet.'));
   }, []);
 

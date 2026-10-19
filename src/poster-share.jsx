@@ -60,6 +60,7 @@ const PO_ACTIVITIES = [
   { id: 'cycling', label: 'Vélo route', icon: 'RoadBike', est: 'cycling', metrics: ['distance', 'ascent', 'duration', 'speed'], avail: ['distance', 'ascent', 'descent', 'duration', 'speed', 'altMax', 'stages'] },
   { id: 'mtb', label: 'VTT', icon: 'MountainBike', est: 'mtb', metrics: ['distance', 'ascent', 'duration', 'speed'], avail: ['distance', 'ascent', 'descent', 'duration', 'speed', 'altMax'] },
   { id: 'gravel', label: 'Bikepacking', icon: 'MountainBike', est: 'gravel', metrics: ['distance', 'ascent', 'stages', 'speed'], avail: ['distance', 'ascent', 'descent', 'duration', 'speed', 'altMax', 'stages'] },
+  { id: 'roadtrip', label: 'Road trip', icon: 'Route', est: 'moto', metrics: ['distance', 'stages', 'duration'], avail: ['distance', 'stages', 'duration', 'altMax', 'speed', 'ascent'] },
   { id: 'moto', label: 'Road trip moto', icon: 'Moto', est: 'moto', metrics: ['distance', 'stages', 'duration', 'altMax'], avail: ['distance', 'stages', 'duration', 'altMax', 'speed', 'ascent'] },
   { id: 'ski', label: 'Ski de rando', icon: 'Ski', est: 'skiTouring', metrics: ['distance', 'ascent', 'duration', 'altMax'], avail: ['distance', 'ascent', 'descent', 'duration', 'altMax'] },
 ];

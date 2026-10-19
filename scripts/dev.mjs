@@ -22,7 +22,7 @@ const safeBuild = () => {
 safeBuild()
 
 let timer = null
-for (const p of ['src', 'gpx', 'assets', 'lib', 'index.html', 'printrace.html', 'design-system.html', 'embed.html', 'tweaks-panel.jsx', 'tailwind.config.cjs'].filter((f) => existsSync(join(ROOT, f)))) {
+for (const p of ['src', 'gpx', 'assets', 'lib', 'index.html', 'printrace.html', 'printrace-site.html', 'design-system.html', 'embed.html', 'tweaks-panel.jsx', 'tailwind.config.cjs'].filter((f) => existsSync(join(ROOT, f)))) {
   watch(join(ROOT, p), { recursive: true }, () => {
     dirty = true
     clearTimeout(timer)

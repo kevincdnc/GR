@@ -1,6 +1,6 @@
 // Configuration Tailwind 3 (reprise du prototype) — polices GR planner : Barlow
 module.exports = {
-  content: ['./index.html', './printrace.html', './design-system.html', './src/**/*.jsx', './tweaks-panel.jsx'],
+  content: ['./index.html', './printrace.html', './printrace-site.html', './design-system.html', './src/**/*.jsx', './tweaks-panel.jsx'],
   theme: {
     extend: {
       fontFamily: {

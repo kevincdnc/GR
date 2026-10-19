@@ -5,7 +5,8 @@ Deux produits, un même code et un même design system :
 - **Routdoor** — créer, importer et modifier ses itinéraires (né du suivi de mon GR34, le sentier des douaniers).
   En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.github.io/GR/#metrics
 - **Printrace** — transformer un tracé (GPX, FIT, lien Strava, ou envoyé depuis Routdoor) en poster
-  vectoriel prêt à imprimer. En ligne : https://kevincdnc.github.io/GR/printrace/
+  vectoriel prêt à imprimer. Site : https://kevincdnc.github.io/GR/printrace/ · studio :
+  https://kevincdnc.github.io/GR/printrace/studio/
 - **Design system** — fondations et composants communs, documentation vivante :
   https://kevincdnc.github.io/GR/design-system/
 
@@ -18,7 +19,8 @@ et Barlow Semi Condensed (chiffres, titres), servies avec le site.
 | Dossier / fichier | Rôle |
 |---|---|
 | `index.html`, `src/*.jsx` | Routdoor (carte, itinéraires, stats, partage story / embed / lien) |
-| `printrace.html`, `src/printrace/` | Printrace : navigation, bibliothèque de tracés, import (fichier, lien Strava, Routdoor) |
+| `printrace-site.html`, `src/site/` | Site web de Printrace (hero « Print your Trek », import qui ouvre le studio) |
+| `printrace.html`, `src/printrace/` | Studio Printrace : navigation, bibliothèque de tracés, import (fichier, lien Strava, Routdoor) |
 | `src/poster-share.jsx`, `src/poster-map.jsx` | Studio poster (modèles, carte vectorielle, export PNG / SVG), utilisé par Printrace |
 | `src/ds/tokens.css`, `src/ds/ui.jsx` | Design system : jetons (couleurs, rayons, typo) et composants `Ui*` |
 | `design-system.html`, `src/ds/showcase.jsx` | Documentation vivante du design system |

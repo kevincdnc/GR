@@ -1,7 +1,7 @@
 // Routdoor -> Printrace : les tracés partent dans le lien (#t=…, même format
 // que le partage) et Printrace les ajoute à sa bibliothèque à l'ouverture.
 
-const PRINTRACE_PATH = 'printrace/';
+const PRINTRACE_PATH = 'printrace/studio/';
 const printraceBase = () => (window.RoutdoorLink ? window.RoutdoorLink.siteBase() : './') + PRINTRACE_PATH;
 
 // parts : tracés Routdoor (sharePartsOf) ; resolved = déjà au format du studio

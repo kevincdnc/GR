@@ -61,6 +61,8 @@ const UI_TOKENS = {
     { name: 'Section', cls: 'text-[11px] font-semibold uppercase tracking-[0.08em] text-neutral-400', sample: 'Infos affichées', spec: '11 · semibold · capitales +8 %' },
     { name: 'Aide', cls: 'text-[11px] text-neutral-500', sample: 'Teintes sombres uniquement pour un rendu net.', spec: '11 · regular · text-4' },
     { name: 'Chiffre', cls: 'text-[22px] tabular-nums font-semibold', sample: '179,1 km · 1 313 m', spec: 'Barlow Semi Condensed · tabulaire' },
+    { name: 'Site · titre', cls: 'font-display font-extrabold text-[40px] leading-none tracking-[-0.035em]', sample: 'Print your Trek', spec: 'Mont (logo) · Montserrat en secours · 800' },
+    { name: 'Site · texte', cls: 'font-site text-[16px] text-neutral-300', sample: 'Ton trek en poster vectoriel, prêt à encadrer.', spec: 'Inter · 400 / 600' },
   ],
   sizes: [
     { name: 'xs', h: 28, use: 'Puces, actions de ligne' },

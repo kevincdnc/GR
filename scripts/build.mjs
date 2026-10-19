@@ -9,7 +9,8 @@
 // Plusieurs pages partagent le même build (mêmes scripts compilés, même
 // Tailwind, mêmes fondations src/ds/tokens.css servies en ds.css) :
 //   index.html          -> dist/index.html                (Routdoor)
-//   printrace.html      -> dist/printrace/index.html      (Printrace)
+//   printrace-site.html -> dist/printrace/index.html      (site web de Printrace)
+//   printrace.html      -> dist/printrace/studio/index.html (studio Printrace)
 //   design-system.html  -> dist/design-system/index.html  (documentation du design system)
 //
 //   node scripts/build.mjs                -> dist/ (site GitHub Pages)
@@ -76,7 +77,8 @@ const dataUri = (path) => `data:${MIME[extname(path)] || 'application/octet-stre
 // Pages du site : source, sortie dans dist/, fichier unique de preview
 const PAGES = [
   { src: 'index.html', out: 'index.html', preview: 'gr34.html' },
-  { src: 'printrace.html', out: 'printrace/index.html', preview: 'printrace.html' },
+  { src: 'printrace-site.html', out: 'printrace/index.html', preview: 'printrace-site.html' },
+  { src: 'printrace.html', out: 'printrace/studio/index.html', preview: 'printrace.html' },
   { src: 'design-system.html', out: 'design-system/index.html', preview: 'design-system.html' },
 ]
 
@@ -116,6 +118,9 @@ export function build({ single = false } = {}) {
     // Posters : titres éditoriaux (Playfair Display) et style « ancienne carte » (IM Fell English)
     ...['400-normal', '400-italic', '700-normal'].map((v) => ({ name: `playfair-display-latin-${v}.woff2`, path: nm(`@fontsource/playfair-display/files/playfair-display-latin-${v}.woff2`) })),
     ...['400-normal', '400-italic'].map((v) => ({ name: `im-fell-english-latin-${v}.woff2`, path: nm(`@fontsource/im-fell-english/files/im-fell-english-latin-${v}.woff2`) })),
+    // Site Printrace : Inter (texte) et Montserrat (titres, en attendant les fichiers de Mont)
+    ...[400, 500, 600, 700].map((w) => ({ name: `inter-latin-${w}-normal.woff2`, path: nm(`@fontsource/inter/files/inter-latin-${w}-normal.woff2`) })),
+    ...['800-normal', '900-normal', '800-italic'].map((v) => ({ name: `montserrat-latin-${v}.woff2`, path: nm(`@fontsource/montserrat/files/montserrat-latin-${v}.woff2`) })),
   ])
   const vendor = {
     'vendor/react.js': nm('react/umd/react.production.min.js'),
