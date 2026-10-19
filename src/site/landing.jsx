@@ -495,7 +495,7 @@ const SITE_LINE = 'rgba(255,255,255,0.14)';
 // Fond commun : grille de points qui s'efface sur les bords
 function SiteIllusFrame({ children }) {
   return (
-    <div className="relative aspect-[4/3]">
+    <div className="relative aspect-[4/3] rounded-2xl overflow-hidden" style={{ background: 'radial-gradient(75% 75% at 50% 45%, #2a2a2f 0%, #1b1b1f 55%, #121214 100%)' }}>
       <div className="absolute inset-0" style={{
         backgroundImage: 'radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)', backgroundSize: '16px 16px',
         maskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)', WebkitMaskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)' }} />
@@ -621,11 +621,12 @@ function SiteHowItWorks({ c }) {
           {SITE_STEPS.map((st, i) => (
             <li key={st.title}>
               <st.Illus c={c} />
-              <div className="mt-4 flex items-center gap-3">
-                <span className="text-[12px] text-neutral-500 tabular-nums" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>0{i + 1}</span>
+ <div className="mt-6 flex items-center gap-3">
+                <span className="w-9 h-9 shrink-0 rounded-full grid place-items-center bg-white text-neutral-900 text-[15px] font-bold" style={{ fontFamily: 'var(--ds-font-site)' }}>{i + 1}</span>
+                <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Étape {i + 1}</span>
                 <span className="flex-1 h-px bg-gradient-to-r from-white/15 to-transparent" />
               </div>
-              <h3 className="mt-3 text-[18px] font-semibold text-white" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '-0.01em' }}>{st.title}</h3>
+              <h3 className="mt-4 text-[18px] font-semibold text-white" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '-0.01em' }}>{st.title}</h3>
               <p className="mt-2 text-[14.5px] leading-relaxed text-neutral-400 max-w-[360px]">{st.text}</p>
             </li>
           ))}
@@ -677,7 +678,7 @@ function PrintraceSite() {
               <span className="block text-white/90">Imprimez votre</span>
               <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
             </h1>
-            <p key={c.id} className="ds-fade-up mt-6 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[520px] mx-auto lg:mx-0">
+            <p key={c.id} className="ds-fade-up mt-6 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[520px] mx-auto lg:mx-0 min-h-[3.4em]">
               {c.pitch}
             </p>
             <div className="mt-10 sm:mt-12"><SiteImport c={c} /></div>
