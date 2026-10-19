@@ -288,12 +288,12 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
               <button key={x.id} role="option" aria-selected={on} onClick={() => { onChange(x.id); setOpen(false); }}
                 className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${on ? 'bg-white/[0.08]' : 'hover:bg-white/[0.05]'}`}>
                 <span className="w-9 h-9 shrink-0 rounded-lg grid place-items-center transition-colors"
-                  style={on ? { background: x.accent, color: '#0a0a0a' } : { background: x.accent + '1f', color: x.accent }}><Ico size={17} /></span>
+                  style={on ? { background: 'rgba(255,255,255,0.12)', color: '#fff' } : { background: 'rgba(255,255,255,0.05)', color: '#a3a3a3' }}><Ico size={17} /></span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[14px] font-semibold" style={{ color: on ? x.accent : '#fff' }}>{x.label}</span>
+                  <span className="block text-[14px] font-semibold text-white">{x.label}</span>
                   <span className="block text-[12px] text-neutral-500 truncate">{x.example}</span>
                 </span>
-                {on && <span style={{ color: x.accent }}><I.Check size={15} /></span>}
+                {on && <span className="text-neutral-300"><I.Check size={15} /></span>}
               </button>
             );
           })}
@@ -354,26 +354,31 @@ function SiteImport({ c }) {
   const pick = () => fileRef.current && fileRef.current.click();
 
   return (
-    <div className="w-full max-w-[720px] mx-auto">
+    <div className="w-full max-w-[600px] mx-auto">
       <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => { importFiles(e.target.files); e.target.value = ''; }} />
-      <div className="grid grid-cols-1 sm:grid-cols-[1fr_1.25fr] gap-2.5">
+      {/* Fichier puis lien Strava, l'un au-dessus de l'autre */}
+      <div className="flex flex-col">
         <button onClick={pick}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
-          className={`h-14 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2.5 text-[15px] font-semibold transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.02]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.06]'}`}>
-          {busy ? <UiSpinner size={18} /> : <I.Upload size={18} />}
-          {busy ? 'Lecture du tracé…' : <span>Importer <span className="text-neutral-400 font-medium">GPX ou FIT</span></span>}
+          className={`min-h-[132px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 px-6 py-6 transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/20 bg-white/[0.03] hover:border-white/45 hover:bg-white/[0.05]'}`}>
+          <span className="w-11 h-11 rounded-xl grid place-items-center bg-white text-neutral-900">{busy ? <UiSpinner size={20} /> : <I.Upload size={20} />}</span>
+          <span className="text-[16px] font-semibold text-white">{busy ? 'Lecture du tracé…' : 'Importe ton GPX ou FIT'}</span>
+          {!busy && <span className="text-[13px] text-neutral-400">Glisse tes fichiers ici ou <span className="text-white underline underline-offset-2 decoration-white/30">parcours ton ordinateur</span></span>}
         </button>
-        <div className={`h-14 flex items-center gap-2.5 rounded-2xl bg-white/[0.05] ring-1 pl-4 pr-1.5 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
-          <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="22" height="22" className="rounded-[5px] shrink-0" />
+        <div className="flex items-center gap-3 my-3.5 text-[12px] uppercase tracking-[0.12em] text-neutral-500">
+          <span className="flex-1 h-px bg-white/[0.08]" /> ou <span className="flex-1 h-px bg-white/[0.08]" />
+        </div>
+        <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
+          <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="24" height="24" className="rounded-[5px] shrink-0" />
           <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
             placeholder="Colle ton lien d’activité Strava" aria-label="Lien d'activité Strava"
-            className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
-          <UiButton variant="strava" size="md" className="h-11 rounded-xl px-4 text-[14px]" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
+            className="flex-1 min-w-0 bg-transparent outline-none text-[15.5px] text-white placeholder:text-neutral-500" />
+          <UiButton variant="strava" size="md" className="h-12 rounded-xl px-5 text-[14.5px]" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
         </div>
       </div>
       {error ? <p className="mt-2.5 text-[13px] text-red-300">{error}</p> : (
-        <p className="mt-3 text-[13px] text-neutral-500">GPX, FIT, TCX, KML… ou lien Strava · Aperçu gratuit, tu paies seulement au téléchargement</p>
+        <p className="mt-3.5 text-[13px] text-neutral-500">GPX, FIT, TCX, KML, GeoJSON · Aperçu gratuit, tu paies seulement au téléchargement</p>
       )}
 
       {stravaRef && (
@@ -430,7 +435,7 @@ function PrintraceSite() {
         <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-24 text-center">
 
           {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
-          <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.02] text-[clamp(44px,7.4vw,104px)]">
+          <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.02] text-[clamp(36px,5.4vw,76px)]">
             <span className="block text-white/90">Print your</span>
             <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
           </h1>
