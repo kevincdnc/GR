@@ -21,10 +21,10 @@
 <style>
   body { background: #0a0a0a; color: #fff; overflow: hidden; }
   /* Trait discret sous le mot du titre ; en lecture auto, il se remplit jusqu'au mot suivant */
-  .site-dash { border-radius: 99px; background-image: repeating-linear-gradient(90deg, var(--c) 0 0.16em, transparent 0.16em 0.22em); }
-  .site-dash-fill { width: 0; animation: siteFill linear 1 forwards; }
+  .site-bar { height: max(3px, 0.04em); border-radius: 99px; }
+  .site-bar-fill { width: 0; border-radius: 99px; animation: siteFill linear 1 forwards; }
   @keyframes siteFill { from { width: 0; } to { width: 100%; } }
-  @media (prefers-reduced-motion: reduce) { .site-dash-fill { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .site-bar-fill { animation: none; width: 100%; opacity: .6; } }
 </style>
 <link rel="stylesheet" href="tailwind.css" />
 </head>
