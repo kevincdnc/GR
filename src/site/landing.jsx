@@ -483,6 +483,159 @@ function SiteImport({ c }) {
   );
 }
 
+// ---------------------------------------------------------------- comment ça marche
+// Mini poster vectoriel (illustrations des étapes)
+function SiteMiniPoster({ accent = '#ffffff', bg = '#0f1d33', className = '' }) {
+  return (
+    <svg viewBox="0 0 120 170" className={className} aria-hidden="true">
+      <rect width="120" height="170" fill={bg} />
+      {[...Array(9)].map((_, i) => <path key={'v' + i} d={`M${i * 15} 0V170`} stroke="#fff" strokeOpacity="0.04" />)}
+      {[...Array(12)].map((_, i) => <path key={'h' + i} d={`M0 ${i * 15}H120`} stroke="#fff" strokeOpacity="0.04" />)}
+      <rect x="6" y="6" width="108" height="158" fill="none" stroke="#fff" strokeOpacity="0.75" strokeWidth="0.8" />
+      <path d="M22 52 C30 44 34 58 42 60 S56 72 60 86 S74 96 80 92 S92 104 98 110" stroke={accent} strokeOpacity="0.35" strokeWidth="5" fill="none" strokeLinecap="round" />
+      <path d="M22 52 C30 44 34 58 42 60 S56 72 60 86 S74 96 80 92 S92 104 98 110" stroke={accent} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      <circle cx="22" cy="52" r="2.6" fill={bg} stroke={accent} strokeWidth="1.2" /><circle cx="98" cy="110" r="2.6" fill={bg} stroke={accent} strokeWidth="1.2" />
+      <rect x="12" y="14" width="22" height="3" rx="1" fill="#fff" />
+      <circle cx="102" cy="18" r="5" fill="none" stroke="#fff" strokeOpacity="0.8" strokeWidth="0.7" />
+      <rect x="62" y="128" width="46" height="30" fill={bg} stroke="#fff" strokeOpacity="0.75" strokeWidth="0.6" />
+      <rect x="66" y="133" width="24" height="3" rx="1" fill="#fff" />
+      {[0, 1, 2].map((i) => <g key={i}><rect x="66" y={141 + i * 5.5} width="10" height="1.6" rx="0.8" fill="#fff" fillOpacity="0.45" /><rect x="94" y={141 + i * 5.5} width="10" height="1.6" rx="0.8" fill="#fff" /></g>)}
+    </svg>
+  );
+}
+
+// 1 · Import : fichier au centre, sources autour
+function SiteIllusImport({ c }) {
+  const src = [
+    { id: 'strava', logo: ptRes('stravaLogo', 'assets/strava.svg'), name: 'Strava', pos: 'left-[5%] top-[9%]', rot: -6 },
+    { id: 'garmin', logo: ptRes('garminLogo', 'assets/garmin.svg'), name: 'Garmin', pos: 'right-[5%] top-[7%]', rot: 5 },
+    { id: 'komoot', logo: ptRes('komootLogo', 'assets/komoot.svg'), name: 'Komoot', pos: 'right-[6%] bottom-[9%]', rot: -4 },
+  ];
+  return (
+    <div className="relative h-full">
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M95 85 C150 95 160 130 200 150 M305 75 C250 90 240 125 200 150 M290 225 C250 215 235 175 200 150" stroke="#fff" strokeOpacity="0.16" strokeWidth="1.5" strokeDasharray="3 6" fill="none" />
+      </svg>
+      {src.map((x) => (
+        <div key={x.id} className={`absolute ${x.pos} flex items-center gap-2 rounded-xl bg-[#18181b] ring-1 ring-white/10 pl-1.5 pr-3 py-1.5 shadow-[0_12px_30px_-10px_rgba(0,0,0,0.8)]`} style={{ transform: `rotate(${x.rot}deg)` }}>
+          <img src={x.logo} alt="" width="26" height="26" className="rounded-md" />
+          <span className="text-[12px] font-medium text-neutral-200">{x.name}</span>
+        </div>
+      ))}
+      {/* Fichier GPX déposé au centre */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] rounded-2xl border-[1.5px] border-dashed border-white/25 bg-white/[0.04] backdrop-blur-sm px-3 py-4 text-center">
+        <div className="mx-auto w-10 h-10 rounded-xl grid place-items-center bg-white text-neutral-900"><I.Upload size={18} /></div>
+        <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.08] px-2 h-7 text-[11.5px] font-medium text-white">
+          <I.FileGpx size={13} /> mon-{c.word.replace(/\s+/g, '-')}.gpx
+        </div>
+        <div className="mx-auto mt-2.5 h-1 w-[70%] rounded-full bg-white/10 overflow-hidden"><div className="h-full w-[72%] rounded-full" style={{ background: c.accent }} /></div>
+      </div>
+      <div className="absolute left-[6%] bottom-[10%] inline-flex items-center gap-1.5 rounded-lg bg-[#18181b] ring-1 ring-white/10 px-2.5 h-8 text-[11.5px] text-neutral-300 shadow-[0_12px_30px_-10px_rgba(0,0,0,0.8)]" style={{ transform: 'rotate(3deg)' }}>
+        <span className="font-semibold text-white">.FIT</span> · <span className="font-semibold text-white">.GPX</span> · .TCX
+      </div>
+    </div>
+  );
+}
+
+// 2 · Personnalisation : studio simplifié (modèles, poster, réglages)
+function SiteIllusCustomize({ c }) {
+  return (
+    <div className="absolute inset-x-[7%] top-[12%] bottom-[-6%] rounded-t-xl bg-[#111112] ring-1 ring-white/10 shadow-[0_24px_50px_-16px_rgba(0,0,0,0.9)] overflow-hidden flex">
+      <div className="w-[22%] border-r border-white/[0.06] p-2 flex flex-col gap-1.5">
+        {['#0f1d33', '#141414', '#2b2140'].map((b, i) => (
+          <div key={b} className={`rounded-[4px] overflow-hidden ${i === 0 ? 'ring-2 ring-white' : 'ring-1 ring-white/10 opacity-70'}`}><SiteMiniPoster bg={b} accent={i === 1 ? '#facc15' : '#ffffff'} className="block w-full" /></div>
+        ))}
+      </div>
+      <div className="flex-1 grid place-items-center bg-[#2a2a2d]">
+        <div className="w-[62%] p-[3%] bg-[#151515] shadow-[0_14px_30px_-10px_rgba(0,0,0,0.9)]"><SiteMiniPoster accent={c.accent} className="block w-full" /></div>
+      </div>
+      <div className="w-[30%] border-l border-white/[0.06] p-2.5 flex flex-col gap-2.5">
+        <div className="flex items-center gap-1">
+          {[1, 2, 3].map((n) => <span key={n} className={`w-3.5 h-3.5 rounded-full grid place-items-center text-[7px] font-bold ${n === 2 ? 'bg-white text-neutral-900' : 'ring-1 ring-white/25 text-neutral-400'}`}>{n}</span>)}
+        </div>
+        <div className="h-1.5 w-[60%] rounded-full bg-white/20" />
+        <div className="flex flex-wrap gap-1">
+          {[c.accent, '#ffffff', '#fc5200', '#3b82f6'].map((col, i) => <span key={i} className={`w-3.5 h-3.5 rounded-full ${i === 0 ? 'ring-2 ring-white ring-offset-1 ring-offset-[#111112]' : ''}`} style={{ background: col }} />)}
+        </div>
+        {[true, true, false].map((on, i) => (
+          <div key={i} className="flex items-center justify-between">
+            <span className="h-1.5 w-[55%] rounded-full bg-white/15" />
+            <span className="relative w-5 h-3 rounded-full" style={{ background: on ? '#3b82f6' : '#404040' }}><span className="absolute top-[2px] w-2 h-2 rounded-full bg-white" style={{ left: on ? 10 : 2 }} /></span>
+          </div>
+        ))}
+        <div className="mt-auto h-5 rounded-md bg-white" />
+      </div>
+    </div>
+  );
+}
+
+// 3 · Impression : poster encadré au mur + fichier HD
+function SiteIllusPrint({ c }) {
+  return (
+    <div className="relative h-full" style={{ background: 'radial-gradient(70% 70% at 50% 40%, #ebe6de14, transparent 70%)' }}>
+      <div className="absolute left-1/2 top-[12%] -translate-x-[62%] w-[34%] p-[2.4%] bg-[#151515] shadow-[0_26px_40px_-14px_rgba(0,0,0,0.95),0_0_0_1px_rgba(255,255,255,0.06)]">
+        <SiteMiniPoster accent={c.accent} className="block w-full" />
+      </div>
+      <div className="absolute right-[7%] top-[24%] w-[44%] rounded-xl bg-[#18181b] ring-1 ring-white/10 p-3 shadow-[0_16px_34px_-12px_rgba(0,0,0,0.9)]" style={{ transform: 'rotate(3deg)' }}>
+        <div className="flex items-center gap-2">
+          <span className="w-7 h-7 rounded-lg grid place-items-center bg-white/[0.08] text-white"><I.Download size={14} /></span>
+          <span className="min-w-0">
+            <span className="block text-[11.5px] font-semibold text-white leading-tight">Fichier HD</span>
+            <span className="block text-[10px] text-neutral-500 whitespace-nowrap">PNG 300 dpi · SVG</span>
+          </span>
+        </div>
+        <div className="mt-2.5 h-1 rounded-full bg-white/10 overflow-hidden"><div className="h-full w-full rounded-full" style={{ background: c.accent }} /></div>
+      </div>
+      <div className="absolute right-[13%] bottom-[16%] inline-flex items-center gap-2 rounded-xl bg-white text-neutral-900 pl-2 pr-3 h-9 text-[12px] font-semibold shadow-[0_16px_34px_-12px_rgba(0,0,0,0.9)]" style={{ transform: 'rotate(-3deg)' }}>
+        <span className="w-6 h-6 rounded-md grid place-items-center bg-neutral-900 text-white"><I.Poster size={13} /></span> Livré encadré
+      </div>
+      <div className="absolute left-[14%] bottom-[10%] flex gap-1.5">
+        {['A4', 'A3', '50×70'].map((f, i) => <span key={f} className={`h-6 px-2 rounded-md grid place-items-center text-[10.5px] font-semibold ${i === 1 ? 'bg-white text-neutral-900' : 'bg-white/[0.07] text-neutral-300 ring-1 ring-white/10'}`}>{f}</span>)}
+      </div>
+    </div>
+  );
+}
+
+const SITE_STEPS = [
+  { title: 'Importez votre tracé', text: 'Fichier GPX ou FIT, lien Strava, export Garmin ou Komoot : votre aventure arrive en un glisser-déposer.', Illus: SiteIllusImport },
+  { title: 'Personnalisez votre carte', text: 'Modèle, couleurs, style de carte, infos affichées, photos : chaque détail se règle en direct.', Illus: SiteIllusCustomize },
+  { title: 'Imprimez-le', text: 'Téléchargez le fichier HD prêt pour l’imprimeur, ou recevez votre poster encadré chez vous.', Illus: SiteIllusPrint },
+];
+
+function SiteHowItWorks({ c }) {
+  return (
+    <section className="relative" style={{ background: 'linear-gradient(180deg, #36363b 0%, #18181b 22%, #0c0c0d 60%, #0a0a0a 100%)' }}>
+      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pt-20 sm:pt-28 pb-24 sm:pb-32">
+        <div className="text-center">
+          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-400">Comment ça marche</span>
+          <h2 className="mt-3 font-display font-extrabold tracking-[-0.03em] leading-[1.1] text-[clamp(30px,3.6vw,48px)] text-white">De votre tracé au mur,<br className="hidden sm:block" /> en trois étapes</h2>
+        </div>
+        <ol className="mt-14 sm:mt-16 grid gap-5 lg:gap-6 lg:grid-cols-3">
+          {SITE_STEPS.map((st, i) => (
+            <li key={st.title} className="relative">
+             <div className="h-full flex flex-col rounded-3xl bg-white/[0.025] ring-1 ring-white/[0.07] overflow-hidden">
+              <div className="relative aspect-[4/3] overflow-hidden border-b border-white/[0.06]" style={{ background: 'radial-gradient(80% 80% at 50% 0%, rgba(255,255,255,0.05), transparent 70%)' }}>
+                <st.Illus c={c} />
+              </div>
+              <div className="p-6 sm:p-7">
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full grid place-items-center text-[13px] font-bold text-neutral-900 bg-white">{i + 1}</span>
+                  <h3 className="text-[19px] font-semibold text-white" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '-0.01em' }}>{st.title}</h3>
+                </div>
+                <p className="mt-3 text-[14.5px] leading-relaxed text-neutral-400">{st.text}</p>
+              </div>
+             </div>
+              {i < SITE_STEPS.length - 1 && (
+                <span aria-hidden="true" className="hidden lg:grid absolute -right-[19px] top-[calc(37.5%-14px)] z-10 w-8 h-8 rounded-full place-items-center bg-[#141416] ring-1 ring-white/10 text-neutral-400"><I.ChevronRight size={15} /></span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
 // ---------------------------------------------------------------- page
 function PrintraceSite() {
   const [caseId, setCaseId] = useSiteState('trek');
@@ -540,6 +693,7 @@ function PrintraceSite() {
           <div className="mt-12 sm:mt-14"><SitePoster c={c} photos={photoSet[caseId] || null} /></div>
         </section>
       </div>
+      <SiteHowItWorks c={c} />
     </div>
   );
 }
