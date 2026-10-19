@@ -42,8 +42,8 @@ const SITE_CASES = [
     pitch: 'Votre trek de plusieurs jours, en poster prêt à encadrer.',
     poster: {
       // Vraies étapes du GR34 (gpx/, servies en data/gr34.js) : chiffres calculés
-      tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR34', subtitle: 'Sentier des douaniers · Bretagne',
-      metrics: ['distance', 'ascent', 'stages'], values: {}, photos: 2, gr34: true,
+      tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR34 ⚪️🔴', subtitle: 'Sentier des douaniers · Bretagne',
+      metrics: ['distance', 'ascent', 'duration', 'stages', 'start'], values: {}, photos: 2, gr34: true,
       route: { name: 'GR34', seed: 11, way: [[47.80, -3.79, 10], [47.87, -3.92, 20], [47.87, -4.10, 15], [47.80, -4.37, 20], [48.02, -4.70, 30]] },
     },
     unsplash: ['brittany coastal path', 'crozon peninsula beach'],
@@ -53,7 +53,7 @@ const SITE_CASES = [
     id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
     pitch: 'Votre course mythique et votre temps, en poster prêt à encadrer.',
     poster: {
-      tpl: 'nuit', color: '#fc5200', mapStyle: 'routes', mapOpacity: 100, title: 'Marathon de Paris', subtitle: '42,195 km · 6 avril 2026',
+      tpl: 'nuit', border: 'marge', typeScale: 0.68, color: '#fc5200', mapStyle: 'routes', mapOpacity: 100, title: 'Marathon de Paris', subtitle: '42,195 km · 6 avril 2026',
       metrics: ['distance', 'duration', 'pace'], values: { distance: '42,2 km', duration: '3 h 42', pace: "5'15\"/km" },
       route: { name: 'Marathon de Paris', seed: 5, rough: 0.12, depth: 5, way: [[48.8738, 2.2950], [48.8656, 2.3212], [48.8606, 2.3376], [48.8566, 2.3522], [48.8530, 2.3690], [48.8443, 2.3920], [48.8390, 2.4100], [48.8335, 2.4330], [48.8290, 2.4440], [48.8225, 2.4320], [48.8300, 2.4050], [48.8410, 2.3790], [48.8505, 2.3570], [48.8580, 2.3360], [48.8610, 2.3150], [48.8580, 2.2945], [48.8510, 2.2780], [48.8460, 2.2560], [48.8575, 2.2470], [48.8680, 2.2550], [48.8715, 2.2760]] },
     },
@@ -105,7 +105,7 @@ function sitePosterData(c, routes, photos = []) {
   return {
     routes, agg, color: p.color, coords: true, activityLabel: act.label, title: p.title, subtitle: p.subtitle, stats,
     photoSlot: false, photos, bgPhoto: null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
-    bg: p.bg || null, preview: false,
+    bg: p.bg || null, preview: false, typeScale: p.typeScale,
   };
 }
 
@@ -309,7 +309,7 @@ function SitePoster({ c, photos, children }) {
       const w = 900; cv.width = w; cv.height = Math.round(w * fmt.mm[1] / fmt.mm[0]);
       const ph = await sitePosterPhotos(c, photos);
       if (!live) return;
-      await renderPoster(cv, tpl, sitePosterData(c, routes, ph), fmt, 'none', w / PO_W);
+      await renderPoster(cv, tpl, sitePosterData(c, routes, ph), fmt, c.poster.border || 'none', w / PO_W);
       if (live) setReady(true);
     })();
     return () => { live = false; };

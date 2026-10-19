@@ -523,9 +523,9 @@ const POSTER_TEMPLATES = [
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
     rec: { colors: ['#fc5200', '#ffffff'], mapStyle: 'routes', mapOpacity: 100, map: true },
     async draw(ctx, d, w, h) {
-      const u = w / 1200;
+      const u = w / 1200, ts = d.typeScale || 1; // ts : échelle du titre et des chiffres
       ctx.fillStyle = '#161616'; ctx.fillRect(0, 0, w, h);
-      const L = stStatsLayout(ctx, d.stats, w - 220 * u, { maxSize: 70 * u, labelSize: 20 * u, cols: poCols(d.stats.length) });
+      const L = stStatsLayout(ctx, d.stats, w - 220 * u, { maxSize: 70 * u * ts, labelSize: 20 * u * Math.max(0.85, ts), cols: poCols(d.stats.length) });
       const statsTop = h - 130 * u - L.height;
       const titleY = statsTop - 90 * u;
       const ph = d.photos.length ? 190 * u : 0;
@@ -543,8 +543,8 @@ const POSTER_TEMPLATES = [
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffb648'), width: 7 * u, glow: 30 * u });
       await poDrawLogo(ctx, w / 2, 110 * u, 34 * u, '#ffffff', 'center');
       if (ph) poPhotos(ctx, d.photos, 110 * u, photosTop, w - 220 * u, ph, { gap: 18 * u, radius: 14 * u, maxRatio: 1.5 });
-      if (d.title) poLine(ctx, d.title, w / 2, titleY, w - 220 * u, 84 * u, '#ffffff', { upper: true, spacing: 0.1, align: 'center' });
-      if (d.subtitle) stLabel(ctx, d.subtitle, w / 2, titleY + 50 * u, 20 * u, 'rgba(255,255,255,0.6)', 'center');
+      if (d.title) poLine(ctx, d.title, w / 2, titleY, w - 220 * u, 84 * u * ts, '#ffffff', { upper: true, spacing: ts < 1 ? 0.16 : 0.1, align: 'center' });
+      if (d.subtitle) stLabel(ctx, d.subtitle, w / 2, titleY + 50 * u * Math.max(0.8, ts), 20 * u * Math.max(0.85, ts), 'rgba(255,255,255,0.6)', 'center');
       if (d.stats.length) stDrawStats(ctx, d.stats, 110 * u, statsTop, w - 220 * u, { layout: L, labelColor: 'rgba(255,255,255,0.55)', dividers: true, dividerColor: 'rgba(255,255,255,0.18)' });
       if (d.coords) stLabel(ctx, poCoords(d), w / 2, h - 60 * u, 16 * u, 'rgba(255,255,255,0.45)', 'center');
     },
