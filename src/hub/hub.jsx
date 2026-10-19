@@ -22,7 +22,7 @@ const HUB_SERVICES = [
   },
   {
     id: 'site', key: '3', path: 'printrace/', name: 'Printrace', kind: 'Site web',
-    desc: 'La page d’accueil publique : « Print your Trek », import GPX ou Strava.',
+    desc: 'La page d’accueil publique : « Imprimez votre trek », import GPX ou Strava.',
     logo: <span className="text-white"><UiPrintraceLogo height={22} /></span>, accent: '#34d399',
   },
 ];
@@ -73,8 +73,8 @@ function HubPreview({ id }) {
       <rect x="22" y="16" width="44" height="7" rx="3.5" fill="#ffffffcc" />
       {[0, 1, 2].map((i) => <circle key={i} cx={322 + i * 9} cy="20" r="5" fill={['#2563eb', '#059669', '#f59e0b'][i]} stroke="#0a0a0a" strokeWidth="1.5" />)}
       <rect x="350" y="16" width="30" height="5" rx="2.5" fill="#fcd34d" />
-      <text x="200" y="66" textAnchor="middle" fontFamily="Montserrat, Inter, sans-serif" fontWeight="800" fontSize="30" fill="#ffffffe6" letterSpacing="-1">Print your</text>
-      <text x="200" y="98" textAnchor="middle" fontFamily="Montserrat, Inter, sans-serif" fontWeight="800" fontSize="30" fill="#34d399" letterSpacing="-1">Trek</text>
+      <text x="200" y="66" textAnchor="middle" fontFamily="Montserrat, Inter, sans-serif" fontWeight="800" fontSize="26" fill="#ffffffe6" letterSpacing="-1">Imprimez votre</text>
+      <text x="200" y="98" textAnchor="middle" fontFamily="Montserrat, Inter, sans-serif" fontWeight="800" fontSize="30" fill="#34d399" letterSpacing="-1">trek</text>
       <rect x="170" y="104" width="60" height="2" rx="1" fill="#34d39955" />
       <rect x="112" y="118" width="80" height="16" rx="6" fill="none" stroke="#ffffff55" strokeDasharray="3 3" />
       <rect x="198" y="118" width="90" height="16" rx="6" fill="#ffffff12" /><rect x="262" y="121" width="22" height="10" rx="4" fill="#fc4c02" />

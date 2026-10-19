@@ -21,7 +21,7 @@ et Barlow Semi Condensed (chiffres, titres), servies avec le site.
 |---|---|
 | `hub.html`, `src/hub/` | Hub (page d'accueil) : tuiles vers chaque service |
 | `routdoor.html`, `src/*.jsx` | Routdoor (carte, itinéraires, stats, partage story / embed / lien) |
-| `printrace-site.html`, `src/site/` | Site web de Printrace (hero « Print your Trek », import qui ouvre le studio) |
+| `printrace-site.html`, `src/site/` | Site web de Printrace (hero « Imprimez votre trek », import qui ouvre le studio) |
 | `printrace.html`, `src/printrace/` | Studio Printrace : navigation, bibliothèque de tracés, import (fichier, lien Strava, Routdoor) |
 | `src/poster-share.jsx`, `src/poster-map.jsx` | Studio poster (modèles, carte vectorielle, export PNG / SVG), utilisé par Printrace |
 | `src/ds/tokens.css`, `src/ds/ui.jsx` | Design system : jetons (couleurs, rayons, typo) et composants `Ui*` |

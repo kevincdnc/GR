@@ -1,5 +1,5 @@
 // Site web de Printrace — hero.
-// « Print your [Trek] » : le mot change selon le cas d'usage (trek, marathon,
+// « Imprimez votre [trek] » : le mot change selon le cas d'usage (trek, marathon,
 // road trip, moto trip), l'import GPX / FIT ou le lien Strava mène au studio
 // avec le tracé, et un vrai poster d'exemple (même moteur que le studio)
 // montre le résultat. Composants : design system (src/ds/ui.jsx).
@@ -38,8 +38,8 @@ function siteTrace(way, { seed = 7, rough = 0.22, depth = 6 } = {}) {
 // ~800 × 1000 px) ; tant qu'elles manquent, une illustration prend leur place.
 const SITE_CASES = [
   {
-    id: 'trek', accent: '#34d399', word: 'Trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, Compostelle…', icon: 'Footprints', activity: 'hiking',
-    pitch: 'Ton trek de plusieurs jours, en poster technique prêt à encadrer.',
+    id: 'trek', accent: '#34d399', word: 'trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, Compostelle…', icon: 'Footprints', activity: 'hiking',
+    pitch: 'Votre trek de plusieurs jours, en poster prêt à encadrer.',
     poster: {
       tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR20', subtitle: 'Corse · Calenzana → Conca',
       metrics: ['distance', 'ascent', 'duration'], values: { distance: '180 km', ascent: '12 000 m', duration: '15 jours' },
@@ -48,8 +48,8 @@ const SITE_CASES = [
     photos: [{ src: 'assets/site/trek-1.jpg', caption: 'GR20 · jour 6' }, { src: 'assets/site/trek-2.jpg', caption: 'Lac de Nino' }],
   },
   {
-    id: 'marathon', accent: '#fb7a3c', word: 'Marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, ton premier semi…', icon: 'Run', activity: 'running',
-    pitch: 'Ta course mythique, avec ton temps, sur une affiche qui claque.',
+    id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
+    pitch: 'Votre course mythique et votre temps, en poster prêt à encadrer.',
     poster: {
       tpl: 'nuit', color: '#fc5200', mapStyle: 'routes', mapOpacity: 100, title: 'Marathon de Paris', subtitle: '42,195 km · 6 avril 2026',
       metrics: ['distance', 'duration', 'pace'], values: { distance: '42,2 km', duration: '3 h 42', pace: "5'15\"/km" },
@@ -58,8 +58,8 @@ const SITE_CASES = [
     photos: [{ src: 'assets/site/marathon-1.jpg', caption: 'Ligne d’arrivée' }, { src: 'assets/site/marathon-2.jpg', caption: 'Km 30, le mur' }],
   },
   {
-    id: 'roadtrip', accent: '#facc15', word: 'Road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
-    pitch: 'Des milliers de kilomètres d’asphalte, réunis sur un seul poster.',
+    id: 'roadtrip', accent: '#facc15', word: 'road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
+    pitch: 'Des milliers de kilomètres réunis sur un seul poster.',
     poster: {
       tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Pacific Coast Hwy', subtitle: 'San Francisco → Los Angeles',
       metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '7 jours' },
@@ -68,8 +68,8 @@ const SITE_CASES = [
     photos: [{ src: 'assets/site/roadtrip-1.jpg', caption: 'Big Sur' }, { src: 'assets/site/roadtrip-2.jpg', caption: 'Highway 1' }],
   },
   {
-    id: 'moto', accent: '#60a5fa', word: 'Moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
-    pitch: 'Chaque col, chaque épingle : ta virée à moto mérite d’être au mur.',
+    id: 'moto', accent: '#60a5fa', word: 'moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
+    pitch: 'Chaque col et chaque virage de votre virée, au mur.',
     poster: {
       tpl: 'nuit', color: '#ffffff', mapStyle: 'routes', mapOpacity: 100, title: 'Route des Grandes Alpes', subtitle: 'Thonon → Menton · 16 cols',
       metrics: ['distance', 'altMax', 'duration'], values: { distance: '720 km', altMax: '2 802 m', duration: '5 jours' },
@@ -218,7 +218,7 @@ function SitePhoto({ c, i, className = '', rotate = 0, style }) {
 }
 
 // Poster d'exemple rendu par le moteur du studio, dans un cadre noir
-function SitePoster({ c, children }) {
+function SitePoster({ c }) {
   const ref = useSiteRef(null);
   const [ready, setReady] = useSiteState(false);
   const route = useSiteMemo(() => siteRouteOf(c), [c.id]);
@@ -237,16 +237,15 @@ function SitePoster({ c, children }) {
     return () => { live = false; };
   }, [c.id]);
   return (
-    <div className="relative mx-auto w-full">
+    <div className="relative mx-auto w-[min(480px,80vw)]">
       {/* Halo et ombre au sol : le poster se détache du fond */}
       <div className="pointer-events-none absolute -inset-x-[40%] -top-[12%] bottom-[10%] -z-10" style={{ background: `radial-gradient(50% 45% at 50% 45%, ${c.accent}24, transparent 70%)` }} />
-      {children}
-      <div className="relative z-10 p-[3.2%] bg-[#151515] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
+      <div className="relative p-[3.2%] bg-[#151515] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
         <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' }} />
         {!ready && <div className="absolute inset-[3.2%] grid place-items-center bg-neutral-900"><UiSpinner size={20} className="text-neutral-500" /></div>}
       </div>
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
-      <div className="relative z-10 mt-3 flex justify-center">
+      <div className="mt-3 flex justify-center">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300">
           <I.Poster size={13} /> Exemple · {c.poster.title} · A3
         </span>
@@ -282,7 +281,7 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
         </span>
       </button>
       {open && (
-        <div role="listbox" className="absolute left-1/2 -translate-x-1/2 lg:left-0 lg:translate-x-0 top-full mt-3 z-40 w-[340px] max-w-[88vw] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 text-left animate-menu" style={{ fontFamily: 'var(--ds-font-site)', fontSize: 14, letterSpacing: 0, lineHeight: 1.3 }}>
+        <div role="listbox" className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-40 w-[340px] max-w-[88vw] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 text-left animate-menu" style={{ fontFamily: 'var(--ds-font-site)', fontSize: 14, letterSpacing: 0, lineHeight: 1.3 }}>
           {SITE_CASES.map((x) => {
             const on = x.id === value, Ico = I[x.icon] || I.Route;
             return (
@@ -315,7 +314,7 @@ async function siteOpenStudio(stages, c, source) {
     color: '', distance: st.distanceKm, ascent: st.elevationGain, descent: st.elevationLoss,
     durationMin: st.gpxMovingMin || 0, date: st.gpxDate ? st.gpxDate.slice(0, 10) : '', coords: st.coords,
   }));
-  const code = await window.RoutdoorLink.encodeShare({ title: parts.length > 1 ? 'Mon ' + c.word.toLowerCase() : '', parts }, 6000);
+  const code = await window.RoutdoorLink.encodeShare({ title: parts.length > 1 ? 'Mon ' + c.word : '', parts }, 6000);
   const url = siteStudioUrl() + '#t=' + code + '&a=' + c.activity + '&src=site' + (source === 'strava' ? '&from=strava' : '');
   const sameSite = /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
   if (sameSite) location.href = url; else window.open(url, '_blank', 'noopener');
@@ -345,7 +344,7 @@ function SiteImport({ c }) {
     setError('');
     const r = ptParseStrava(link);
     if (!r || r.kind === 'invalid') { setError("Ce lien n'est pas une activité Strava."); return; }
-    if (r.kind === 'short') { setError("Lien raccourci : ouvre-le puis copie l'adresse complète (strava.com/activities/…)."); return; }
+    if (r.kind === 'short') { setError("Lien raccourci : ouvrez-le puis copiez l'adresse complète (strava.com/activities/…)."); return; }
     if (!ptStravaApi()) { setStravaRef(r); return; } // parcours guidé
     setStravaBusy(true);
     try { const f = await ptFetchStravaGpx(r); if (f) await importFiles([f], 'strava'); }
@@ -355,31 +354,29 @@ function SiteImport({ c }) {
   const pick = () => fileRef.current && fileRef.current.click();
 
   return (
-    <div className="w-full max-w-[520px] mx-auto lg:mx-0">
+    <div className="w-full max-w-[780px] mx-auto">
       <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => { importFiles(e.target.files); e.target.value = ''; }} />
-      {/* Fichier puis lien Strava, l'un au-dessus de l'autre */}
-      <div className="flex flex-col gap-3">
+      {/* Fichier et lien Strava côte à côte, sur une seule ligne (empilés sur mobile) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <button onClick={pick}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
           className={`h-16 rounded-2xl border-2 border-dashed flex items-center gap-3 pl-3 pr-5 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/20 bg-white/[0.03] hover:border-white/45 hover:bg-white/[0.05]'}`}>
           <span className="w-10 h-10 shrink-0 rounded-xl grid place-items-center bg-white text-neutral-900">{busy ? <UiSpinner size={17} /> : <I.Upload size={18} />}</span>
           <span className="min-w-0">
-            <span className="block text-[15px] font-semibold text-white leading-tight">{busy ? 'Lecture du tracé…' : 'Importe ton GPX ou FIT'}</span>
-            {!busy && <span className="block text-[12.5px] text-neutral-400 mt-0.5 truncate">Glisse tes fichiers ou <span className="text-white underline underline-offset-2 decoration-white/30">parcours</span></span>}
+            <span className="block text-[15px] font-semibold text-white leading-tight">{busy ? 'Lecture du tracé…' : 'Importez votre GPX ou FIT'}</span>
+            {!busy && <span className="block text-[12.5px] text-neutral-400 mt-0.5 truncate">Glissez vos fichiers ou <span className="text-white underline underline-offset-2 decoration-white/30">parcours</span></span>}
           </span>
         </button>
         <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
           <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="24" height="24" className="rounded-[5px] shrink-0" />
           <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
-            placeholder="Ou colle ton lien d’activité Strava" aria-label="Lien d'activité Strava"
+            placeholder="Ou collez votre lien Strava" aria-label="Lien d'activité Strava"
             className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
           <UiButton variant="strava" size="md" className="h-12 rounded-xl px-5 text-[14.5px]" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
         </div>
       </div>
-      {error ? <p className="mt-2.5 text-[13px] text-red-300">{error}</p> : (
-        <p className="mt-3.5 text-[13px] text-neutral-500">GPX, FIT, TCX, KML · Aperçu gratuit, tu ne paies qu’au téléchargement</p>
-      )}
+      {error && <p className="mt-2.5 text-[13px] text-red-300">{error}</p>}
 
       {stravaRef && (
         <div className="mt-4 text-left rounded-2xl bg-[#fc4c02]/[0.07] ring-1 ring-[#fc4c02]/25 p-4 ds-fade-up">
@@ -387,7 +384,7 @@ function SiteImport({ c }) {
             <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="28" height="28" className="rounded-md shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="text-[14px] font-semibold text-white">Activité Strava n° {stravaRef.id}</div>
-              <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">Télécharge le GPX depuis ton compte Strava, puis dépose-le ici : ton poster s'ouvre aussitôt.</p>
+              <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">Téléchargez le GPX depuis votre compte Strava, puis déposez-le ici : votre poster s'ouvre aussitôt.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <a href={ptStravaExportUrl(stravaRef)} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white bg-[#fc4c02] hover:brightness-110"><I.Download size={15} /> Télécharger le GPX</a>
                 <UiButton icon="Upload" onClick={pick}>Déposer le fichier</UiButton>
@@ -416,47 +413,37 @@ function PrintraceSite() {
   return (
     <div className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
       {/* Fond : noir en haut, plus clair vers le poster (dégradé linéaire) */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(165deg, #0a0a0a 0%, #0c0c0d 35%, #1d1d21 65%, #303036 88%, #38383e 100%)' }}>
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #0a0a0a 0%, #0c0c0d 38%, #1c1c1f 62%, #2e2e33 84%, #36363b 100%)' }}>
         {/* Décor : lueur, quadrillage de plan qui s'efface */}
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 50% at 50% 0%, rgba(255,255,255,0.08), rgba(255,255,255,0) 70%)' }} />
         <div className="pointer-events-none absolute inset-0 opacity-60" style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '48px 48px', maskImage: 'radial-gradient(60% 70% at 72% 45%, #000 25%, transparent 75%)', WebkitMaskImage: 'radial-gradient(60% 70% at 72% 45%, #000 25%, transparent 75%)' }} />
+          backgroundSize: '48px 48px', maskImage: 'radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%)', WebkitMaskImage: 'radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%)' }} />
 
         <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={24} /></a>
           <SiteProof />
         </nav>
 
-        {/* Deux colonnes : promesse + import à gauche, poster d'exemple et photos à droite */}
-        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-8 lg:pt-14 pb-20 lg:pb-28 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] gap-14 lg:gap-10 items-center">
-          <div className="text-center lg:text-left">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/[0.05] ring-1 ring-white/10 pl-2 pr-3 h-7 text-[12.5px] text-neutral-300">
-              <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.accent }} /> Posters de tracés GPS, prêts à encadrer
-            </span>
-            {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
-            <h1 className="mt-6 font-display font-extrabold tracking-[-0.035em] leading-[1.02] text-[clamp(38px,5.2vw,72px)]">
-              <span className="block text-white/90">Print your</span>
-              <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
-            </h1>
-            <p key={c.id} className="ds-fade-up mt-5 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[500px] mx-auto lg:mx-0">
-              {c.pitch} <span className="text-neutral-200">Poster vectoriel, prêt à encadrer.</span>
-            </p>
-            <div className="mt-8"><SiteImport c={c} /></div>
-            <ul className="mt-7 flex flex-wrap justify-center lg:justify-start gap-x-5 gap-y-2 text-[13px] text-neutral-400">
-              {['PNG 300 dpi + SVG vectoriel', 'Du A4 au 50 × 70', 'Carte au style de ton choix'].map((t) => (
-                <li key={t} className="inline-flex items-center gap-1.5"><span className="text-neutral-200"><I.Check size={14} /></span>{t}</li>
-              ))}
-            </ul>
-          </div>
+        {/* Photos du cas d'usage, de part et d'autre (en dehors de la colonne de texte) */}
+        <SitePhoto c={c} i={0} rotate={-7} className="hidden lg:block z-0 top-[150px] w-[188px] h-[236px] xl:w-[214px] xl:h-[268px]" style={{ left: 'max(20px, calc(50% - 690px))' }} />
+        <SitePhoto c={c} i={1} rotate={6} className="hidden lg:block z-0 top-[420px] w-[180px] h-[226px] xl:w-[204px] xl:h-[256px]" style={{ right: 'max(20px, calc(50% - 690px))' }} />
 
-          <div className="relative w-full max-w-[440px] mx-auto lg:mr-6">
-            <SitePoster c={c}>
-              {/* Photos du trip glissées derrière le poster */}
-              <SitePhoto c={c} i={0} rotate={-8} className="hidden sm:block z-0 -left-[30%] xl:-left-[34%] top-[8%] w-[40%] xl:w-[44%] aspect-[4/5]" />
-              <SitePhoto c={c} i={1} rotate={7} className="hidden sm:block z-20 -right-[12%] xl:-right-[20%] bottom-[16%] w-[36%] xl:w-[40%] aspect-[4/5]" />
-            </SitePoster>
-          </div>
+        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-24 text-center">
+
+          {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
+          <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.02] text-[clamp(36px,5.4vw,76px)]">
+            <span className="block text-white/90">Imprimez votre</span>
+            <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
+          </h1>
+          {/* Description sur une seule ligne */}
+          <p key={c.id} className="ds-fade-up mt-6 text-[17px] sm:text-[19px] leading-relaxed text-neutral-400 sm:whitespace-nowrap">
+            {c.pitch}
+          </p>
+
+          <div className="mt-10"><SiteImport c={c} /></div>
+
+          <div className="mt-12 sm:mt-14"><SitePoster c={c} /></div>
         </section>
       </div>
     </div>
