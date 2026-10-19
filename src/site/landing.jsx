@@ -306,8 +306,7 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
 // ---------------------------------------------------------------- import
 // Adresse du studio (même site) ; les tracés partent dans le lien (#t=…)
 function siteStudioUrl() {
-  const b = window.RoutdoorLink ? window.RoutdoorLink.siteBase() : './';
-  return /printrace\/$/.test(b) ? b + 'studio/' : b + 'printrace/studio/';
+  return (window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../') + 'printrace/studio/';
 }
 async function siteOpenStudio(stages, c, source) {
   const parts = stages.map(({ st, name }) => ({

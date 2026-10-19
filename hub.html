@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Hub</title>
+<meta name="description" content="Accès rapide à Routdoor, au studio Printrace et au site Printrace." />
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+<script>
+  // Anciens liens de Routdoor (tracé partagé #t=…, statistiques #metrics) : redirigés vers Routdoor
+  if (/^#(t=|metrics)/.test(location.hash)) location.replace('routdoor/' + location.hash);
+</script>
+<link rel="stylesheet" href="ds.css" />
+<script src="vendor/react.js"></script>
+<script src="vendor/react-dom.js"></script>
+<style>
+  body { background: #0a0a0a; color: #fff; overflow: hidden; }
+</style>
+<link rel="stylesheet" href="tailwind.css" />
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="src/icons.jsx"></script>
+<script type="text/babel" src="src/ds/ui.jsx"></script>
+<script type="text/babel" src="src/hub/hub.jsx"></script>
+</body>
+</html>

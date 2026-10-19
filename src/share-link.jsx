@@ -3,7 +3,7 @@
 // Il n'y a pas de serveur : le tracé voyage DANS le lien. Les points sont
 // simplifiés (Douglas-Peucker), codés en entiers delta (lat/lng au 1e-5,
 // altitude au mètre) en varints, puis compressés (deflate) et passés en base64url.
-//   https://…/GR/#t=<données>            -> l'app ouvre le tracé partagé
+//   https://…/GR/routdoor/#t=<données>   -> Routdoor ouvre le tracé partagé
 //   https://…/GR/embed.html#t=<données>&o=<options>  -> carte intégrable
 // Ce fichier est chargé par l'app ET par embed.html (sans React).
 
@@ -21,6 +21,13 @@
     } catch (e) {}
     return RD_SITE;
   }
+
+  // Racine du site (hub) : les services vivent dans des sous-dossiers
+  //   routdoor/ · printrace/ · printrace/studio/ · design-system/
+  function siteRoot() {
+    return siteBase().replace(/(routdoor|printrace\/studio|printrace|design-system)\/$/, '');
+  }
+  const routdoorBase = () => siteRoot() + 'routdoor/';
 
   // ---------------------------------------------------------------- simplification
   function simplify(coords, tolM) {
@@ -156,8 +163,8 @@
   }
   const encOpts = (o) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-  const shareUrl = (code) => siteBase() + '#t=' + code;
-  const embedUrl = (code, opts) => siteBase() + 'embed.html#t=' + code + (opts ? '&o=' + encOpts(opts) : '');
+  const shareUrl = (code) => routdoorBase() + '#t=' + code;
+  const embedUrl = (code, opts) => siteRoot() + 'embed.html#t=' + code + (opts ? '&o=' + encOpts(opts) : '');
 
   // ---------------------------------------------------------------- carte intégrable
   const EMBED_LAYERS = {
@@ -383,7 +390,7 @@
   }
 
   window.RoutdoorLink = {
-    encodeShare, decodeShare, readHash, shareUrl, embedUrl, siteBase, mountEmbed,
+    encodeShare, decodeShare, readHash, shareUrl, embedUrl, siteBase, siteRoot, routdoorBase, mountEmbed,
     EMBED_LAYERS, EMBED_DEFAULTS, simplify,
   };
 })();

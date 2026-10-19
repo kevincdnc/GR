@@ -1,9 +1,10 @@
 # Routdoor · Printrace
 
-Deux produits, un même code et un même design system :
+Deux produits, un même code et un même design system. La page d'accueil
+https://kevincdnc.github.io/GR/ est un **hub** qui donne accès à chaque service (tuiles, raccourcis 1 · 2 · 3).
 
 - **Routdoor** — créer, importer et modifier ses itinéraires (né du suivi de mon GR34, le sentier des douaniers).
-  En ligne : https://kevincdnc.github.io/GR/ · statistiques : https://kevincdnc.github.io/GR/#metrics
+  En ligne : https://kevincdnc.github.io/GR/routdoor/ · statistiques : https://kevincdnc.github.io/GR/routdoor/#metrics
 - **Printrace** — transformer un tracé (GPX, FIT, lien Strava, ou envoyé depuis Routdoor) en poster
   vectoriel prêt à imprimer. Site : https://kevincdnc.github.io/GR/printrace/ · studio :
   https://kevincdnc.github.io/GR/printrace/studio/
@@ -18,7 +19,8 @@ et Barlow Semi Condensed (chiffres, titres), servies avec le site.
 
 | Dossier / fichier | Rôle |
 |---|---|
-| `index.html`, `src/*.jsx` | Routdoor (carte, itinéraires, stats, partage story / embed / lien) |
+| `hub.html`, `src/hub/` | Hub (page d'accueil) : tuiles vers chaque service |
+| `routdoor.html`, `src/*.jsx` | Routdoor (carte, itinéraires, stats, partage story / embed / lien) |
 | `printrace-site.html`, `src/site/` | Site web de Printrace (hero « Print your Trek », import qui ouvre le studio) |
 | `printrace.html`, `src/printrace/` | Studio Printrace : navigation, bibliothèque de tracés, import (fichier, lien Strava, Routdoor) |
 | `src/poster-share.jsx`, `src/poster-map.jsx` | Studio poster (modèles, carte vectorielle, export PNG / SVG), utilisé par Printrace |
@@ -72,12 +74,12 @@ npm run preview:file   # tout en un seul fichier : preview/gr34.html
 
 Le prototype chargeait ses `.jsx` avec Babel dans le navigateur. `scripts/build.mjs` fait la même
 transformation à la compilation (presets `react` + `env`, un `<script>` classique par fichier, même ordre que
-`index.html`), compile Tailwind 3.4 et sert React / Leaflet depuis `node_modules` : le comportement reste celui
+`routdoor.html` et des autres pages), compile Tailwind 3.4 et sert React / Leaflet depuis `node_modules` : le comportement reste celui
 du design, sans dépendre de CDN.
 
 | Fichier | Rôle |
 |---|---|
-| `index.html`, `src/*.jsx`, `tweaks-panel.jsx`, `assets/` | Interface issue du prototype (modifiée là où elle est branchée sur les vraies données) |
+| `routdoor.html`, `src/*.jsx`, `tweaks-panel.jsx`, `assets/` | Interface issue du prototype (modifiée là où elle est branchée sur les vraies données) |
 | `src/metrics.jsx` | Vue Statistiques GR34 |
 | `src/story-share.jsx` | Partage en story : modèles, aperçu en direct, export PNG |
 | `lib/gpx.mjs` | Lecture des traces (GPX, FIT, TCX, KML, GeoJSON, IGC) + métriques (build et import dans le navigateur) |

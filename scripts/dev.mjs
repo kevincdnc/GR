@@ -1,5 +1,5 @@
 // Serveur de dev : build dans dist/, sert dist/ sur http://localhost:5173
-// et reconstruit à chaque modification (src/, gpx/, index.html…). Recharger la page.
+// et reconstruit à chaque modification (src/, gpx/, pages .html…). Recharger la page.
 import { createServer } from 'node:http'
 import { existsSync, readFileSync, statSync, watch } from 'node:fs'
 import { extname, join, normalize, resolve, dirname } from 'node:path'
@@ -22,7 +22,7 @@ const safeBuild = () => {
 safeBuild()
 
 let timer = null
-for (const p of ['src', 'gpx', 'assets', 'lib', 'index.html', 'printrace.html', 'printrace-site.html', 'design-system.html', 'embed.html', 'tweaks-panel.jsx', 'tailwind.config.cjs'].filter((f) => existsSync(join(ROOT, f)))) {
+for (const p of ['src', 'gpx', 'assets', 'lib', 'hub.html', 'routdoor.html', 'printrace.html', 'printrace-site.html', 'design-system.html', 'embed.html', 'tweaks-panel.jsx', 'tailwind.config.cjs'].filter((f) => existsSync(join(ROOT, f)))) {
   watch(join(ROOT, p), { recursive: true }, () => {
     dirty = true
     clearTimeout(timer)

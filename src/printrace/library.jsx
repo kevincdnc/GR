@@ -130,8 +130,7 @@ async function ptReadInbox() {
 }
 // Adresse de Routdoor (même site) pour créer ou modifier un itinéraire
 function ptRoutdoorUrl() {
-  const b = window.RoutdoorLink ? window.RoutdoorLink.siteBase() : './';
-  return b.replace(/printrace\/(studio\/)?$/, '');
+  return window.RoutdoorLink ? window.RoutdoorLink.routdoorBase() : '../../routdoor/';
 }
 
 Object.assign(window, {
