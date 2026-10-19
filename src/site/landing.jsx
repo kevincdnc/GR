@@ -45,6 +45,7 @@ const SITE_CASES = [
       metrics: ['distance', 'ascent', 'duration'], values: { distance: '180 km', ascent: '12 000 m', duration: '15 jours' }, photos: 1,
       route: { name: 'GR20', seed: 11, way: [[42.508, 8.855, 270], [42.455, 8.905, 1520], [42.405, 8.93, 1980], [42.355, 8.965, 2130], [42.33, 9.01, 1640], [42.285, 9.045, 2225], [42.235, 9.075, 1600], [42.2, 9.12, 1450], [42.15, 9.135, 2350], [42.09, 9.16, 1190], [42.03, 9.19, 1580], [41.975, 9.18, 1800], [41.9, 9.215, 1350], [41.86, 9.25, 2134], [41.82, 9.295, 1240], [41.775, 9.33, 1500], [41.733, 9.343, 250]] },
     },
+    unsplash: ['corsica mountains hiking', 'alpine lake hiker'],
     photos: [{ src: 'assets/site/trek-1.jpg', caption: 'GR20 · jour 6' }, { src: 'assets/site/trek-2.jpg', caption: 'Lac de Nino' }],
   },
   {
@@ -55,6 +56,7 @@ const SITE_CASES = [
       metrics: ['distance', 'duration', 'pace'], values: { distance: '42,2 km', duration: '3 h 42', pace: "5'15\"/km" },
       route: { name: 'Marathon de Paris', seed: 5, rough: 0.12, depth: 5, way: [[48.8738, 2.2950], [48.8656, 2.3212], [48.8606, 2.3376], [48.8566, 2.3522], [48.8530, 2.3690], [48.8443, 2.3920], [48.8390, 2.4100], [48.8335, 2.4330], [48.8290, 2.4440], [48.8225, 2.4320], [48.8300, 2.4050], [48.8410, 2.3790], [48.8505, 2.3570], [48.8580, 2.3360], [48.8610, 2.3150], [48.8580, 2.2945], [48.8510, 2.2780], [48.8460, 2.2560], [48.8575, 2.2470], [48.8680, 2.2550], [48.8715, 2.2760]] },
     },
+    unsplash: ['marathon runners city', 'marathon finish line'],
     photos: [{ src: 'assets/site/marathon-1.jpg', caption: 'Ligne d’arrivée' }, { src: 'assets/site/marathon-2.jpg', caption: 'Km 30, le mur' }],
   },
   {
@@ -65,6 +67,7 @@ const SITE_CASES = [
       metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '7 jours' }, photos: 2,
       route: { name: 'Pacific Coast Highway', seed: 3, rough: 0.14, depth: 5, way: [[37.7749, -122.4194, 20], [37.50, -122.47, 30], [37.25, -122.40, 40], [36.97, -122.03, 10], [36.60, -121.89, 20], [36.27, -121.81, 200], [35.95, -121.48, 300], [35.66, -121.25, 80], [35.37, -120.85, 20], [35.28, -120.66, 70], [34.95, -120.43, 100], [34.42, -119.70, 15], [34.27, -119.23, 10], [34.03, -118.78, 20], [34.05, -118.24, 90]] },
     },
+    unsplash: ['big sur highway coast', 'desert road trip'],
     photos: [{ src: 'assets/site/roadtrip-1.jpg', caption: 'Big Sur' }, { src: 'assets/site/roadtrip-2.jpg', caption: 'Highway 1' }],
   },
   {
@@ -75,6 +78,7 @@ const SITE_CASES = [
       metrics: ['distance', 'altMax', 'duration'], values: { distance: '720 km', altMax: '2 802 m', duration: '5 jours' },
       route: { name: 'Route des Grandes Alpes', seed: 9, rough: 0.2, way: [[46.37, 6.48, 380], [46.20, 6.55, 900], [45.99, 6.47, 1613], [45.87, 6.47, 1486], [45.69, 6.69, 1967], [45.55, 6.88, 800], [45.42, 7.03, 2764], [45.24, 6.68, 1100], [45.06, 6.41, 2642], [44.89, 6.64, 1300], [44.82, 6.73, 2360], [44.62, 6.75, 1100], [44.39, 6.65, 1132], [44.32, 6.81, 2802], [44.10, 7.10, 900], [43.90, 7.35, 500], [43.77, 7.50, 10]] },
     },
+    unsplash: ['motorcycle mountain pass', 'alps hairpin road'],
     photos: [{ src: 'assets/site/moto-1.jpg', caption: 'Col de la Bonette' }, { src: 'assets/site/moto-2.jpg', caption: 'Lacets du Galibier' }],
   },
 ];
@@ -97,13 +101,44 @@ function sitePosterData(c, route, photos = []) {
   };
 }
 
-// Photos posées sur le poster d'exemple : les vraies photos du trip
-// (assets/site/<cas>-N.jpg) ou, à défaut, l'illustration rendue en image.
+// Photos des cas d'usage, par ordre de priorité :
+//  1. vraies photos du trip dans assets/site/<cas>-N.jpg
+//  2. photos Unsplash (clé d'accès gratuite : PRINTRACE_CONFIG.unsplashKey),
+//     chargées par le navigateur et créditées comme le demande Unsplash
+//  3. illustration dessinée
 const siteImgCache = {};
 function siteLoadImg(src) {
   if (!src) return Promise.resolve(null);
-  if (!siteImgCache[src]) siteImgCache[src] = new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  if (!siteImgCache[src]) siteImgCache[src] = new Promise((res) => {
+    const im = new Image();
+    if (/^https?:/.test(src)) im.crossOrigin = 'anonymous'; // Unsplash autorise le dessin sur canvas
+    im.onload = () => res(im); im.onerror = () => res(null); im.src = src;
+  });
   return siteImgCache[src];
+}
+const SITE_UTM = '?utm_source=printrace&utm_medium=referral';
+async function siteUnsplash(query) {
+  const key = (window.PRINTRACE_CONFIG || {}).unsplashKey;
+  if (!key || !query) return null;
+  const ck = 'pt_unsplash_' + query;
+  try { const hit = sessionStorage.getItem(ck); if (hit) return JSON.parse(hit); } catch (e) {}
+  try {
+    const r = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&orientation=portrait&per_page=1&content_filter=high&client_id=${key}`);
+    if (!r.ok) return null;
+    const p = ((await r.json()).results || [])[0];
+    if (!p) return null;
+    const out = { src: p.urls.raw + '&w=720&h=900&fit=crop&q=80', credit: p.user.name, link: p.user.links.html + SITE_UTM };
+    try { sessionStorage.setItem(ck, JSON.stringify(out)); } catch (e) {}
+    return out;
+  } catch (e) { return null; }
+}
+// Photo à afficher pour un cas d'usage : { src, credit?, link? } ou null (illustration)
+async function siteResolvePhoto(c, i) {
+  const local = (c.photos[i] || {}).src;
+  if (local && (await siteLoadImg(local))) return { src: local };
+  const u = await siteUnsplash((c.unsplash || [])[i]);
+  if (u && (await siteLoadImg(u.src))) return u;
+  return null;
 }
 function siteSceneImg(kind, alt) {
   const host = document.createElement('div');
@@ -113,10 +148,11 @@ function siteSceneImg(kind, alt) {
   root.unmount();
   return siteLoadImg('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
 }
-async function sitePosterPhotos(c) {
+async function sitePosterPhotos(c, resolved = []) {
   const out = [];
   for (let i = 0; i < (c.poster.photos || 0); i++) {
-    const img = (await siteLoadImg((c.photos[i] || {}).src)) || (await siteSceneImg(c.id, i === 1));
+    const r = resolved[i];
+    const img = (r && (await siteLoadImg(r.src))) || (await siteSceneImg(c.id, i === 1));
     if (img) out.push({ img, url: img.src });
   }
   return out;
@@ -229,22 +265,25 @@ function SiteScene({ kind, alt }) {
   );
 }
 // Photo posée en décor (cadre type tirage photo, légèrement tournée)
-function SitePhoto({ c, i, className = '', rotate = 0, style }) {
-  const ph = c.photos[i] || {};
+function SitePhoto({ c, i, photo, className = '', rotate = 0, style }) {
+  const ph = { ...(c.photos[i] || {}), src: '', ...(photo || {}) };
   const [broken, setBroken] = useSiteState(false);
   useSiteEffect(() => setBroken(false), [ph.src]); // nouvelle photo à chaque cas d'usage
   return (
-    <figure className={`absolute pointer-events-none select-none rounded-[6px] bg-[#f4f1ea] p-2.5 pb-9 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.8)] ${className}`} style={{ ...style, transform: `rotate(${rotate}deg)` }}>
+    <figure className={`absolute pointer-events-none select-none rounded-[6px] bg-[#f4f1ea] p-2.5 ${photo && photo.credit ? 'pb-11' : 'pb-9'} shadow-[0_30px_60px_-20px_rgba(0,0,0,0.8)] ${className}`} style={{ ...style, transform: `rotate(${rotate}deg)` }}>
       <div key={c.id} className="w-full h-full rounded-[3px] overflow-hidden ds-fade-up bg-neutral-300">
         {ph.src && !broken ? <img src={ph.src} alt="" className="w-full h-full object-cover" onError={() => setBroken(true)} /> : <SiteScene kind={c.id} alt={i === 1} />}
       </div>
-      <figcaption className="absolute left-0 right-0 bottom-2.5 text-center text-[12px] font-medium text-neutral-600" style={{ fontFamily: 'var(--ds-font-site)' }}>{ph.caption}</figcaption>
+      <figcaption className="absolute left-0 right-0 bottom-2.5 text-center text-[12px] font-medium text-neutral-600 leading-none" style={{ fontFamily: 'var(--ds-font-site)' }}>
+        {ph.caption}
+        {ph.credit && <span className="pointer-events-auto block mt-1 text-[9px] font-normal text-neutral-400">Photo <a href={ph.link} target="_blank" rel="noopener" className="underline">{ph.credit}</a> · <a href={'https://unsplash.com/' + SITE_UTM} target="_blank" rel="noopener" className="underline">Unsplash</a></span>}
+      </figcaption>
     </figure>
   );
 }
 
 // Poster d'exemple rendu par le moteur du studio, dans un cadre noir
-function SitePoster({ c }) {
+function SitePoster({ c, photos }) {
   const ref = useSiteRef(null);
   const [ready, setReady] = useSiteState(false);
   const route = useSiteMemo(() => siteRouteOf(c), [c.id]);
@@ -252,18 +291,19 @@ function SitePoster({ c }) {
   useSiteEffect(() => {
     let live = true;
     setReady(false);
+    if (!photos) return; // photos du cas d'usage encore en cours de résolution
     (async () => {
       await storyFontsReady();
       const cv = ref.current; if (!cv || !live) return;
       const tpl = POSTER_TEMPLATES.find((t) => t.id === c.poster.tpl) || POSTER_TEMPLATES[0];
       const w = 900; cv.width = w; cv.height = Math.round(w * fmt.mm[1] / fmt.mm[0]);
-      const photos = await sitePosterPhotos(c);
+      const ph = await sitePosterPhotos(c, photos);
       if (!live) return;
-      await renderPoster(cv, tpl, sitePosterData(c, route, photos), fmt, 'none', w / PO_W);
+      await renderPoster(cv, tpl, sitePosterData(c, route, ph), fmt, 'none', w / PO_W);
       if (live) setReady(true);
     })();
     return () => { live = false; };
-  }, [c.id]);
+  }, [c.id, photos && photos.map((p) => (p ? p.src : '')).join('|')]);
   return (
     <div className="relative mx-auto w-[min(480px,80vw)]">
       {/* Halo et ombre au sol : le poster se détache du fond */}
@@ -444,6 +484,15 @@ function PrintraceSite() {
     return () => clearTimeout(t);
   }, [caseId, auto]);
   const stop = () => setAuto(false);
+  // Photos du cas d'usage (fichiers locaux, Unsplash ou illustration)
+  const [photoSet, setPhotoSet] = useSiteState({});
+  useSiteEffect(() => {
+    if (photoSet[caseId]) return;
+    let live = true;
+    Promise.all([0, 1].map((i) => siteResolvePhoto(c, i))).then((ps) => { if (live) setPhotoSet((m) => ({ ...m, [caseId]: ps })); });
+    return () => { live = false; };
+  }, [caseId]);
+  const photos = photoSet[caseId] || [];
 
   return (
     <div className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
@@ -461,8 +510,8 @@ function PrintraceSite() {
         </nav>
 
         {/* Photos du cas d'usage, de part et d'autre (en dehors de la colonne de texte) */}
-        <SitePhoto c={c} i={0} rotate={-7} className="hidden lg:block z-0 top-[150px] w-[188px] h-[236px] xl:w-[214px] xl:h-[268px]" style={{ left: 'max(20px, calc(50% - 690px))' }} />
-        <SitePhoto c={c} i={1} rotate={6} className="hidden lg:block z-0 top-[420px] w-[180px] h-[226px] xl:w-[204px] xl:h-[256px]" style={{ right: 'max(20px, calc(50% - 690px))' }} />
+        <SitePhoto c={c} i={0} photo={photos[0]} rotate={-7} className="hidden lg:block z-0 top-[150px] w-[188px] h-[236px] xl:w-[214px] xl:h-[268px]" style={{ left: 'max(20px, calc(50% - 690px))' }} />
+        <SitePhoto c={c} i={1} photo={photos[1]} rotate={6} className="hidden lg:block z-0 top-[420px] w-[180px] h-[226px] xl:w-[204px] xl:h-[256px]" style={{ right: 'max(20px, calc(50% - 690px))' }} />
 
         <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-24 text-center">
 
@@ -478,7 +527,7 @@ function PrintraceSite() {
 
           <div className="mt-12 sm:mt-14"><SiteImport c={c} /></div>
 
-          <div className="mt-12 sm:mt-14"><SitePoster c={c} /></div>
+          <div className="mt-12 sm:mt-14"><SitePoster c={c} photos={photoSet[caseId] || null} /></div>
         </section>
       </div>
     </div>
