@@ -47,7 +47,7 @@ const SITE_CASES = [
       route: { name: 'GR34', seed: 11, way: [[47.80, -3.79, 10], [47.87, -3.92, 20], [47.87, -4.10, 15], [47.80, -4.37, 20], [48.02, -4.70, 30]] },
     },
     unsplash: ['brittany coastal path', 'crozon peninsula beach'],
-    photos: [{ src: 'assets/site/trek-1.jpg', caption: 'Balisage du GR34' }, { src: 'assets/site/trek-2.jpg', caption: 'Presqu’île de Crozon' }],
+    photos: [{ src: ptRes('siteTrek1', 'assets/site/trek-1.jpg'), caption: 'Balisage du GR34' }, { src: ptRes('siteTrek2', 'assets/site/trek-2.jpg'), caption: 'Presqu’île de Crozon' }],
   },
   {
     id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
