@@ -3,6 +3,11 @@
 
 const { useEffect: useHubEffect } = React;
 
+// Hors du site (aperçu), les tuiles mènent aux services en ligne
+const HUB_LOCAL = /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
+const HUB_ROOT = HUB_LOCAL ? '' : 'https://kevincdnc.github.io/GR/';
+const hubLink = (path) => (HUB_LOCAL ? { href: path } : { href: HUB_ROOT + path, target: '_blank', rel: 'noopener' });
+
 // Services : chemin relatif à la racine du site
 const HUB_SERVICES = [
   {
@@ -83,7 +88,7 @@ function HubPreview({ id }) {
 
 function HubTile({ s }) {
   return (
-    <a href={s.path} className="group relative flex flex-col rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] overflow-hidden transition-all hover:ring-white/25 hover:bg-white/[0.05] hover:-translate-y-0.5 focus-visible:ring-white/40">
+    <a {...hubLink(s.path)} className="group relative flex flex-col rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] overflow-hidden transition-all hover:ring-white/25 hover:bg-white/[0.05] hover:-translate-y-0.5 focus-visible:ring-white/40">
       <div className="relative aspect-[400/220] overflow-hidden border-b border-white/[0.06]">
         <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-[1.03]"><HubPreview id={s.id} /></div>
         <span className="absolute top-3 left-3"><UiBadge tone="solid">{s.kind}</UiBadge></span>
@@ -112,7 +117,7 @@ function Hub() {
     const k = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey || /input|textarea/i.test((e.target && e.target.tagName) || '')) return;
       const s = HUB_SERVICES.find((x) => x.key === e.key);
-      if (s) location.href = s.path;
+      if (s) { const l = hubLink(s.path); if (l.target) window.open(l.href, '_blank', 'noopener'); else location.href = l.href; }
     };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
@@ -144,7 +149,7 @@ function Hub() {
             {HUB_RESOURCES.map((r) => {
               const Ico = I[r.icon] || I.Link;
               return (
-                <a key={r.name} href={r.href || r.path} {...(r.href ? { target: '_blank', rel: 'noopener' } : {})}
+                <a key={r.name} {...(r.href ? { href: r.href, target: '_blank', rel: 'noopener' } : hubLink(r.path))}
                   className="group flex items-center gap-3 rounded-xl px-4 py-3 bg-white/[0.03] ring-1 ring-white/[0.07] hover:bg-white/[0.06] transition-colors">
                   <span className="w-9 h-9 rounded-lg grid place-items-center bg-white/[0.06] text-neutral-200"><Ico size={17} /></span>
                   <span className="flex-1 min-w-0">
