@@ -653,7 +653,7 @@ function PrintraceSite() {
 
   return (
     <div className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
-     <div className="relative isolate min-h-full">
+     <div className="relative isolate min-h-full overflow-x-clip">
       {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
         backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)',
@@ -661,7 +661,7 @@ function PrintraceSite() {
         maskImage: 'radial-gradient(90% 60% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 45%, transparent 85%)', WebkitMaskImage: 'radial-gradient(90% 60% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 45%, transparent 85%)' }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
       {/* Fond noir ; seule la zone du poster est éclairée */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-x-clip">
         <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
           <SiteProof />
