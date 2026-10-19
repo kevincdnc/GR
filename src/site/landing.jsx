@@ -30,47 +30,49 @@ function siteTrace(way, { seed = 7, rough = 0.22, depth = 6 } = {}) {
   return pts.map((p) => [+p[0].toFixed(5), +p[1].toFixed(5), Math.max(0, Math.round(p[2]))]);
 }
 
-// Cas d'usage : mot du titre, activité du studio, poster d'exemple, photos
+// Cas d'usage : mot du titre (et sa couleur), activité du studio, poster d'exemple, photos.
+// Photos : vraies photos du trip dans assets/site/<cas>-1.jpg et -2.jpg (portrait,
+// ~800 × 1000 px) ; tant qu'elles manquent, une illustration prend leur place.
 const SITE_CASES = [
   {
-    id: 'trek', word: 'Trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, Compostelle…', icon: 'Footprints', activity: 'hiking',
+    id: 'trek', accent: '#34d399', word: 'Trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, Compostelle…', icon: 'Footprints', activity: 'hiking',
     pitch: 'Ton trek de plusieurs jours, en poster technique prêt à encadrer.',
     poster: {
       tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR20', subtitle: 'Corse · Calenzana → Conca',
       metrics: ['distance', 'ascent', 'duration'], values: { distance: '180 km', ascent: '12 000 m', duration: '15 jours' },
       route: { name: 'GR20', seed: 11, way: [[42.508, 8.855, 270], [42.455, 8.905, 1520], [42.405, 8.93, 1980], [42.355, 8.965, 2130], [42.33, 9.01, 1640], [42.285, 9.045, 2225], [42.235, 9.075, 1600], [42.2, 9.12, 1450], [42.15, 9.135, 2350], [42.09, 9.16, 1190], [42.03, 9.19, 1580], [41.975, 9.18, 1800], [41.9, 9.215, 1350], [41.86, 9.25, 2134], [41.82, 9.295, 1240], [41.775, 9.33, 1500], [41.733, 9.343, 250]] },
     },
-    photos: [{ src: '', caption: 'GR20 · jour 6' }, { src: '', caption: 'Lac de Nino' }],
+    photos: [{ src: 'assets/site/trek-1.jpg', caption: 'GR20 · jour 6' }, { src: 'assets/site/trek-2.jpg', caption: 'Lac de Nino' }],
   },
   {
-    id: 'marathon', word: 'Marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, ton premier semi…', icon: 'Run', activity: 'running',
+    id: 'marathon', accent: '#fb7a3c', word: 'Marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, ton premier semi…', icon: 'Run', activity: 'running',
     pitch: 'Ta course mythique, avec ton temps, sur une affiche qui claque.',
     poster: {
       tpl: 'nuit', color: '#fc5200', mapStyle: 'routes', mapOpacity: 100, title: 'Marathon de Paris', subtitle: '42,195 km · 6 avril 2026',
       metrics: ['distance', 'duration', 'pace'], values: { distance: '42,2 km', duration: '3 h 42', pace: "5'15\"/km" },
       route: { name: 'Marathon de Paris', seed: 5, rough: 0.12, depth: 5, way: [[48.8738, 2.2950], [48.8656, 2.3212], [48.8606, 2.3376], [48.8566, 2.3522], [48.8530, 2.3690], [48.8443, 2.3920], [48.8390, 2.4100], [48.8335, 2.4330], [48.8290, 2.4440], [48.8225, 2.4320], [48.8300, 2.4050], [48.8410, 2.3790], [48.8505, 2.3570], [48.8580, 2.3360], [48.8610, 2.3150], [48.8580, 2.2945], [48.8510, 2.2780], [48.8460, 2.2560], [48.8575, 2.2470], [48.8680, 2.2550], [48.8715, 2.2760]] },
     },
-    photos: [{ src: '', caption: 'Ligne d’arrivée' }, { src: '', caption: 'Km 30, le mur' }],
+    photos: [{ src: 'assets/site/marathon-1.jpg', caption: 'Ligne d’arrivée' }, { src: 'assets/site/marathon-2.jpg', caption: 'Km 30, le mur' }],
   },
   {
-    id: 'roadtrip', word: 'Road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
+    id: 'roadtrip', accent: '#facc15', word: 'Road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
     pitch: 'Des milliers de kilomètres d’asphalte, réunis sur un seul poster.',
     poster: {
       tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Pacific Coast Hwy', subtitle: 'San Francisco → Los Angeles',
       metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '7 jours' },
       route: { name: 'Pacific Coast Highway', seed: 3, rough: 0.14, depth: 5, way: [[37.7749, -122.4194, 20], [37.50, -122.47, 30], [37.25, -122.40, 40], [36.97, -122.03, 10], [36.60, -121.89, 20], [36.27, -121.81, 200], [35.95, -121.48, 300], [35.66, -121.25, 80], [35.37, -120.85, 20], [35.28, -120.66, 70], [34.95, -120.43, 100], [34.42, -119.70, 15], [34.27, -119.23, 10], [34.03, -118.78, 20], [34.05, -118.24, 90]] },
     },
-    photos: [{ src: '', caption: 'Big Sur' }, { src: '', caption: 'Highway 1' }],
+    photos: [{ src: 'assets/site/roadtrip-1.jpg', caption: 'Big Sur' }, { src: 'assets/site/roadtrip-2.jpg', caption: 'Highway 1' }],
   },
   {
-    id: 'moto', word: 'Moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
+    id: 'moto', accent: '#60a5fa', word: 'Moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
     pitch: 'Chaque col, chaque épingle : ta virée à moto mérite d’être au mur.',
     poster: {
       tpl: 'nuit', color: '#ffffff', mapStyle: 'routes', mapOpacity: 100, title: 'Route des Grandes Alpes', subtitle: 'Thonon → Menton · 16 cols',
       metrics: ['distance', 'altMax', 'duration'], values: { distance: '720 km', altMax: '2 802 m', duration: '5 jours' },
       route: { name: 'Route des Grandes Alpes', seed: 9, rough: 0.2, way: [[46.37, 6.48, 380], [46.20, 6.55, 900], [45.99, 6.47, 1613], [45.87, 6.47, 1486], [45.69, 6.69, 1967], [45.55, 6.88, 800], [45.42, 7.03, 2764], [45.24, 6.68, 1100], [45.06, 6.41, 2642], [44.89, 6.64, 1300], [44.82, 6.73, 2360], [44.62, 6.75, 1100], [44.39, 6.65, 1132], [44.32, 6.81, 2802], [44.10, 7.10, 900], [43.90, 7.35, 500], [43.77, 7.50, 10]] },
     },
-    photos: [{ src: '', caption: 'Col de la Bonette' }, { src: '', caption: 'Lacets du Galibier' }],
+    photos: [{ src: 'assets/site/moto-1.jpg', caption: 'Col de la Bonette' }, { src: 'assets/site/moto-2.jpg', caption: 'Lacets du Galibier' }],
   },
 ];
 
@@ -201,6 +203,7 @@ function SiteScene({ kind, alt }) {
 function SitePhoto({ c, i, className = '', rotate = 0, style }) {
   const ph = c.photos[i] || {};
   const [broken, setBroken] = useSiteState(false);
+  useSiteEffect(() => setBroken(false), [ph.src]); // nouvelle photo à chaque cas d'usage
   return (
     <figure className={`absolute pointer-events-none select-none rounded-[6px] bg-[#f4f1ea] p-2.5 pb-9 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.8)] ${className}`} style={{ ...style, transform: `rotate(${rotate}deg)` }}>
       <div key={c.id} className="w-full h-full rounded-[3px] overflow-hidden ds-fade-up bg-neutral-300">
@@ -231,12 +234,15 @@ function SitePoster({ c }) {
     return () => { live = false; };
   }, [c.id]);
   return (
-    <div className="relative mx-auto w-[min(420px,78vw)]">
+    <div className="relative mx-auto w-[min(480px,80vw)]">
+      {/* Halo et ombre au sol : le poster se détache du fond */}
+      <div className="pointer-events-none absolute -inset-x-[40%] -top-[12%] bottom-[10%] -z-10" style={{ background: `radial-gradient(50% 45% at 50% 45%, ${c.accent}24, transparent 70%)` }} />
       <div className="relative p-[3.2%] bg-[#151515] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
         <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' }} />
         {!ready && <div className="absolute inset-[3.2%] grid place-items-center bg-neutral-900"><UiSpinner size={20} className="text-neutral-500" /></div>}
       </div>
-      <div className="mt-4 flex justify-center">
+      <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
+      <div className="mt-3 flex justify-center">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300">
           <I.Poster size={13} /> Exemple · {c.poster.title} · A3
         </span>
@@ -261,7 +267,8 @@ function SiteUseCasePicker({ value, onChange, onInteract }) {
     <span ref={ref} className="relative inline-block">
       <button onClick={() => { setOpen((v) => !v); onInteract(); }} aria-haspopup="listbox" aria-expanded={open}
         className="group relative inline-flex items-baseline gap-[0.12em] text-white rounded-xl px-[0.08em] -mx-[0.08em] hover:bg-white/[0.04] transition-colors">
-        <span key={value} className="ds-fade-up underline decoration-dashed decoration-white/35 decoration-[0.045em] underline-offset-[0.14em] group-hover:decoration-white/70">{c.word}</span>
+        <span key={value} className="ds-fade-up underline decoration-dashed decoration-[0.045em] underline-offset-[0.14em] transition-colors"
+          style={{ color: c.accent, textDecorationColor: c.accent + '73' }}>{c.word}</span>
         <span className="text-neutral-500 group-hover:text-white transition-colors self-center" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
           <svg viewBox="0 0 24 24" className="w-[0.32em] h-[0.32em]" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
         </span>
@@ -273,12 +280,13 @@ function SiteUseCasePicker({ value, onChange, onInteract }) {
             return (
               <button key={x.id} role="option" aria-selected={on} onClick={() => { onChange(x.id); setOpen(false); }}
                 className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${on ? 'bg-white/[0.08]' : 'hover:bg-white/[0.05]'}`}>
-                <span className={`w-9 h-9 shrink-0 rounded-lg grid place-items-center ${on ? 'bg-white text-neutral-900' : 'bg-white/[0.06] text-neutral-200'}`}><Ico size={17} /></span>
+                <span className="w-9 h-9 shrink-0 rounded-lg grid place-items-center transition-colors"
+                  style={on ? { background: x.accent, color: '#0a0a0a' } : { background: x.accent + '1f', color: x.accent }}><Ico size={17} /></span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[14px] font-semibold text-white">{x.label}</span>
+                  <span className="block text-[14px] font-semibold" style={{ color: on ? x.accent : '#fff' }}>{x.label}</span>
                   <span className="block text-[12px] text-neutral-500 truncate">{x.example}</span>
                 </span>
-                {on && <span className="text-white"><I.Check size={15} /></span>}
+                {on && <span style={{ color: x.accent }}><I.Check size={15} /></span>}
               </button>
             );
           })}
@@ -396,7 +404,8 @@ function PrintraceSite() {
 
   return (
     <div className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
-      <div className="relative overflow-hidden">
+      {/* Fond : noir en haut, plus clair vers le poster (dégradé linéaire) */}
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #0a0a0a 0%, #0c0c0d 38%, #1c1c1f 62%, #2e2e33 84%, #36363b 100%)' }}>
         {/* Décor : lueur, quadrillage de plan qui s'efface */}
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 50% at 50% 0%, rgba(255,255,255,0.08), rgba(255,255,255,0) 70%)' }} />
         <div className="pointer-events-none absolute inset-0 opacity-60" style={{
