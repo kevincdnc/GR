@@ -277,15 +277,17 @@ function SitePhoto({ c, i, photo, className = '', rotate = 0, style }) {
   const ph = { ...(c.photos[i] || {}), src: '', ...(photo || {}) };
   const [broken, setBroken] = useSiteState(false);
   useSiteEffect(() => setBroken(false), [ph.src]); // nouvelle photo à chaque cas d'usage
+  // Photo seule, contour fin et discret (pas de légende) ; crédit Unsplash si besoin
   return (
-    <figure className={`absolute pointer-events-none select-none rounded-[6px] bg-[#f4f1ea] p-2.5 ${photo && photo.credit ? 'pb-11' : 'pb-9'} shadow-[0_30px_60px_-20px_rgba(0,0,0,0.8)] ${className}`} style={{ ...style, transform: `rotate(${rotate}deg)` }}>
-      <div key={c.id} className="w-full h-full rounded-[3px] overflow-hidden ds-fade-up bg-neutral-300">
-        {ph.src && !broken ? <img src={ph.src} alt="" className="w-full h-full object-cover" onError={() => setBroken(true)} /> : <SiteScene kind={c.id} alt={i === 1} />}
+    <figure className={`absolute pointer-events-none select-none rounded-[14px] p-[5px] bg-white/[0.07] ring-1 ring-white/[0.08] backdrop-blur-sm shadow-[0_30px_60px_-20px_rgba(0,0,0,0.85)] ${className}`} style={{ ...style, transform: `rotate(${rotate}deg)` }}>
+      <div key={c.id} className="relative w-full h-full rounded-[10px] overflow-hidden ds-fade-up bg-neutral-800">
+        {ph.src && !broken ? <img src={ph.src} alt={ph.caption || ''} className="w-full h-full object-cover" onError={() => setBroken(true)} /> : <SiteScene kind={c.id} alt={i === 1} />}
+        {ph.credit && (
+          <figcaption className="pointer-events-auto absolute inset-x-0 bottom-0 px-2 pb-1.5 pt-5 text-[9px] text-white/80 bg-gradient-to-t from-black/60 to-transparent" style={{ fontFamily: 'var(--ds-font-site)' }}>
+            Photo <a href={ph.link} target="_blank" rel="noopener" className="underline">{ph.credit}</a> · <a href={'https://unsplash.com/' + SITE_UTM} target="_blank" rel="noopener" className="underline">Unsplash</a>
+          </figcaption>
+        )}
       </div>
-      <figcaption className="absolute left-0 right-0 bottom-2.5 text-center text-[12px] font-medium text-neutral-600 leading-none" style={{ fontFamily: 'var(--ds-font-site)' }}>
-        {ph.caption}
-        {ph.credit && <span className="pointer-events-auto block mt-1 text-[9px] font-normal text-neutral-400">Photo <a href={ph.link} target="_blank" rel="noopener" className="underline">{ph.credit}</a> · <a href={'https://unsplash.com/' + SITE_UTM} target="_blank" rel="noopener" className="underline">Unsplash</a></span>}
-      </figcaption>
     </figure>
   );
 }
@@ -313,7 +315,7 @@ function SitePoster({ c, photos }) {
     return () => { live = false; };
   }, [c.id, photos && photos.map((p) => (p ? p.src : '')).join('|')]);
   return (
-    <div className="relative mx-auto w-[min(480px,80vw)]">
+    <div className="relative mx-auto w-[min(360px,72vw)]">
       {/* Halo et ombre au sol : le poster se détache du fond */}
       <div className="pointer-events-none absolute -inset-x-[40%] -top-[12%] bottom-[10%] -z-10" style={{ background: `radial-gradient(50% 45% at 50% 45%, ${c.accent}24, transparent 70%)` }} />
       <div className="relative p-[3.2%] bg-[#151515] shadow-[0_50px_100px_-30px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.06)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
@@ -518,8 +520,8 @@ function PrintraceSite() {
         </nav>
 
         {/* Photos du cas d'usage, de part et d'autre (en dehors de la colonne de texte) */}
-        <SitePhoto c={c} i={0} photo={photos[0]} rotate={-7} className="hidden lg:block z-0 top-[150px] w-[188px] h-[236px] xl:w-[214px] xl:h-[268px]" style={{ left: 'max(20px, calc(50% - 690px))' }} />
-        <SitePhoto c={c} i={1} photo={photos[1]} rotate={6} className="hidden lg:block z-0 top-[420px] w-[180px] h-[226px] xl:w-[204px] xl:h-[256px]" style={{ right: 'max(20px, calc(50% - 690px))' }} />
+        <SitePhoto c={c} i={0} photo={photos[0]} rotate={-7} className="hidden lg:block z-0 top-[300px] w-[188px] h-[236px] xl:w-[214px] xl:h-[268px]" style={{ left: 'max(20px, calc(50% - 690px))' }} />
+        <SitePhoto c={c} i={1} photo={photos[1]} rotate={6} className="hidden lg:block z-0 top-[540px] w-[180px] h-[226px] xl:w-[204px] xl:h-[256px]" style={{ right: 'max(20px, calc(50% - 690px))' }} />
 
         <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-24 text-center">
 
