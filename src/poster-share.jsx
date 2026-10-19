@@ -691,10 +691,12 @@ async function renderPosterCtx(ctx, tpl, d, fmt, border, pr) {
   try {
     if (border === 'marge' || border === 'passe') {
       const m = border === 'passe' ? W * 0.085 : W * 0.035;
-      ctx.fillStyle = '#fbfaf6'; ctx.fillRect(0, 0, W, H);
+      // d.marginColor : marge teintée (ex. ton sombre fondu avec un modèle sombre), sinon papier blanc
+      ctx.fillStyle = d.marginColor || '#fbfaf6'; ctx.fillRect(0, 0, W, H);
       ctx.save(); ctx.translate(m, m); ctx.beginPath(); ctx.rect(0, 0, W - 2 * m, H - 2 * m); ctx.clip();
       await tpl.draw(ctx, dd, W - 2 * m, H - 2 * m);
       ctx.restore();
+      if (d.marginColor) { ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1.5; ctx.strokeRect(m - 0.75, m - 0.75, W - 2 * m + 1.5, H - 2 * m + 1.5); }
       if (border === 'passe') {
         ctx.strokeStyle = 'rgba(0,0,0,0.16)'; ctx.lineWidth = 3; ctx.strokeRect(m - 2, m - 2, W - 2 * m + 4, H - 2 * m + 4);
         ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2; ctx.strokeRect(m - 5, m - 5, W - 2 * m + 10, H - 2 * m + 10);
