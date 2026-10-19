@@ -510,33 +510,27 @@ const SITE_ROUTE_D = 'M0 34 C10 26 16 40 26 40 S38 52 42 64 S56 72 62 68 S74 80 
 
 // 1 · Import : le fichier au centre, les sources reliées par des traits fins
 function SiteIllusImport({ c }) {
-  const nodes = [
-    { x: 78, y: 82, logo: ptRes('stravaLogo', 'assets/strava.svg') },
-    { x: 78, y: 218, logo: ptRes('garminLogo', 'assets/garmin.svg') },
-    { x: 322, y: 150, logo: ptRes('komootLogo', 'assets/komoot.svg') },
-  ];
+  const mono = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' };
   return (
     <SiteIllusFrame>
-      <defs>
-        <linearGradient id="siteFadeL" x1="0" x2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.02" /><stop offset="1" stopColor="#fff" stopOpacity="0.22" /></linearGradient>
-        <linearGradient id="siteFadeR" x1="1" x2="0"><stop offset="0" stopColor="#fff" stopOpacity="0.02" /><stop offset="1" stopColor="#fff" stopOpacity="0.22" /></linearGradient>
-      </defs>
-      <path d="M100 82 C140 82 140 132 152 140" stroke="url(#siteFadeL)" />
-      <path d="M100 218 C140 218 140 168 152 160" stroke="url(#siteFadeL)" />
-      <path d="M300 150 H248" stroke="url(#siteFadeR)" />
-      {nodes.map((n, i) => (
-        <g key={i}>
-          <circle cx={n.x} cy={n.y} r="22" fill="#0e0e10" stroke={SITE_LINE} />
-          <image href={n.logo} x={n.x - 11} y={n.y - 11} width="22" height="22" opacity="0.85" style={{ filter: 'grayscale(1)' }} />
-        </g>
-      ))}
-      {/* Fichier */}
-      <rect x="152" y="106" width="96" height="88" rx="12" fill="#0e0e10" stroke="rgba(255,255,255,0.2)" />
-      <path d="M152 130 H248" stroke={SITE_LINE} />
-      <circle cx="164" cy="118" r="2" fill="rgba(255,255,255,0.35)" /><circle cx="172" cy="118" r="2" fill="rgba(255,255,255,0.2)" />
-      <g transform="translate(160 138)"><path d={SITE_ROUTE_D} stroke={c.accent} strokeWidth="1.6" strokeLinecap="round" opacity="0.9" transform="scale(0.98 0.5)" /></g>
-      <text x="200" y="184" textAnchor="middle" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" fontSize="9.5" fill="rgba(255,255,255,0.55)">trace.gpx</text>
-      <circle cx="248" cy="106" r="8" fill={c.accent} /><path d="M244.5 106 l2.5 2.5 l4.5 -5" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Champ fichier : zone en pointillés, fichier déposé */}
+      <rect x="56" y="62" width="288" height="78" rx="14" fill="#0e0e10" stroke="rgba(255,255,255,0.24)" strokeDasharray="4 4" />
+      <rect x="70" y="80" width="42" height="42" rx="10" fill="rgba(255,255,255,0.06)" stroke={SITE_LINE} />
+      <path d="M91 108 V92 M84 98 L91 91 L98 98 M82 112 H100" stroke="rgba(255,255,255,0.7)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="126" y="86" width="96" height="7" rx="3.5" fill="rgba(255,255,255,0.55)" />
+      <text x="126" y="113" {...mono} fontSize="10" fill="rgba(255,255,255,0.45)">trace.gpx · 179 km</text>
+      <rect x="250" y="113" width="78" height="4" rx="2" fill="rgba(255,255,255,0.1)" />
+      <rect x="250" y="113" width="78" height="4" rx="2" fill={c.accent} />
+      <circle cx="320" cy="90" r="8" fill={c.accent} /><path d="M316.5 90 l2.5 2.5 l4.5 -5" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Séparateur « ou » */}
+      <path d="M56 170 H180 M220 170 H344" stroke={SITE_LINE} />
+      <text x="200" y="174" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.4)" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '0.12em' }}>OU</text>
+      {/* Champ lien Strava */}
+      <rect x="56" y="198" width="288" height="52" rx="14" fill="#0e0e10" stroke="rgba(255,255,255,0.18)" />
+      <image href={ptRes('stravaLogo', 'assets/strava.svg')} x="70" y="212" width="24" height="24" />
+      <text x="104" y="228" {...mono} fontSize="10" fill="rgba(255,255,255,0.55)">strava.com/activities/…</text>
+      <rect x="272" y="208" width="62" height="32" rx="8" fill="#fc4c02" />
+      <text x="303" y="228" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff" style={{ fontFamily: 'var(--ds-font-site)' }}>Importer</text>
     </SiteIllusFrame>
   );
 }
@@ -615,21 +609,18 @@ function SiteHowItWorks({ c }) {
   return (
     <section className="relative" style={{ background: 'radial-gradient(70% 60% at 50% 55%, rgba(255,255,255,0.045), rgba(255,255,255,0.015) 55%, transparent 80%)' }}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pt-20 sm:pt-28 pb-24 sm:pb-32">
-        <div className="text-center">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500">Comment ça marche</span>
-          <h2 className="mt-3 font-display font-extrabold tracking-[-0.03em] leading-[1.1] text-[clamp(30px,3.6vw,48px)] text-white">De votre tracé au mur,<br className="hidden sm:block" /> en trois étapes</h2>
-        </div>
-        <ol className="mt-12 sm:mt-16 grid gap-12 lg:gap-10 lg:grid-cols-3">
+        <h2 className="text-center text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500" style={{ fontFamily: 'var(--ds-font-site)' }}>Comment ça marche</h2>
+        <ol className="mt-10 sm:mt-14 grid gap-12 lg:gap-10 lg:grid-cols-3">
           {SITE_STEPS.map((st, i) => (
-            <li key={st.title}>
-              <st.Illus c={c} />
- <div className="mt-6 flex items-center gap-3">
+            <li key={st.title} className="flex flex-col">
+              <div className="flex items-center gap-3">
                 <span className="w-9 h-9 shrink-0 rounded-full grid place-items-center bg-white text-neutral-900 text-[15px] font-bold" style={{ fontFamily: 'var(--ds-font-site)' }}>{i + 1}</span>
                 <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Étape {i + 1}</span>
                 <span className="flex-1 h-px bg-gradient-to-r from-white/15 to-transparent" />
               </div>
               <h3 className="mt-4 text-[18px] font-semibold text-white" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '-0.01em' }}>{st.title}</h3>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-neutral-400 max-w-[360px]">{st.text}</p>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-neutral-400 max-w-[360px] min-h-[4.9em]">{st.text}</p>
+              <div className="mt-6"><st.Illus c={c} /></div>
             </li>
           ))}
         </ol>
