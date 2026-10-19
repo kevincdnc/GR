@@ -91,7 +91,7 @@ const SITE_CASES = [
     photos: [{ src: 'assets/site/roadtrip-1.jpg', caption: 'Big Sur' }, { src: 'assets/site/roadtrip-2.jpg', caption: 'Highway 1' }],
   },
   {
-    id: 'moto', accent: '#60a5fa', word: 'moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
+    id: 'moto', heroBg: 0, accent: '#60a5fa', word: 'moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
     pitch: 'Chaque col et chaque virage de votre virée, au mur.',
     poster: {
       tpl: 'nuit', color: '#ffffff', mapStyle: 'routes', mapOpacity: 100, title: 'Route des Grandes Alpes', subtitle: 'Thonon → Menton · 16 cols',
@@ -99,7 +99,7 @@ const SITE_CASES = [
       route: { name: 'Route des Grandes Alpes', seed: 9, rough: 0.2, way: [[46.37, 6.48, 380], [46.20, 6.55, 900], [45.99, 6.47, 1613], [45.87, 6.47, 1486], [45.69, 6.69, 1967], [45.55, 6.88, 800], [45.42, 7.03, 2764], [45.24, 6.68, 1100], [45.06, 6.41, 2642], [44.89, 6.64, 1300], [44.82, 6.73, 2360], [44.62, 6.75, 1100], [44.39, 6.65, 1132], [44.32, 6.81, 2802], [44.10, 7.10, 900], [43.90, 7.35, 500], [43.77, 7.50, 10]] },
     },
     unsplash: ['motorcycle mountain pass', 'alps hairpin road'],
-    photos: [{ src: 'assets/site/moto-1.jpg', caption: 'Col de la Bonette' }, { src: 'assets/site/moto-2.jpg', caption: 'Lacets du Galibier' }],
+    photos: [{ src: ptRes('siteMoto1', 'assets/site/moto-1.jpg'), caption: 'Col alpin' }, { src: 'assets/site/moto-2.jpg', caption: 'Lacets du Galibier' }],
   },
 ];
 
@@ -744,11 +744,11 @@ function PrintraceSite() {
           <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto lg:self-start lg:pt-[150px]"><SiteImport c={c} /></div>
 
           <div className="relative w-full max-w-[400px] lg:w-[400px] xl:w-[440px] lg:max-w-none mx-auto">
-            {/* Photo du trip fondue dans le fond, derrière le cadre */}
+            {/* Photo du trip fondue dans le fond, décalée à droite du cadre (occupe la colonne vide) */}
             {c.heroBg != null && photos[c.heroBg] && (
-              <div key={c.id} aria-hidden="true" className="pointer-events-none absolute -inset-x-[55%] -top-[18%] -bottom-[14%] ds-fade-up" style={{
-                maskImage: 'radial-gradient(closest-side, #000 25%, rgba(0,0,0,0.45) 60%, transparent 100%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 25%, rgba(0,0,0,0.45) 60%, transparent 100%)' }}>
-                <img src={photos[c.heroBg].src} alt="" className="w-full h-full object-cover opacity-[0.32] saturate-[0.8]" />
+              <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[112%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
+                maskImage: 'radial-gradient(ellipse 62% 60% at 58% 50%, #000 30%, rgba(0,0,0,0.55) 62%, transparent 100%)', WebkitMaskImage: 'radial-gradient(ellipse 62% 60% at 58% 50%, #000 30%, rgba(0,0,0,0.55) 62%, transparent 100%)' }}>
+                <img src={photos[c.heroBg].src} alt="" className="w-full h-full object-cover opacity-[0.5] saturate-[0.85]" />
               </div>
             )}
             <SitePoster c={c} photos={photoSet[caseId] || null} />
