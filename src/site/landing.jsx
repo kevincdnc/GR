@@ -361,8 +361,8 @@ function SiteImport({ c }) {
         <button onClick={pick}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
-          className={`min-h-[132px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 px-6 py-6 transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/20 bg-white/[0.03] hover:border-white/45 hover:bg-white/[0.05]'}`}>
-          <span className="w-11 h-11 rounded-xl grid place-items-center bg-white text-neutral-900">{busy ? <UiSpinner size={20} /> : <I.Upload size={20} />}</span>
+          className={`min-h-[96px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 px-6 py-4 transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/20 bg-white/[0.03] hover:border-white/45 hover:bg-white/[0.05]'}`}>
+          <span className="w-9 h-9 rounded-lg grid place-items-center bg-white text-neutral-900">{busy ? <UiSpinner size={17} /> : <I.Upload size={17} />}</span>
           <span className="text-[16px] font-semibold text-white">{busy ? 'Lecture du tracé…' : 'Importe ton GPX ou FIT'}</span>
           {!busy && <span className="text-[13px] text-neutral-400">Glisse tes fichiers ici ou <span className="text-white underline underline-offset-2 decoration-white/30">parcours ton ordinateur</span></span>}
         </button>
