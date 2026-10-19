@@ -746,9 +746,9 @@ function PrintraceSite() {
           <div className="relative w-full max-w-[400px] lg:w-[400px] xl:w-[440px] lg:max-w-none mx-auto">
             {/* Photo du trip fondue dans le fond, décalée à droite du cadre (occupe la colonne vide) */}
             {c.heroBg != null && photos[c.heroBg] && (
-              <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[112%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
-                maskImage: 'radial-gradient(ellipse 62% 60% at 58% 50%, #000 30%, rgba(0,0,0,0.55) 62%, transparent 100%)', WebkitMaskImage: 'radial-gradient(ellipse 62% 60% at 58% 50%, #000 30%, rgba(0,0,0,0.55) 62%, transparent 100%)' }}>
-                <img src={photos[c.heroBg].src} alt="" className="w-full h-full object-cover opacity-[0.5] saturate-[0.85]" />
+              <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
+                maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
+                <img src={photos[c.heroBg].src} alt="" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
               </div>
             )}
             <SitePoster c={c} photos={photoSet[caseId] || null} />
