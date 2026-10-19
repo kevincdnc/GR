@@ -342,10 +342,10 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
           {c.word}
           {/* Trait discret en pointillés ; en lecture auto, il se remplit jusqu'au mot suivant */}
           {/* Fine barre de progression : rail discret, remplissage dans la couleur du mot */}
-          <span aria-hidden="true" className="site-bar absolute left-[0.04em] right-[0.04em] -bottom-[0.08em] overflow-hidden" style={{ background: c.accent + '26' }}>
+          <span aria-hidden="true" className="site-bar absolute left-[0.04em] right-[0.04em] -bottom-[0.08em] overflow-hidden" style={{ background: c.accent + '17' }}>
             {auto
-              ? <span key={value} className="site-bar-fill block h-full" style={{ background: c.accent, animationDuration: `${SITE_ROTATE_MS}ms` }} />
-              : <span className="block h-full w-full" style={{ background: c.accent + '99' }} />}
+              ? <span key={value} className="site-bar-fill block h-full" style={{ background: c.accent + '99', animationDuration: `${SITE_ROTATE_MS}ms` }} />
+              : <span className="block h-full w-full" style={{ background: c.accent + '66' }} />}
           </span>
         </span>
         <span className="text-neutral-500 group-hover:text-white transition-colors self-center" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>
@@ -525,7 +525,7 @@ function PrintraceSite() {
             {c.pitch}
           </p>
 
-          <div className="mt-12 sm:mt-14"><SiteImport c={c} /></div>
+          <div className="mt-16 sm:mt-20"><SiteImport c={c} /></div>
 
           <div className="mt-12 sm:mt-14"><SitePoster c={c} photos={photoSet[caseId] || null} /></div>
         </section>
