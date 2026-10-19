@@ -29,6 +29,7 @@
 @font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/inter-latin-600-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/inter-latin-700-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Mont'; font-style: normal; font-weight: 800; font-display: swap; src: local('Mont Heavy'), local('Mont-Heavy'), local('Mont Bold'); }
+@font-face { font-family: 'Mont'; font-style: italic; font-weight: 800; font-display: swap; src: local('Mont Heavy Italic'), local('Mont-HeavyItalic'), local('Mont Bold Italic'); }
 @font-face { font-family: 'Montserrat'; font-style: normal; font-weight: 800; font-display: swap; src: url(fonts/montserrat-latin-800-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Montserrat'; font-style: normal; font-weight: 900; font-display: swap; src: url(fonts/montserrat-latin-900-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Montserrat'; font-style: italic; font-weight: 800; font-display: swap; src: url(fonts/montserrat-latin-800-italic.woff2) format('woff2'); }

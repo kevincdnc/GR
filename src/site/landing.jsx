@@ -354,7 +354,7 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
     <span ref={ref} className="relative inline-block">
       <button onClick={() => { setOpen((v) => !v); onInteract(); }} aria-haspopup="listbox" aria-expanded={open}
         className="group relative inline-flex items-baseline gap-[0.12em] text-white rounded-xl px-[0.08em] -mx-[0.08em] hover:bg-white/[0.04] transition-colors">
-        <span key={value} className="ds-fade-up relative inline-block" style={{ color: c.accent }}>
+        <span key={value} className="ds-fade-up relative inline-block italic pr-[0.06em]" style={{ color: c.accent }}>
           {c.word}
           {/* Trait discret en pointillés ; en lecture auto, il se remplit jusqu'au mot suivant */}
           {/* Fine barre de progression : rail discret, remplissage dans la couleur du mot */}
