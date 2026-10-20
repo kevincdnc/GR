@@ -606,27 +606,33 @@ function SiteImport({ c }) {
           <button onClick={() => pick()}
             onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
             onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
-            className={`group w-full min-h-[84px] rounded-2xl border-[1.5px] border-dashed flex items-center gap-4 px-4 py-4 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
-            <span className={`w-12 h-12 shrink-0 rounded-xl grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
+            className={`group w-full h-[76px] sm:h-[84px] rounded-2xl border-[1.5px] border-dashed flex items-center gap-3 sm:gap-4 px-3.5 sm:px-4 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
+            <span className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
               {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-[15.5px] font-semibold text-white leading-snug">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : fileItems.length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
-              <span className="block text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em]">GPX · FIT · TCX · KML</span>
+              <span className="block text-[14px] sm:text-[15.5px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : fileItems.length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
+              <span className="block text-[12px] sm:text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em] whitespace-nowrap">GPX · FIT · TCX · KML</span>
             </span>
-            {!busy && <span className="shrink-0 h-10 px-3.5 rounded-lg grid place-items-center text-[13px] font-medium text-neutral-200 bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors">Parcourir</span>}
+            {!busy && <span className="shrink-0 w-[88px] sm:w-[104px] h-10 rounded-lg grid place-items-center text-[13px] sm:text-[14px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors">Parcourir</span>}
           </button>
           {list(fileItems)}
           {cta('file')}
         </div>
         <div>
-          <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
-            <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="30" height="30" className="rounded-[6px] shrink-0" />
-            <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
-              placeholder="Collez le lien d’une activité Strava" aria-label="Lien d'activité Strava"
-              className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
-            <UiButton variant="strava" size="md" className="h-11 rounded-lg px-4 text-[14px] shrink-0" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
-          </div>
+          {/* Même gabarit que la zone de fichiers : vignette, deux lignes, bouton de même taille */}
+          <label className={`h-[76px] sm:h-[84px] flex items-center gap-3 sm:gap-4 px-3.5 sm:px-4 rounded-2xl bg-white/[0.05] ring-1 transition-colors cursor-text focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
+            <span className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl grid place-items-center bg-[#fc4c02]/[0.12] ring-1 ring-[#fc4c02]/25">
+              <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="26" height="26" className="w-[22px] h-[22px] sm:w-[26px] sm:h-[26px] rounded-[6px]" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[14px] sm:text-[15.5px] font-semibold text-white leading-snug whitespace-nowrap">Importez depuis Strava</span>
+              <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
+                placeholder="Collez le lien ici" aria-label="Lien d'activité Strava"
+                className="block w-full mt-1 bg-transparent outline-none text-[13px] sm:text-[13.5px] text-white placeholder:text-neutral-500 truncate" />
+            </span>
+            <UiButton variant="strava" size="md" className="w-[88px] sm:w-[104px] h-10 rounded-lg px-0 text-[13px] sm:text-[14px] shrink-0 justify-center" loading={stravaBusy} onClick={(e) => { e.preventDefault(); submitStrava(); }}>Importer</UiButton>
+          </label>
           {stravaRef && (
             <div className="mt-2 text-left rounded-2xl bg-[#fc4c02]/[0.07] ring-1 ring-[#fc4c02]/25 p-4 ds-fade-up">
               <div className="flex items-start gap-3">
