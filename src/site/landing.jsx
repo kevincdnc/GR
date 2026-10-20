@@ -871,7 +871,7 @@ function SiteStepHead({ i, accent, snap }) {
   return (
     <div data-step-head style={snap ? { scrollSnapAlign: 'start', scrollSnapStop: 'always', scrollMarginTop: SITE_POSTER_TOP } : undefined}>
       <span aria-hidden="true" data-step-num className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[46px] tabular-nums select-none"
-        style={{ fontFamily: 'var(--ds-font-display)', backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em' }}>
+        style={{ fontFamily: 'var(--ds-font-display)', backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em', willChange: snap ? 'opacity' : undefined }}>
         0{i + 1}
       </span>
       <h2 className="mt-3 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[24px] text-white"><span className="sr-only">Étape {i + 1} : </span>{st.title}</h2>
@@ -1042,7 +1042,7 @@ function PrintraceSite() {
   // Mise en avant : étape active nette, les autres estompées (cliquables pour y aller)
   const dim = (i) => (desktop && step !== i ? 'lg:opacity-30 lg:hover:opacity-55 lg:cursor-pointer lg:scale-[0.98]' : 'opacity-100');
   // Chaque étape occupe un écran ; son contenu est centré à hauteur du poster
-  const stepBox = 'relative flex flex-col justify-center lg:min-h-screen lg:py-12 origin-left transition-[opacity,transform] duration-500 ease-out';
+  const stepBox = 'relative flex flex-col justify-center lg:min-h-screen lg:py-12 origin-left lg:will-change-[opacity,transform] transition-[opacity,transform] duration-500 ease-out';
   const stepProps = (i) => ({
     ref: stepRefs[i], 'data-step': i,
     onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); } : undefined,

@@ -68,9 +68,9 @@
   /* Site : chiffres dans la police du texte (le design system les met en Barlow condensé) */
   .font-site .tabular-nums, .font-site .font-mono { font-family: inherit; letter-spacing: inherit; word-spacing: normal; }
   .site-bar { height: max(3px, 0.04em); border-radius: 99px; }
-  .site-bar-fill { width: 0; border-radius: 99px; animation: siteFill linear 1 forwards; }
-  @keyframes siteFill { from { width: 0; } to { width: 100%; } }
-  @media (prefers-reduced-motion: reduce) { .site-bar-fill { animation: none; width: 100%; opacity: .6; } }
+  .site-bar-fill { width: 100%; border-radius: 99px; transform: scaleX(0); transform-origin: left; will-change: transform; animation: siteFill linear 1 forwards; }
+  @keyframes siteFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @media (prefers-reduced-motion: reduce) { .site-bar-fill { animation: none; transform: none; opacity: .6; } }
 </style>
 <link rel="stylesheet" href="tailwind.css" />
 </head>
