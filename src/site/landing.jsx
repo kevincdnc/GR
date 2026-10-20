@@ -948,6 +948,12 @@ function PrintraceSite() {
         const on = sc.scrollTop >= s0 - 12;
         rail.classList.toggle('opacity-0', !on); rail.classList.toggle('pointer-events-none', !on); rail.classList.toggle('translate-x-2', !on);
       }
+      // Photo de fond : s'estompe progressivement de l'étape 1 (30 %) à l'étape 3 (7 %)
+      const ph = sc.querySelector('[data-hero-photo]'), s2 = snapFor(2);
+      if (ph && s0 != null && s2 != null && s2 > s0) {
+        const k = Math.max(0, Math.min(1, (sc.scrollTop - s0) / (s2 - s0)));
+        ph.style.opacity = String(0.3 - 0.23 * k);
+      }
       nums().forEach((n) => {
         const d = Math.abs(n.getBoundingClientRect().top - top);
         const t = Math.max(0, Math.min(1, 1 - (d - 160) / 460)); // 1 dès 160 px du cadre
@@ -1046,7 +1052,8 @@ function PrintraceSite() {
             {c.heroBg != null && photos[c.heroBg] && (
               <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
                 maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
-                <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
+                {/* De plus en plus discrète au fil des étapes 2 et 3 (opacité réglée au scroll) */}
+                <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" data-hero-photo className="w-full h-full object-cover saturate-[0.8] opacity-[0.3]" />
               </div>
             )}
             <SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} />
