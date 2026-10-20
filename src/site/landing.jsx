@@ -941,36 +941,63 @@ function PrintraceSite() {
     paint();
     return () => { sc.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); cancelAnimationFrame(raf); };
   }, [desktop]);
-  // Résistance au scroll (grand écran) : à chaque étape alignée sur le haut du cadre, la molette
-  // marque un temps d'arrêt ; il faut insister un peu pour passer à l'étape suivante.
+  // Arrêts de scroll (grand écran) : à chaque étape, quand son chiffre est aligné sur le haut
+  // du cadre, le scroll s'arrête net. Il reste bloqué un court instant (l'élan du trackpad
+  // est absorbé), puis il faut un nouveau geste franc pour passer à l'étape suivante.
+  // Clavier (flèches, page, espace) : d'étape en étape. Barre de défilement : calage à
+  // l'arrêt le plus proche quand on lâche près d'une étape.
   useSiteEffect(() => {
     const sc = scroller.current;
-    if (!desktop || !sc || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const HOLD = 240; // « force » à accumuler pour repartir (px de molette)
-    let holdAt = null, held = 0, lastT = 0;
+    if (!desktop || !sc) return;
+    const LOCK_MS = 650, HOLD = 160;
+    let holdAt = null, lockUntil = 0, held = 0, lastT = 0, settleT = 0, self = false;
+    const snaps = () => {
+      const max = sc.scrollHeight - sc.clientHeight;
+      return [0, 1, 2].map(snapFor).filter((v) => v != null && v > 0 && v < max);
+    };
+    const stopAt = (v) => { self = true; sc.scrollTop = v; holdAt = v; held = 0; lockUntil = performance.now() + LOCK_MS; };
     const onWheel = (e) => {
       if (e.ctrlKey || e.target.closest('[role="listbox"]')) return;
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? sc.clientHeight : 1);
       if (!dy) return;
-      const now = performance.now(), y = sc.scrollTop;
-      if (now - lastT > 450) held = 0; // pause : la résistance se recharge
+      const now = performance.now(), y = sc.scrollTop, gap = now - lastT;
       lastT = now;
       if (holdAt != null && Math.abs(y - holdAt) < 2) {
-        if (Math.sign(dy) !== Math.sign(held || dy)) held = 0;
+        // Bloqué : on absorbe l'élan, puis il faut insister après une courte pause
+        if (now < lockUntil) { e.preventDefault(); lockUntil = Math.max(lockUntil, now + 120); return; }
+        if (gap > 500 || Math.sign(dy) !== Math.sign(held || dy)) held = 0;
         held += dy;
         if (Math.abs(held) < HOLD) { e.preventDefault(); return; }
-        holdAt = null; held = 0; return; // assez insisté : on repart
+        holdAt = null; held = 0; return;
       }
       holdAt = null;
-      const max = sc.scrollHeight - sc.clientHeight;
-      const snaps = [0, 1, 2].map(snapFor).filter((v) => v != null && v > 0 && v < max);
-      const next = y + dy;
-      const hit = dy > 0 ? snaps.filter((v) => v > y + 1 && v <= next).sort((a, b) => a - b)[0]
-                         : snaps.filter((v) => v < y - 1 && v >= next).sort((a, b) => b - a)[0];
-      if (hit != null) { e.preventDefault(); sc.scrollTop = hit; holdAt = hit; held = 0; }
+      const next = y + dy, ss = snaps();
+      const hit = dy > 0 ? ss.filter((v) => v > y + 1 && v <= next).sort((a, b) => a - b)[0]
+                         : ss.filter((v) => v < y - 1 && v >= next).sort((a, b) => b - a)[0];
+      if (hit != null) { e.preventDefault(); stopAt(hit); }
+    };
+    const onKey = (e) => {
+      if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+      const down = ['ArrowDown', 'PageDown', ' '].includes(e.key) && !(e.key === ' ' && e.shiftKey);
+      const up = ['ArrowUp', 'PageUp'].includes(e.key) || (e.key === ' ' && e.shiftKey);
+      if (!down && !up) return;
+      const y = sc.scrollTop, ss = snaps();
+      const t = down ? ss.find((v) => v > y + 2) : [...ss].reverse().find((v) => v < y - 2);
+      if (t == null || (down ? t - y : y - t) > sc.clientHeight * 1.2) return;
+      e.preventDefault(); self = true; holdAt = t; sc.scrollTo({ top: t, behavior: 'smooth' });
+    };
+    const onScroll = () => {
+      if (self) { self = false; return; }
+      clearTimeout(settleT);
+      settleT = setTimeout(() => {
+        const y = sc.scrollTop, near = snaps().find((v) => Math.abs(v - y) < 70);
+        if (near != null && Math.abs(near - y) > 1 && performance.now() - lastT > 200) { self = true; holdAt = near; sc.scrollTo({ top: near, behavior: 'smooth' }); }
+      }, 180);
     };
     sc.addEventListener('wheel', onWheel, { passive: false });
-    return () => sc.removeEventListener('wheel', onWheel);
+    sc.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('keydown', onKey);
+    return () => { sc.removeEventListener('wheel', onWheel); sc.removeEventListener('scroll', onScroll); window.removeEventListener('keydown', onKey); clearTimeout(settleT); };
   }, [desktop]);
   const goTo = (i) => {
     const el = stepRefs[i].current, sc = scroller.current; if (!el || !sc) return;
@@ -1027,7 +1054,7 @@ function PrintraceSite() {
       <section aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-12">
         {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
         <div className="contents lg:block lg:w-full lg:max-w-[400px] lg:ml-auto">
-          <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!py-0 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : undefined}>
+          <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : undefined}>
             <SiteStepHead i={0} accent={c.accent} />
             <div className="mt-9"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
           </div>
