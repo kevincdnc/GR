@@ -815,8 +815,8 @@ function SiteStepHead({ i, accent }) {
         <span aria-hidden="true" className="h-px w-10 transition-colors duration-500" style={{ background: `linear-gradient(90deg, ${accent}99, transparent)` }} />
         <span className="text-neutral-600 tabular-nums tracking-[0.12em]">/ 03</span>
       </div>
-      <h2 className="mt-3 font-display font-bold tracking-[-0.02em] leading-[1.12] text-[24px] text-white">{st.title}</h2>
-      <p className="mt-2.5 text-[15px] leading-relaxed text-neutral-400 max-w-[400px]">{st.text}</p>
+      <h2 className="mt-5 font-display font-bold tracking-[-0.02em] leading-[1.15] text-[24px] text-white">{st.title}</h2>
+      <p className="mt-3.5 text-[15px] leading-[1.7] text-neutral-400 max-w-[400px]">{st.text}</p>
     </div>
   );
 }
@@ -967,15 +967,15 @@ function PrintraceSite() {
         <div className="contents lg:block lg:w-full lg:max-w-[400px] lg:ml-auto">
           <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!py-0 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : undefined}>
             <SiteStepHead i={0} accent={c.accent} />
-            <div className="mt-6"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
+            <div className="mt-9"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
           </div>
           <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
             <SiteStepHead i={1} accent={c.accent} />
-            <div className="mt-6"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
+            <div className="mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
           </div>
           <div {...stepProps(2)} className={`order-4 ${stepBox} ${dim(2)}`}>
             <SiteStepHead i={2} accent={c.accent} />
-            <div className="mt-6"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
+            <div className="mt-9"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
               onDownload={() => open('download')} onOrder={() => open('order')} onImport={() => goTo(0)} /></div>
           </div>
         </div>
