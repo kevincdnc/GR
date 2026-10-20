@@ -1180,7 +1180,8 @@ function PrintraceSite() {
         maskComposite: 'intersect', WebkitMaskComposite: 'source-in' }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[560px] -z-10 opacity-[0.025]" style={{ backgroundImage: SITE_GRAIN }} />
       <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between" style={{ scrollSnapAlign: 'start' }}>
-        <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
+        {/* Logo plus petit sur mobile */}
+        <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={21} className="sm:hidden" /><UiPrintraceLogo height={29} className="hidden sm:inline-block" /></a>
         <div className="flex items-center gap-3">
           <SiteProof />
           <SiteAccountButton />
