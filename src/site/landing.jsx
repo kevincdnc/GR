@@ -411,9 +411,13 @@ function SiteCustomize({ c, value, onChange }) {
   const photosOn = value.photos !== false;
   const touched = !!(value.title || value.color || value.photos === false);
   return (
-    <div className="rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
+    <div data-drag-handle className="group/drag rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4 lg:cursor-grab">
       <div className="flex items-center justify-between h-6">
         <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Personnalisez</span>
+        {/* Poignée : n'apparaît qu'au survol, sur grand écran (le bloc se déplace) */}
+        <span aria-hidden="true" className="hidden lg:grid grid-cols-3 gap-[3px] ml-2 mr-auto opacity-0 group-hover/drag:opacity-60 transition-opacity">
+          {[0, 1, 2, 3, 4, 5].map((k) => <span key={k} className="w-[3px] h-[3px] rounded-full bg-neutral-400" />)}
+        </span>
         {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
       </div>
       <label className="block mt-3">
@@ -441,6 +445,46 @@ function SiteCustomize({ c, value, onChange }) {
         <span className="text-[13.5px] text-neutral-300 group-enabled:group-hover:text-white transition-colors">Photos du voyage</span>
         <UiSwitch on={canPhotos && photosOn} />
       </button>
+    </div>
+  );
+}
+
+// Bloc déplaçable à la souris (grand écran) : on l'attrape partout sauf sur ses
+// contrôles, il reste dans les limites du hero ; double-clic = retour à sa place.
+function SiteDraggable({ bounds, top, className = '', children }) {
+  const ref = useSiteRef(null), drag = useSiteRef(null);
+  const [off, setOff] = useSiteState({ x: 0, y: 0 });
+  const [moving, setMoving] = useSiteState(false);
+  const [enabled, setEnabled] = useSiteState(false);
+  useSiteEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const on = () => { setEnabled(mq.matches); if (!mq.matches) setOff({ x: 0, y: 0 }); };
+    on(); mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  const interactive = 'button, input, a, label, [role="switch"], [role="radio"]';
+  const down = (e) => {
+    if (!enabled || e.button !== 0 || !e.target.closest('[data-drag-handle]') || e.target.closest(interactive)) return;
+    const r = ref.current.getBoundingClientRect(), b = bounds.current.getBoundingClientRect();
+    const t = top && top.current ? top.current.getBoundingClientRect().bottom : b.top; // pas sous la navigation
+    drag.current = { px: e.clientX, py: e.clientY, ox: off.x, oy: off.y,
+      // limites du décalage pour rester dans le hero (8 px de marge)
+      minX: off.x + b.left + 8 - r.left, maxX: off.x + b.right - 8 - r.right, minY: off.y + t + 8 - r.top, maxY: off.y + b.bottom - 8 - r.bottom };
+    ref.current.setPointerCapture(e.pointerId);
+    setMoving(true);
+    e.preventDefault();
+  };
+  const move = (e) => {
+    const d = drag.current; if (!d) return;
+    const cl = (v, a, z) => Math.min(Math.max(v, a), z);
+    setOff({ x: cl(d.ox + e.clientX - d.px, d.minX, d.maxX), y: cl(d.oy + e.clientY - d.py, d.minY, d.maxY) });
+  };
+  const up = () => { drag.current = null; setMoving(false); };
+  return (
+    <div ref={ref} className={className} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
+      onDoubleClick={(e) => { if (enabled && !e.target.closest(interactive)) setOff({ x: 0, y: 0 }); }}
+      style={{ transform: `translate3d(${off.x}px, ${off.y}px, 0)`, transition: moving ? 'none' : 'transform .3s cubic-bezier(.22,.8,.3,1)', touchAction: enabled ? 'none' : undefined }}>
+      <div className={`rounded-2xl transition-[transform,box-shadow] duration-200 ${moving ? 'scale-[1.02] shadow-[0_30px_70px_-20px_rgba(0,0,0,0.9)] [&_[data-drag-handle]]:cursor-grabbing' : ''}`}>{children}</div>
     </div>
   );
 }
@@ -826,6 +870,7 @@ function PrintraceSite() {
   }, [caseId, auto]);
   const stop = () => setAuto(false);
   const [customs, setCustoms] = useSiteState({}); // personnalisation par cas d'usage
+  const heroRef = useSiteRef(null), navRef = useSiteRef(null); // limites du bloc « Personnalisez » déplaçable
   // Photos du cas d'usage (fichiers locaux, Unsplash ou illustration)
   const [photoSet, setPhotoSet] = useSiteState({});
   useSiteEffect(() => {
@@ -849,8 +894,8 @@ function PrintraceSite() {
         maskComposite: 'intersect', WebkitMaskComposite: 'source-in' }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
       {/* Fond noir ; seule la zone du poster est éclairée */}
-      <div className="relative overflow-x-clip">
-        <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
+      <div ref={heroRef} className="relative overflow-x-clip">
+        <nav ref={navRef} className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
           <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
           <SiteProof />
         </nav>
@@ -883,8 +928,11 @@ function PrintraceSite() {
           </div>
 
           {/* Réglages de l'exemple, de l'autre côté du poster et plus bas : l'import reste le premier regard */}
-          <div className="relative z-10 w-full max-w-[420px] lg:max-w-[320px] mx-auto lg:ml-0 lg:mr-auto lg:self-start lg:pt-[380px]">
-            <SiteCustomize c={c} value={customs[caseId] || {}} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} />
+          <div className="relative z-20 w-full max-w-[420px] lg:max-w-[320px] mx-auto lg:ml-0 lg:mr-auto lg:self-start lg:pt-[380px]">
+            {/* Déplaçable dans le hero (glisser-déposer), position de départ inchangée */}
+            <SiteDraggable bounds={heroRef} top={navRef}>
+              <SiteCustomize c={c} value={customs[caseId] || {}} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} />
+            </SiteDraggable>
           </div>
           </div>
         </section>
