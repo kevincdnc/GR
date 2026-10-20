@@ -606,8 +606,8 @@ function SiteImport({ c }) {
           <button onClick={() => pick()}
             onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
             onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
-            className={`group w-full h-[76px] sm:h-[84px] rounded-2xl border-[1.5px] border-dashed flex items-center gap-3 sm:gap-4 px-3.5 sm:px-4 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
-            <span className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
+            className={`group w-full h-[76px] sm:h-[84px] rounded-[20px] border-[1.5px] border-dashed flex items-center gap-3 sm:gap-4 px-3.5 sm:px-4 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
+            <span className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-[10px] grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
               {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
             </span>
             <span className="flex-1 min-w-0">
@@ -620,19 +620,14 @@ function SiteImport({ c }) {
           {cta('file')}
         </div>
         <div>
-          {/* Même gabarit que la zone de fichiers : vignette, deux lignes, bouton de même taille */}
-          <label className={`h-[76px] sm:h-[84px] flex items-center gap-3 sm:gap-4 px-3.5 sm:px-4 rounded-2xl bg-white/[0.05] ring-1 transition-colors cursor-text focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
-            <span className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl grid place-items-center bg-[#fc4c02]/[0.12] ring-1 ring-[#fc4c02]/25">
-              <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="26" height="26" className="w-[22px] h-[22px] sm:w-[26px] sm:h-[26px] rounded-[6px]" />
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-[14px] sm:text-[15.5px] font-semibold text-white leading-snug whitespace-nowrap">Importez depuis Strava</span>
-              <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
-                placeholder="Collez le lien ici" aria-label="Lien d'activité Strava"
-                className="block w-full mt-1 bg-transparent outline-none text-[13px] sm:text-[13.5px] text-white placeholder:text-neutral-500 truncate" />
-            </span>
-            <UiButton variant="strava" size="md" className="w-[88px] sm:w-[104px] h-10 rounded-lg px-0 text-[13px] sm:text-[14px] shrink-0 justify-center" loading={stravaBusy} onClick={(e) => { e.preventDefault(); submitStrava(); }}>Importer</UiButton>
-          </label>
+          {/* Champ de saisie classique (même hauteur et même bouton que la zone de fichiers) */}
+          <div className={`h-[76px] sm:h-[84px] flex items-center gap-3 pl-4 sm:pl-5 pr-3.5 sm:pr-4 rounded-[20px] bg-black/40 ring-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] transition-colors focus-within:bg-black/50 ${error && link ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-white/40'}`}>
+            <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="26" height="26" className="w-6 h-6 sm:w-[26px] sm:h-[26px] rounded-[6px] shrink-0" />
+            <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
+              placeholder="Lien d’une activité Strava" aria-label="Lien d'activité Strava" inputMode="url"
+              className="flex-1 min-w-0 h-full bg-transparent outline-none text-[14px] sm:text-[15px] text-white placeholder:text-neutral-500" />
+            <UiButton variant="strava" size="md" className="w-[88px] sm:w-[104px] h-10 rounded-lg px-0 text-[13px] sm:text-[14px] shrink-0 justify-center" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
+          </div>
           {stravaRef && (
             <div className="mt-2 text-left rounded-2xl bg-[#fc4c02]/[0.07] ring-1 ring-[#fc4c02]/25 p-4 ds-fade-up">
               <div className="flex items-start gap-3">
