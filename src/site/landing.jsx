@@ -52,7 +52,7 @@ const SITE_CASES = [
     id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
     pitch: 'Votre course mythique et votre temps, en poster prêt à encadrer.',
     poster: {
-      tpl: 'nuit', border: 'marge', marginColor: '#222222', typeScale: 0.68, color: '#fc5200', mapStyle: 'routes', mapOpacity: 100, title: 'Marathon de Paris', subtitle: '42,195 km · 6 avril 2026',
+      tpl: 'nuit', border: 'marge', marginColor: '#222222', typeScale: 0.68, labels: false, color: '#fc5200', mapStyle: 'routes', mapOpacity: 100, title: 'Marathon de Paris', subtitle: '42,195 km · 6 avril 2026',
       metrics: ['distance', 'duration', 'pace'], values: { distance: '42,2 km', duration: '3 h 42', pace: "5'15\"/km" },
       route: { name: 'Marathon de Paris', seed: 5, rough: 0.12, depth: 5, way: [[48.8738, 2.2950], [48.8656, 2.3212], [48.8606, 2.3376], [48.8566, 2.3522], [48.8530, 2.3690], [48.8443, 2.3920], [48.8390, 2.4100], [48.8335, 2.4330], [48.8290, 2.4440], [48.8225, 2.4320], [48.8300, 2.4050], [48.8410, 2.3790], [48.8505, 2.3570], [48.8580, 2.3360], [48.8610, 2.3150], [48.8580, 2.2945], [48.8510, 2.2780], [48.8460, 2.2560], [48.8575, 2.2470], [48.8680, 2.2550], [48.8715, 2.2760]] },
     },
@@ -178,7 +178,7 @@ function sitePosterData(c, routes, photos = [], o = {}) {
     .map((st) => (!user && p.values[st.key] ? { ...st, value: p.values[st.key], unit: '' } : st));
   return {
     routes, agg, color: o.color || p.color, coords: true, activityLabel: act.label, title: (o.title || '').trim() || siteDefaultTitle(c, o.items), subtitle: user ? siteUserSubtitle(o.items) || act.label : p.subtitle, stats,
-    photoSlot: false, photos: p.bgPhoto ? photos.slice(1) : photos, bgPhoto: p.bgPhoto && photos[0] ? photos[0].img : null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: o.labels !== false,
+    photoSlot: false, photos: p.bgPhoto ? photos.slice(1) : photos, bgPhoto: p.bgPhoto && photos[0] ? photos[0].img : null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: (o.labels != null ? o.labels : p.labels) !== false,
     bg: (p.tpl === 'blueprint' && o.bg) || p.bg || null, preview: false, typeScale: p.typeScale, marginColor: p.marginColor, photoShade: p.photoShade,
   };
 }
@@ -539,7 +539,7 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
         </div>
       )}
       {sw('photos', photosOn, 'Ajoutez des photos', !canPhotos, canPhotos ? undefined : items.length ? 'Vos photos s’ajoutent dans le studio' : 'Ce style n’affiche pas de photos')}
-      {sw('labels', value.labels !== false, 'Afficher les villes')}
+      {sw('labels', (value.labels != null ? value.labels : p.labels) !== false, 'Afficher les villes')}
       {sw('info', value.info !== false, 'Afficher les infos')}
     </div>
   );
@@ -1077,7 +1077,7 @@ function PrintraceSite() {
             {/* Le site n'est qu'un aperçu : la personnalisation complète se fait dans l'app */}
             <a href={ptLoginUrl()} className="group mt-4 flex items-start gap-3 rounded-xl px-1 py-1 text-[13px] leading-relaxed text-neutral-500 hover:text-neutral-300 transition-colors">
               <I.Info size={15} className="mt-[3px] shrink-0 text-neutral-600 group-hover:text-neutral-400" />
-              <span>Ceci n’est qu’un aperçu. Modèles, fonds de carte, photos, formats : tout se règle dans l’app <span className="font-medium text-neutral-300 group-hover:text-white underline decoration-white/20 underline-offset-[3px] group-hover:decoration-white/60">printrace.app</span> <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">→</span></span>
+              <span>Ceci n’est qu’un aperçu : modèles, typographies, formats… bien plus d’options sur <span className="font-medium text-neutral-300 group-hover:text-white underline decoration-white/20 underline-offset-[3px] group-hover:decoration-white/60">printrace.app</span> <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">→</span></span>
             </a>
           </div>
           <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[40vh] ${dim(2)}`}>
