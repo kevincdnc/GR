@@ -804,26 +804,31 @@ const SITE_FLOW = [
   { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
 // En-tête d'étape : bulle numérotée (comme le stepper de droite), nom de l'étape, puis description
-function SiteStepHead({ i }) {
+// Aux couleurs du site : surtitre « Étape 01 » dans la couleur du cas d'usage (comme le
+// mot du grand titre), nom de l'étape en Mont, description en Inter
+function SiteStepHead({ i, accent }) {
   const st = SITE_FLOW[i];
   return (
     <div>
-      {/* Bulle discrète, même police que le stepper de droite */}
-      <span className="w-8 h-8 rounded-full grid place-items-center bg-white/[0.06] ring-1 ring-white/20 text-[13px] font-semibold tabular-nums text-neutral-200">{i + 1}</span>
-      <h2 className="mt-3.5 text-[21px] font-semibold leading-tight tracking-[-0.01em] text-white" style={{ fontFamily: 'var(--ds-font-site)' }}>{st.title}</h2>
-      <p className="mt-3 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
+      <div className="flex items-center gap-3 text-[11.5px] font-semibold uppercase tracking-[0.18em] transition-colors duration-500" style={{ color: accent }}>
+        <span>Étape <span className="tabular-nums">0{i + 1}</span></span>
+        <span aria-hidden="true" className="h-px w-10 transition-colors duration-500" style={{ background: `linear-gradient(90deg, ${accent}99, transparent)` }} />
+        <span className="text-neutral-600 tabular-nums tracking-[0.12em]">/ 03</span>
+      </div>
+      <h2 className="mt-3 font-display font-bold tracking-[-0.02em] leading-[1.12] text-[24px] text-white">{st.title}</h2>
+      <p className="mt-2.5 text-[15px] leading-relaxed text-neutral-400 max-w-[400px]">{st.text}</p>
     </div>
   );
 }
 // Progression verticale (à droite du poster), cliquable pour aller à une étape.
 // Lignes de hauteur fixe : le trait relie exactement les centres des pastilles.
 const SITE_RAIL_ROW = 40, SITE_RAIL_GAP = 28;
-function SiteStepRail({ step, onGo }) {
+function SiteStepRail({ step, onGo, accent = '#ffffff' }) {
   const pitch = SITE_RAIL_ROW + SITE_RAIL_GAP, n = SITE_FLOW.length;
   return (
     <nav aria-label="Étapes" className="relative">
       <span aria-hidden="true" className="absolute left-[19.5px] w-px bg-white/10" style={{ top: SITE_RAIL_ROW / 2, height: pitch * (n - 1) }} />
-      <span aria-hidden="true" className="absolute left-[19.5px] w-px bg-white/60 transition-[height] duration-500 ease-out" style={{ top: SITE_RAIL_ROW / 2, height: pitch * step }} />
+      <span aria-hidden="true" className="absolute left-[19.5px] w-px transition-[height,background-color] duration-500 ease-out" style={{ top: SITE_RAIL_ROW / 2, height: pitch * step, background: accent }} />
       <ol className="relative flex flex-col" style={{ gap: SITE_RAIL_GAP }}>
         {SITE_FLOW.map((st, i) => {
           const on = i === step, done = i < step;
@@ -961,15 +966,15 @@ function PrintraceSite() {
         {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
         <div className="contents lg:block lg:w-full lg:max-w-[400px] lg:ml-auto">
           <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!py-0 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : undefined}>
-            <SiteStepHead i={0} />
+            <SiteStepHead i={0} accent={c.accent} />
             <div className="mt-6"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
           </div>
           <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
-            <SiteStepHead i={1} />
+            <SiteStepHead i={1} accent={c.accent} />
             <div className="mt-6"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
           </div>
           <div {...stepProps(2)} className={`order-4 ${stepBox} ${dim(2)}`}>
-            <SiteStepHead i={2} />
+            <SiteStepHead i={2} accent={c.accent} />
             <div className="mt-6"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
               onDownload={() => open('download')} onOrder={() => open('order')} onImport={() => goTo(0)} /></div>
           </div>
@@ -991,7 +996,7 @@ function PrintraceSite() {
 
         {/* Progression : à droite, à mi-hauteur du poster */}
         <div className="hidden lg:flex lg:col-start-3 lg:row-start-1 lg:self-start lg:sticky items-center relative z-10" style={{ top: SITE_POSTER_TOP, height: SITE_POSTER_H }}>
-          <SiteStepRail step={step} onGo={goTo} />
+          <SiteStepRail step={step} onGo={goTo} accent={c.accent} />
         </div>
       </section>
      </div>
