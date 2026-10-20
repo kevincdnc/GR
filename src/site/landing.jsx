@@ -620,14 +620,15 @@ function SiteImport({ c }) {
           {cta('file')}
         </div>
         <div>
-          {/* Champ de saisie classique (même hauteur et même bouton que la zone de fichiers) */}
-          <div className={`h-[76px] sm:h-[84px] flex items-center gap-3 pl-4 sm:pl-5 pr-3.5 sm:pr-4 rounded-[20px] bg-black/40 ring-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] transition-colors focus-within:bg-black/50 ${error && link ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-white/40'}`}>
+          {/* Champ de saisie classique (même hauteur et même bouton que la zone de fichiers).
+              Tout le bloc est la zone de clic du champ (label) ; l'anneau de focus est celui du bloc */}
+          <label className={`h-[76px] sm:h-[84px] flex items-center gap-3 pl-4 sm:pl-5 pr-3.5 sm:pr-4 rounded-[20px] cursor-text bg-black/40 ring-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] transition-colors focus-within:bg-black/50 ${error && link ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-2 focus-within:ring-[#fc4c02]/55 focus-within:hover:ring-[#fc4c02]/55'}`}>
             <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="26" height="26" className="w-6 h-6 sm:w-[26px] sm:h-[26px] rounded-[6px] shrink-0" />
             <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
               placeholder="Lien d’une activité Strava" aria-label="Lien d'activité Strava" inputMode="url"
-              className="flex-1 min-w-0 h-full bg-transparent outline-none text-[14px] sm:text-[15px] text-white placeholder:text-neutral-500" />
-            <UiButton variant="strava" size="md" className="w-[88px] sm:w-[104px] h-10 rounded-lg px-0 text-[13px] sm:text-[14px] shrink-0 justify-center" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
-          </div>
+              style={{ outline: 'none' }} className="flex-1 min-w-0 h-full bg-transparent text-[14px] sm:text-[15px] text-white placeholder:text-neutral-500 caret-[#fc4c02]" />
+            <UiButton variant="strava" size="md" className="w-[88px] sm:w-[104px] h-10 rounded-lg px-0 text-[13px] sm:text-[14px] shrink-0 justify-center" loading={stravaBusy} onClick={(e) => { e.preventDefault(); submitStrava(); }}>Importer</UiButton>
+          </label>
           {stravaRef && (
             <div className="mt-2 text-left rounded-2xl bg-[#fc4c02]/[0.07] ring-1 ring-[#fc4c02]/25 p-4 ds-fade-up">
               <div className="flex items-start gap-3">
@@ -840,10 +841,12 @@ function PrintraceSite() {
      <div className="relative isolate min-h-full overflow-x-clip">
       {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
-        backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.022) 1px, transparent 1px)',
+        backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)',
         backgroundSize: '32px 32px', backgroundPosition: 'center top',
-        // Grille surtout autour du titre, très discrète, et effacée avant le poster
-        maskImage: 'radial-gradient(80% 42% at 50% 0%, #000 0%, rgba(0,0,0,0.4) 40%, transparent 72%)', WebkitMaskImage: 'radial-gradient(80% 42% at 50% 0%, #000 0%, rgba(0,0,0,0.4) 40%, transparent 72%)' }} />
+        // Grille bien visible en haut de page, qui s'estompe sous le titre et disparaît avant le poster
+        maskImage: 'linear-gradient(to bottom, #000 0, rgba(0,0,0,0.75) 160px, rgba(0,0,0,0.3) 340px, transparent 480px), radial-gradient(75% 100% at 50% 0%, #000 40%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, #000 0, rgba(0,0,0,0.75) 160px, rgba(0,0,0,0.3) 340px, transparent 480px), radial-gradient(75% 100% at 50% 0%, #000 40%, transparent 100%)',
+        maskComposite: 'intersect', WebkitMaskComposite: 'source-in' }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
       {/* Fond noir ; seule la zone du poster est éclairée */}
       <div className="relative overflow-x-clip">
