@@ -803,15 +803,14 @@ const SITE_FLOW = [
   { id: 'custom', title: 'Personnalisez votre carte', text: 'Choisissez le style, la couleur du tracé, vos photos et les infos affichées.' },
   { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
-// En-tête d'étape : numéro (pastille) et nom de l'étape en Mont sur une ligne, puis description
+// En-tête d'étape : bulle numérotée (comme le stepper de droite), nom de l'étape, puis description
 function SiteStepHead({ i }) {
   const st = SITE_FLOW[i];
   return (
     <div>
-      <h2 className="flex items-center gap-3">
-        <span className="h-7 min-w-7 px-2 rounded-lg grid place-items-center bg-white/[0.08] ring-1 ring-white/15 text-[13px] font-bold tabular-nums text-white">0{i + 1}</span>
-        <span className="font-display font-bold tracking-[-0.015em] leading-tight text-[19px] text-white whitespace-nowrap">{st.title}</span>
-      </h2>
+      {/* Même bulle et même police que le stepper de droite */}
+      <span className="w-10 h-10 rounded-full grid place-items-center bg-white text-neutral-900 text-[13.5px] font-semibold tabular-nums shadow-[0_0_0_5px_rgba(255,255,255,0.07)]">{i + 1}</span>
+      <h2 className="mt-4 text-[21px] font-semibold leading-tight tracking-[-0.01em] text-white" style={{ fontFamily: 'var(--ds-font-site)' }}>{st.title}</h2>
       <p className="mt-3 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
     </div>
   );
