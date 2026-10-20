@@ -12,6 +12,7 @@
 //   routdoor.html       -> dist/routdoor/index.html       (Routdoor)
 //   printrace-site.html -> dist/printrace/index.html      (site web de Printrace)
 //   printrace.html      -> dist/printrace/studio/index.html (studio Printrace)
+//   printrace-login.html -> dist/printrace/login/index.html (connexion : entrée du produit)
 //   design-system.html  -> dist/design-system/index.html  (documentation du design system)
 //
 // Performances (dist/) : un seul script minifié par page (esbuild), chargé en
@@ -131,6 +132,7 @@ const PAGES = [
   { src: 'routdoor.html', out: 'routdoor/index.html', preview: 'gr34.html' },
   { src: 'printrace-site.html', out: 'printrace/index.html', preview: 'printrace-site.html', prerender: true },
   { src: 'printrace.html', out: 'printrace/studio/index.html', preview: 'printrace.html' },
+  { src: 'printrace-login.html', out: 'printrace/login/index.html', preview: 'printrace-login.html' },
   { src: 'design-system.html', out: 'design-system/index.html', preview: 'design-system.html' },
 ]
 

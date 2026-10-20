@@ -38,6 +38,17 @@ function siteTrace(way, { seed = 7, rough = 0.22, depth = 6 } = {}) {
 // ~800 × 1000 px) ; tant qu'elles manquent, une illustration prend leur place.
 const SITE_CASES = [
   {
+    id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
+    pitch: 'Votre course mythique et votre temps, en poster prêt à encadrer.',
+    poster: {
+      tpl: 'nuit', border: 'marge', marginColor: '#222222', typeScale: 0.68, color: '#fc5200', mapStyle: 'routes', mapOpacity: 100, title: 'Marathon de Paris', subtitle: '42,195 km · 6 avril 2026',
+      metrics: ['distance', 'duration', 'pace'], values: { distance: '42,2 km', duration: '3 h 42', pace: "5'15\"/km" },
+      route: { name: 'Marathon de Paris', seed: 5, rough: 0.12, depth: 5, way: [[48.8738, 2.2950], [48.8656, 2.3212], [48.8606, 2.3376], [48.8566, 2.3522], [48.8530, 2.3690], [48.8443, 2.3920], [48.8390, 2.4100], [48.8335, 2.4330], [48.8290, 2.4440], [48.8225, 2.4320], [48.8300, 2.4050], [48.8410, 2.3790], [48.8505, 2.3570], [48.8580, 2.3360], [48.8610, 2.3150], [48.8580, 2.2945], [48.8510, 2.2780], [48.8460, 2.2560], [48.8575, 2.2470], [48.8680, 2.2550], [48.8715, 2.2760]] },
+    },
+    unsplash: ['marathon runners city', 'marathon finish line'],
+    photos: [{ src: null, caption: 'Ligne d’arrivée' }, { src: null, caption: 'Km 30, le mur' }],
+  },
+  {
     id: 'trek', heroBg: 1, accent: '#60a5fa', word: 'trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, GR34…', icon: 'Footprints', activity: 'hiking',
     pitch: 'Votre trek de plusieurs jours, en poster prêt à encadrer.',
     poster: {
@@ -67,17 +78,6 @@ const SITE_CASES = [
     },
     unsplash: ['corsica mountains hiking', 'gr20 corsica'],
     photos: [{ src: ptRes('siteTrek1', 'assets/site/trek-1.webp'), caption: 'Balisage' }, { src: ptRes('siteTrek2', 'assets/site/trek-2.webp'), caption: 'En chemin' }],
-  },
-  {
-    id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
-    pitch: 'Votre course mythique et votre temps, en poster prêt à encadrer.',
-    poster: {
-      tpl: 'nuit', border: 'marge', marginColor: '#222222', typeScale: 0.68, color: '#fc5200', mapStyle: 'routes', mapOpacity: 100, title: 'Marathon de Paris', subtitle: '42,195 km · 6 avril 2026',
-      metrics: ['distance', 'duration', 'pace'], values: { distance: '42,2 km', duration: '3 h 42', pace: "5'15\"/km" },
-      route: { name: 'Marathon de Paris', seed: 5, rough: 0.12, depth: 5, way: [[48.8738, 2.2950], [48.8656, 2.3212], [48.8606, 2.3376], [48.8566, 2.3522], [48.8530, 2.3690], [48.8443, 2.3920], [48.8390, 2.4100], [48.8335, 2.4330], [48.8290, 2.4440], [48.8225, 2.4320], [48.8300, 2.4050], [48.8410, 2.3790], [48.8505, 2.3570], [48.8580, 2.3360], [48.8610, 2.3150], [48.8580, 2.2945], [48.8510, 2.2780], [48.8460, 2.2560], [48.8575, 2.2470], [48.8680, 2.2550], [48.8715, 2.2760]] },
-    },
-    unsplash: ['marathon runners city', 'marathon finish line'],
-    photos: [{ src: null, caption: 'Ligne d’arrivée' }, { src: null, caption: 'Km 30, le mur' }],
   },
   {
     id: 'roadtrip', heroBg: 0, accent: '#facc15', word: 'road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
@@ -271,6 +271,23 @@ function SiteProof() {
         <span className="font-semibold text-white">{SITE_PROOF.rating}</span>
       </div>
     </div>
+  );
+}
+
+// Connexion (en-tête, tout à droite) : entrée du produit ; « Mon espace » une fois connecté
+function SiteAccountButton() {
+  const [user, setUser] = useSiteState(null);
+  useSiteEffect(() => { setUser(ptAuthUser()); }, []);
+  if (user) {
+    return (
+      <a href={siteStudioUrl()} className="inline-flex items-center gap-2 h-10 rounded-full bg-white/[0.06] ring-1 ring-white/10 pl-1.5 pr-3.5 text-[13.5px] font-medium text-white hover:bg-white/[0.1] transition-colors">
+        <span className="w-7 h-7 rounded-full grid place-items-center bg-white text-neutral-900 text-[12px] font-bold uppercase">{(user.name || user.email)[0]}</span>
+        Mon espace
+      </a>
+    );
+  }
+  return (
+    <a href={ptLoginUrl()} className="inline-flex items-center h-10 rounded-full bg-white px-4 text-[13.5px] font-semibold text-neutral-900 hover:bg-neutral-200 transition-colors">Se connecter</a>
   );
 }
 
@@ -600,7 +617,7 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
 }
 
 // ---------------------------------------------------------------- import
-// Adresse du studio (même site) ; les tracés partent dans le lien (#t=…)
+// Adresse du studio (même site) ; les tracés partent dans le lien (#t=…), via la connexion
 function siteStudioUrl() {
   return (window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../') + 'printrace/studio/';
 }
@@ -612,7 +629,8 @@ async function siteOpenStudio(stages, c, source, o = {}) {
     durationMin: st.gpxMovingMin || 0, date: st.gpxDate ? st.gpxDate.slice(0, 10) : '', coords: st.coords,
   }));
   const code = await window.RoutdoorLink.encodeShare({ title: (o.title || '').trim() || (parts.length > 1 ? 'Mon ' + c.word : ''), parts }, 6000);
-  const url = siteStudioUrl() + '#t=' + code + '&a=' + c.activity + '&src=site' + (source && source !== 'file' ? '&from=' + source : '');
+  // Entrée du produit : la page de connexion, qui ouvre ensuite le studio avec ces tracés
+  const url = ptLoginUrl('#t=' + code + '&a=' + c.activity + '&src=site' + (source && source !== 'file' ? '&from=' + source : ''));
   const sameSite = /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
   if (sameSite) location.href = url; else window.open(url, '_blank', 'noopener');
 }
@@ -636,7 +654,7 @@ const SITE_LINK_SOURCES = [
     invalid: "Ce lien n'est pas un tour Komoot (komoot.com/tour/…)." },
 ];
 
-function SiteImport({ c, items, setItems, onNext }) {
+function SiteImport({ c, items, setItems, onNext, opening }) {
   const fileRef = useSiteRef(null);
   const [busy, setBusy] = useSiteState(false);
   const [over, setOver] = useSiteState(false);
@@ -694,7 +712,7 @@ function SiteImport({ c, items, setItems, onNext }) {
   const bySource = (id) => items.filter((x) => (x.source || 'file') === id);
   const ctaUnder = bySource(lastSource).length ? lastSource : (['file', 'strava', 'komoot'].find((k) => bySource(k).length) || 'file');
   const next = (where) => items.length > 0 && ctaUnder === where && (
-    <UiButton variant="primary" size="lg" block iconRight="ChevronDown" onClick={onNext} className="mt-3 ds-fade-up">
+    <UiButton variant="primary" size="lg" block iconRight="ChevronRight" loading={opening} onClick={onNext} className="mt-3 ds-fade-up">
       Personnaliser ma carte{items.length > 1 ? ` · ${items.length} tracés, ${ptKm(total)}` : ''}
     </UiButton>
   );
@@ -848,7 +866,7 @@ const SITE_POSTER_W = 'max(340px, min(480px, calc((100vh - 120px) / 1.48), calc(
 const SITE_POSTER_H = `calc(${SITE_POSTER_W} * 1.414 + 48px)`; // cadre A3 + étiquette
 const SITE_POSTER_TOP = `max(20px, calc((100vh - ${SITE_POSTER_H}) / 2))`;
 function PrintraceSite() {
-  const [caseId, setCaseId] = useSiteState('trek');
+  const [caseId, setCaseId] = useSiteState(SITE_CASES[0].id);
   const [auto, setAuto] = useSiteState(true); // défilement des cas d'usage tant qu'on n'a pas choisi
   const c = SITE_CASES.find((x) => x.id === caseId);
   useSiteEffect(() => {
@@ -981,7 +999,10 @@ function PrintraceSite() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
       <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between" style={desktop ? { scrollSnapAlign: 'start' } : undefined}>
         <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
-        <SiteProof />
+        <div className="flex items-center gap-3">
+          <SiteProof />
+          <SiteAccountButton />
+        </div>
       </nav>
 
       {/* Titre et description, centrés en haut */}
@@ -1000,13 +1021,13 @@ function PrintraceSite() {
         <div className="contents lg:block lg:w-full lg:max-w-[400px] lg:ml-auto">
           <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : undefined}>
             <SiteStepHead i={0} accent={c.accent} snap={desktop} />
-            <div className="mt-9"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
+            <div className="mt-9"><SiteImport c={c} items={items} setItems={setItems} opening={opening === 'custom'} onNext={() => open('custom')} /></div>
           </div>
           <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
             <SiteStepHead i={1} accent={c.accent} snap={desktop} />
             <div className="mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
             {/* Le site n'est qu'un aperçu : la personnalisation complète se fait dans l'app */}
-            <a href={siteStudioUrl()} className="group mt-4 flex items-start gap-3 rounded-xl px-1 py-1 text-[13px] leading-relaxed text-neutral-500 hover:text-neutral-300 transition-colors">
+            <a href={ptLoginUrl()} className="group mt-4 flex items-start gap-3 rounded-xl px-1 py-1 text-[13px] leading-relaxed text-neutral-500 hover:text-neutral-300 transition-colors">
               <I.Info size={15} className="mt-[3px] shrink-0 text-neutral-600 group-hover:text-neutral-400" />
               <span>Ceci n’est qu’un aperçu. Modèles, fonds de carte, photos, formats : tout se règle dans l’app <span className="font-medium text-neutral-300 group-hover:text-white underline decoration-white/20 underline-offset-[3px] group-hover:decoration-white/60">printrace.app</span> <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">→</span></span>
             </a>

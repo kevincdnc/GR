@@ -23,9 +23,9 @@
   }
 
   // Racine du site (hub) : les services vivent dans des sous-dossiers
-  //   routdoor/ · printrace/ · printrace/studio/ · design-system/
+  //   routdoor/ · printrace/ · printrace/studio/ · printrace/login/ · design-system/
   function siteRoot() {
-    return siteBase().replace(/(routdoor|printrace\/studio|printrace|design-system)\/$/, '');
+    return siteBase().replace(/(routdoor|printrace\/studio|printrace\/login|printrace|design-system)\/$/, '');
   }
   const routdoorBase = () => siteRoot() + 'routdoor/';
 
