@@ -941,34 +941,37 @@ function PrintraceSite() {
     paint();
     return () => { sc.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); cancelAnimationFrame(raf); };
   }, [desktop]);
-  // Arrêts de scroll (grand écran) : à chaque étape, quand son chiffre est aligné sur le haut
-  // du cadre, le scroll s'arrête net. Il reste bloqué un court instant (l'élan du trackpad
-  // est absorbé), puis il faut un nouveau geste franc pour passer à l'étape suivante.
-  // Clavier (flèches, page, espace) : d'étape en étape. Barre de défilement : calage à
-  // l'arrêt le plus proche quand on lâche près d'une étape.
+  // Arrêts de scroll (grand écran) : quand le chiffre d'une étape arrive sur le haut du cadre,
+  // le scroll s'arrête net et reste bloqué tant que le geste continue (molette qui tourne,
+  // élan du trackpad). Il faut marquer une pause puis refaire un geste pour passer à la suite.
+  // Clavier (flèches, page, espace) : d'étape en étape.
   useSiteEffect(() => {
     const sc = scroller.current;
     if (!desktop || !sc) return;
-    const LOCK_MS = 650, HOLD = 160;
-    let holdAt = null, lockUntil = 0, held = 0, lastT = 0, settleT = 0, self = false;
+    const MIN_LOCK = 700;  // durée minimale de l'arrêt (ms)
+    const PAUSE = 220;     // pause sans geste nécessaire pour déverrouiller (ms)
+    const HOLD = 120;      // puis « force » du nouveau geste pour repartir (px)
+    let holdAt = null, lockedAt = 0, lastT = 0, released = false, held = 0;
     const snaps = () => {
       const max = sc.scrollHeight - sc.clientHeight;
-      return [0, 1, 2].map(snapFor).filter((v) => v != null && v > 0 && v < max);
+      return [0, 1, 2].map(snapFor).filter((v) => v != null && v > 0 && v <= max);
     };
-    const stopAt = (v) => { self = true; sc.scrollTop = v; holdAt = v; held = 0; lockUntil = performance.now() + LOCK_MS; };
+    const stopAt = (v) => { sc.scrollTop = v; holdAt = v; lockedAt = performance.now(); released = false; held = 0; };
     const onWheel = (e) => {
-      if (e.ctrlKey || e.target.closest('[role="listbox"]')) return;
+      if (e.ctrlKey || (e.target.closest && e.target.closest('[role="listbox"]'))) return;
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? sc.clientHeight : 1);
       if (!dy) return;
-      const now = performance.now(), y = sc.scrollTop, gap = now - lastT;
+      const now = performance.now(), gap = now - lastT, y = sc.scrollTop;
       lastT = now;
-      if (holdAt != null && Math.abs(y - holdAt) < 2) {
-        // Bloqué : on absorbe l'élan, puis il faut insister après une courte pause
-        if (now < lockUntil) { e.preventDefault(); lockUntil = Math.max(lockUntil, now + 120); return; }
-        if (gap > 500 || Math.sign(dy) !== Math.sign(held || dy)) held = 0;
+      if (holdAt != null && Math.abs(y - holdAt) < 3) {
+        if (!released) {
+          // déverrouillage seulement après l'arrêt minimal ET une pause dans le geste
+          if (now - lockedAt >= MIN_LOCK && gap >= PAUSE) released = true;
+          else { e.preventDefault(); return; }
+        }
         held += dy;
         if (Math.abs(held) < HOLD) { e.preventDefault(); return; }
-        holdAt = null; held = 0; return;
+        holdAt = null; return; // repart
       }
       holdAt = null;
       const next = y + dy, ss = snaps();
@@ -977,27 +980,20 @@ function PrintraceSite() {
       if (hit != null) { e.preventDefault(); stopAt(hit); }
     };
     const onKey = (e) => {
-      if (e.target.closest('input, textarea, select, [contenteditable]')) return;
-      const down = ['ArrowDown', 'PageDown', ' '].includes(e.key) && !(e.key === ' ' && e.shiftKey);
+      if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
+      const down = ['ArrowDown', 'PageDown'].includes(e.key) || (e.key === ' ' && !e.shiftKey);
       const up = ['ArrowUp', 'PageUp'].includes(e.key) || (e.key === ' ' && e.shiftKey);
       if (!down && !up) return;
       const y = sc.scrollTop, ss = snaps();
       const t = down ? ss.find((v) => v > y + 2) : [...ss].reverse().find((v) => v < y - 2);
-      if (t == null || (down ? t - y : y - t) > sc.clientHeight * 1.2) return;
-      e.preventDefault(); self = true; holdAt = t; sc.scrollTo({ top: t, behavior: 'smooth' });
+      if (t == null || Math.abs(t - y) > sc.clientHeight * 1.2) return;
+      e.preventDefault(); holdAt = t; lockedAt = performance.now(); released = false; held = 0;
+      sc.scrollTo({ top: t, behavior: 'smooth' });
     };
-    const onScroll = () => {
-      if (self) { self = false; return; }
-      clearTimeout(settleT);
-      settleT = setTimeout(() => {
-        const y = sc.scrollTop, near = snaps().find((v) => Math.abs(v - y) < 70);
-        if (near != null && Math.abs(near - y) > 1 && performance.now() - lastT > 200) { self = true; holdAt = near; sc.scrollTo({ top: near, behavior: 'smooth' }); }
-      }, 180);
-    };
-    sc.addEventListener('wheel', onWheel, { passive: false });
-    sc.addEventListener('scroll', onScroll, { passive: true });
+    // capture : passe avant tout autre gestionnaire ; non passif pour pouvoir bloquer
+    window.addEventListener('wheel', onWheel, { passive: false, capture: true });
     window.addEventListener('keydown', onKey);
-    return () => { sc.removeEventListener('wheel', onWheel); sc.removeEventListener('scroll', onScroll); window.removeEventListener('keydown', onKey); clearTimeout(settleT); };
+    return () => { window.removeEventListener('wheel', onWheel, { capture: true }); window.removeEventListener('keydown', onKey); };
   }, [desktop]);
   const goTo = (i) => {
     const el = stepRefs[i].current, sc = scroller.current; if (!el || !sc) return;
@@ -1017,7 +1013,7 @@ function PrintraceSite() {
   // Mise en avant : étape active nette, les autres estompées (cliquables pour y aller)
   const dim = (i) => (desktop && step !== i ? 'lg:opacity-30 lg:hover:opacity-55 lg:cursor-pointer lg:scale-[0.98]' : 'opacity-100');
   // Chaque étape occupe un écran ; son contenu est centré à hauteur du poster
-  const stepBox = 'relative flex flex-col justify-center lg:min-h-screen lg:py-12 origin-left transition-[opacity,transform] duration-500 ease-out';
+  const stepBox = 'relative flex flex-col justify-center lg:min-h-[72vh] lg:py-12 origin-left transition-[opacity,transform] duration-500 ease-out';
   const stepProps = (i) => ({
     ref: stepRefs[i], 'data-step': i,
     onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); } : undefined,
@@ -1062,7 +1058,7 @@ function PrintraceSite() {
             <SiteStepHead i={1} accent={c.accent} />
             <div className="mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
           </div>
-          <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[24vh] ${dim(2)}`}>
+          <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[40vh] ${dim(2)}`}>
             <SiteStepHead i={2} accent={c.accent} />
             <div className="mt-9"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
               onDownload={() => open('download')} onOrder={() => open('order')} onImport={() => goTo(0)} /></div>
