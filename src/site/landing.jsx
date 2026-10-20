@@ -803,16 +803,15 @@ const SITE_FLOW = [
   { id: 'custom', title: 'Personnalisez votre carte', text: 'Choisissez le style, la couleur du tracé, vos photos et les infos affichées.' },
   { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
-// En-tête d'étape : numéro (pastille), nom de l'étape en Mont, puis description
+// En-tête d'étape : numéro (pastille) et nom de l'étape en Mont sur une ligne, puis description
 function SiteStepHead({ i }) {
   const st = SITE_FLOW[i];
   return (
     <div>
-      <span className="inline-flex items-center gap-2.5">
+      <h2 className="flex items-center gap-3">
         <span className="h-7 min-w-7 px-2 rounded-lg grid place-items-center bg-white/[0.08] ring-1 ring-white/15 text-[13px] font-bold tabular-nums text-white">0{i + 1}</span>
-        <span aria-hidden="true" className="h-px w-8 bg-gradient-to-r from-white/30 to-transparent" />
-      </span>
-      <h2 className="mt-3.5 font-display font-bold tracking-[-0.02em] leading-[1.12] text-[clamp(22px,1.9vw,27px)] text-white">{st.title}</h2>
+        <span className="font-display font-bold tracking-[-0.015em] leading-tight text-[19px] text-white whitespace-nowrap">{st.title}</span>
+      </h2>
       <p className="mt-3 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
     </div>
   );
