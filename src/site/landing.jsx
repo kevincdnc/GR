@@ -905,7 +905,7 @@ function PrintraceSite() {
   // Aller à une étape : la progression passe tout de suite sur la cible, puis suit le scroll
   const jumpTo = useSiteRef(null), jumpT = useSiteRef(0);
   // Arrêt d'une étape : position de scroll où son en-tête s'aligne sur le haut du cadre (poster collé)
-  const posterRef = useSiteRef(null);
+  const posterRef = useSiteRef(null), railRef = useSiteRef(null);
   const snapFor = (i) => {
     const sc = scroller.current, el = stepRefs[i].current, po = posterRef.current;
     if (!sc || !el || !po) return null;
@@ -924,6 +924,12 @@ function PrintraceSite() {
       raf = 0;
       const po = posterRef.current; if (!po) return;
       const top = sc.getBoundingClientRect().top + (parseFloat(getComputedStyle(po).top) || 0);
+      // Stepper de droite : visible à partir de l'arrêt de l'étape 1 (avec 12 px de marge)
+      const rail = railRef.current, s0 = snapFor(0);
+      if (rail && s0 != null) {
+        const on = sc.scrollTop >= s0 - 12;
+        rail.classList.toggle('opacity-0', !on); rail.classList.toggle('pointer-events-none', !on); rail.classList.toggle('translate-x-2', !on);
+      }
       nums().forEach((n) => {
         const d = Math.abs(n.getBoundingClientRect().top - top);
         const t = Math.max(0, Math.min(1, 1 - d / 520)); // 0 loin, 1 aligné sur le cadre
@@ -1050,8 +1056,8 @@ function PrintraceSite() {
           </div>
         </div>
 
-        {/* Progression : à droite, à mi-hauteur du poster */}
-        <div className="hidden lg:flex lg:col-start-3 lg:row-start-1 lg:self-start lg:sticky items-center relative z-10" style={{ top: SITE_POSTER_TOP, height: SITE_POSTER_H }}>
+        {/* Progression : à droite, à mi-hauteur du poster ; n'apparaît qu'une fois l'étape 1 calée sur le cadre */}
+        <div ref={railRef} className="hidden lg:flex lg:col-start-3 lg:row-start-1 lg:self-start lg:sticky items-center relative z-10 opacity-0 pointer-events-none translate-x-2 transition-[opacity,transform] duration-500 ease-out" style={{ top: SITE_POSTER_TOP, height: SITE_POSTER_H }}>
           <SiteStepRail step={step} onGo={goTo} />
         </div>
       </section>
