@@ -401,7 +401,7 @@ function SitePhoto({ c, i, photo, className = '', rotate = 0, style }) {
 
 // Poster d'exemple rendu par le moteur du studio, dans un cadre noir
 // finish : { border: 'none' | 'fine' (liseré) | 'marge', frame: bool } — choisi à l'étape 3
-function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children }) {
+function SitePoster({ c, photos, custom = {}, items = [], finish = {}, compact, children }) {
   const ref = useSiteRef(null);
   const drawn = useSiteRef(null); // cas d'usage déjà dessiné sur le canvas
   const [ready, setReady] = useSiteState(false);
@@ -450,7 +450,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children 
         <div className={`pointer-events-none absolute inset-[3.2%] transition-opacity duration-500 ${framed ? '' : 'opacity-0'}`} style={{ background: 'linear-gradient(125deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 28%, transparent 45%)' }} />
       </div>
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
-      <div className="relative z-10 mt-3 flex justify-center">
+      <div className={`relative z-10 mt-3 flex justify-center ${compact ? 'hidden' : ''}`}>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300 max-w-full">
           <I.Poster size={13} /> <span className="truncate">{user ? 'Votre poster' : 'Exemple'} · {title} · A3{framed ? ' · cadre ' + frame.label.toLowerCase() : ''}</span>
         </span>
@@ -873,12 +873,15 @@ function SiteStepHead({ i, accent, snap }) {
   const st = SITE_FLOW[i];
   return (
     <div data-step-head style={snap ? { scrollSnapAlign: 'start', scrollSnapStop: 'always', scrollMarginTop: SITE_POSTER_TOP } : undefined}>
-      <span aria-hidden="true" data-step-num className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[46px] tabular-nums select-none"
+      {/* Mobile : numéro à côté du titre (plus compact) ; grand écran : numéro au-dessus */}
+      <div className="flex items-baseline gap-3 lg:block">
+      <span aria-hidden="true" data-step-num className="shrink-0 block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[30px] lg:text-[46px] tabular-nums select-none"
         style={{ fontFamily: 'var(--ds-font-display)', backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em', willChange: snap ? 'opacity' : undefined }}>
         0{i + 1}
       </span>
-      <h2 className="mt-3 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[24px] text-white"><span className="sr-only">Étape {i + 1} : </span>{st.title}</h2>
-      <p className="mt-3.5 text-[15px] leading-[1.7] text-neutral-400 max-w-[400px]">{st.text}</p>
+      <h2 className="lg:mt-3 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[22px] lg:text-[24px] text-white"><span className="sr-only">Étape {i + 1} : </span>{st.title}</h2>
+      </div>
+      <p className="mt-2.5 lg:mt-3.5 text-[14px] lg:text-[15px] leading-[1.6] lg:leading-[1.7] text-neutral-400 max-w-[400px]">{st.text}</p>
     </div>
   );
 }
@@ -910,6 +913,9 @@ function SiteStepRail({ step, onGo }) {
 const SITE_POSTER_W = 'max(340px, min(480px, calc((100vh - 120px) / 1.48), calc(100vw - 880px)))';
 const SITE_POSTER_H = `calc(${SITE_POSTER_W} * 1.414 + 48px)`; // cadre A3 + étiquette
 const SITE_POSTER_TOP = `max(20px, calc((100vh - ${SITE_POSTER_H}) / 2))`;
+// Mobile : poster collé en haut de l'écran (hauteur fixe), étapes en dessous, une par écran
+const SITE_MPOSTER_H = '35svh';
+const SITE_MPOSTER_BOX = `calc(${SITE_MPOSTER_H} + 32px)`; // poster + marges haut/bas
 // ---------------------------------------------------------------- posts Instagram
 // Banderole de posts : posters Printrace mis en scène chez soi (images générées par
 // scripts/insta/, comptes fictifs). Défilement continu, en pause au survol.
@@ -1063,7 +1069,8 @@ function PrintraceSite() {
     const update = () => {
       raf = 0;
       if (jumpTo.current != null) return; // saut vers une étape en cours : pas de clignotement
-      const mid = sc.getBoundingClientRect().top + sc.clientHeight / 2;
+      const po = posterRef.current, off = !mq.matches && po ? po.offsetHeight : 0;
+      const mid = sc.getBoundingClientRect().top + off + (sc.clientHeight - off) / 2;
       let best = 0, dist = Infinity;
       stepRefs.forEach((r, i) => {
         const el = r.current; if (!el) return;
@@ -1150,16 +1157,18 @@ function PrintraceSite() {
   // Mise en avant : étape active nette, les autres estompées (cliquables pour y aller)
   const dim = (i) => (desktop && step !== i ? 'lg:opacity-30 lg:hover:opacity-55 lg:cursor-pointer lg:scale-[0.98]' : 'opacity-100');
   // Chaque étape occupe un écran ; son contenu est centré à hauteur du poster
-  const stepBox = 'relative flex flex-col justify-center lg:min-h-screen lg:py-12 origin-left lg:will-change-[opacity,transform] transition-[opacity,transform] duration-500 ease-out';
+  const stepBox = 'relative flex flex-col justify-start py-6 lg:justify-center lg:min-h-screen lg:py-12 origin-left lg:will-change-[opacity,transform] transition-[opacity,transform] duration-500 ease-out';
+  // Mobile : chaque étape remplit l'écran sous le poster, et le scroll s'arrête sur chacune
+  const mStep = desktop ? undefined : { minHeight: `calc(100svh - ${SITE_MPOSTER_BOX})`, scrollSnapAlign: 'start', scrollSnapStop: 'always', scrollMarginTop: SITE_MPOSTER_BOX };
   const stepProps = (i) => ({
-    ref: stepRefs[i], 'data-step': i,
+    ref: stepRefs[i], 'data-step': i, style: mStep,
     onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); } : undefined,
   });
 
   // Grand écran : défilement par sections (scroll-snap natif) — le haut de page, puis chaque
   // étape, dont le chiffre se cale sur le haut du cadre ; une section à la fois
   return (
-    <div ref={scroller} className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white" style={desktop ? { scrollSnapType: 'y mandatory' } : undefined}>
+    <div ref={scroller} className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white" style={{ scrollSnapType: 'y mandatory' }}>
      <div className="relative isolate min-h-full overflow-x-clip">
       {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[560px] -z-10" style={{
@@ -1170,7 +1179,7 @@ function PrintraceSite() {
         WebkitMaskImage: 'linear-gradient(to bottom, #000 0, rgba(0,0,0,0.75) 160px, rgba(0,0,0,0.3) 340px, transparent 480px), radial-gradient(75% 100% at 50% 0%, #000 40%, transparent 100%)',
         maskComposite: 'intersect', WebkitMaskComposite: 'source-in' }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[560px] -z-10 opacity-[0.025]" style={{ backgroundImage: SITE_GRAIN }} />
-      <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between" style={desktop ? { scrollSnapAlign: 'start' } : undefined}>
+      <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between" style={{ scrollSnapAlign: 'start' }}>
         <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
         <div className="flex items-center gap-3">
           <SiteProof />
@@ -1189,16 +1198,16 @@ function PrintraceSite() {
       </header>
 
       {/* Étapes à gauche (elles défilent), poster centré sur la page et progression à droite (ils restent à l'écran) */}
-      <section aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-12">
+      <section aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-0">
         {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
         <div className="contents lg:block lg:w-full lg:max-w-[360px] lg:ml-auto">
-          <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : undefined}>
+          <div {...stepProps(0)} className={`order-2 ${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : mStep}>
             <SiteStepHead i={0} accent={c.accent} snap={desktop} />
-            <div className="mt-9"><SiteImport c={c} items={items} setItems={setItems} opening={opening === 'custom'} onNext={() => open('custom')} /></div>
+            <div className="mt-5 lg:mt-9"><SiteImport c={c} items={items} setItems={setItems} opening={opening === 'custom'} onNext={() => open('custom')} /></div>
           </div>
           <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
             <SiteStepHead i={1} accent={c.accent} snap={desktop} />
-            <div className="mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
+            <div className="mt-5 lg:mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
             {/* Le site n'est qu'un aperçu : la personnalisation complète se fait dans l'app */}
             <a href={ptLoginUrl()} className="group mt-4 flex items-start gap-3 rounded-xl px-1 py-1 text-[13px] leading-relaxed text-neutral-500 hover:text-neutral-300 transition-colors">
               <I.Info size={15} className="mt-[3px] shrink-0 text-neutral-600 group-hover:text-neutral-400" />
@@ -1207,13 +1216,14 @@ function PrintraceSite() {
           </div>
           <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[40vh] ${dim(2)}`}>
             <SiteStepHead i={2} accent={c.accent} snap={desktop} />
-            <div className="mt-9"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening === 'order'} onOpen={() => (items.length ? open('order') : (location.href = ptLoginUrl()))} /></div>
+            <div className="mt-5 lg:mt-9"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening === 'order'} onOpen={() => (items.length ? open('order') : (location.href = ptLoginUrl()))} /></div>
           </div>
         </div>
 
         {/* Poster : collé au centre de l'écran pendant que les étapes défilent */}
-        <div ref={posterRef} className="order-2 lg:order-none lg:col-start-2 lg:row-start-1 lg:self-start lg:sticky" style={desktop ? { top: SITE_POSTER_TOP, willChange: 'transform', transform: 'translateZ(0)' } : undefined}>
-          <div className="relative w-full max-w-[400px] lg:max-w-none mx-auto" style={desktop ? { width: SITE_POSTER_W } : undefined}>
+        <div ref={posterRef} className="order-1 sticky top-0 z-20 self-start -mx-5 sm:-mx-8 px-5 sm:px-8 pt-3 pb-5 lg:z-auto lg:mx-0 lg:px-0 lg:pt-0 lg:pb-0 lg:order-none lg:col-start-2 lg:row-start-1"
+          style={desktop ? { top: SITE_POSTER_TOP, willChange: 'transform', transform: 'translateZ(0)' } : { top: 0, height: SITE_MPOSTER_BOX, background: 'linear-gradient(#0a0a0a 92%, rgba(10,10,10,0))', willChange: 'transform', transform: 'translateZ(0)' }}>
+          <div className="relative mx-auto lg:max-w-none" style={desktop ? { width: SITE_POSTER_W } : { width: `calc(${SITE_MPOSTER_H} / 1.414)` }}>
             {/* Photo du trip fondue dans le fond, décalée à droite du cadre */}
             {c.heroBg != null && photos[c.heroBg] && (
               <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
@@ -1222,7 +1232,7 @@ function PrintraceSite() {
                 <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" data-hero-photo className="w-full h-full object-cover saturate-[0.8] opacity-[0.3]" style={{ willChange: 'opacity' }} />
               </div>
             )}
-            <SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} />
+            <SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} compact={!desktop} />
           </div>
         </div>
 
@@ -1232,8 +1242,8 @@ function PrintraceSite() {
         </div>
       </section>
 
-      <SiteInstaWall snap={desktop} />
-      <SiteFooter snap={desktop} />
+      <SiteInstaWall snap />
+      <SiteFooter snap />
      </div>
     </div>
   );
