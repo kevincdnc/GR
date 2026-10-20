@@ -67,7 +67,14 @@
   .site-bar { height: max(3px, 0.04em); border-radius: 99px; }
   .site-bar-fill { width: 0; border-radius: 99px; animation: siteFill linear 1 forwards; }
   @keyframes siteFill { from { width: 0; } to { width: 100%; } }
-  @media (prefers-reduced-motion: reduce) { .site-bar-fill { animation: none; width: 100%; opacity: .6; } }
+  /* Parcours en 3 étapes : entrée en cascade, trait qui se déploie, pulsation de l'étape active */
+  .site-step-in { animation: siteStepIn .6s cubic-bezier(.22,.8,.3,1) both; }
+  @keyframes siteStepIn { from { opacity: 0; transform: translateY(var(--site-dy, 20px)); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+  .site-line-in { width: 24px; animation: siteLineIn .6s cubic-bezier(.22,.8,.3,1) .1s both; }
+  @keyframes siteLineIn { from { width: 0; } to { width: 24px; } }
+  .site-rail-pulse { animation: siteRailPulse 1s ease-out 1 both; }
+  @keyframes siteRailPulse { from { box-shadow: 0 0 0 0 rgba(255,255,255,.45); } to { box-shadow: 0 0 0 14px rgba(255,255,255,0); } }
+  @media (prefers-reduced-motion: reduce) { .site-bar-fill { animation: none; width: 100%; opacity: .6; } .site-step-in, .site-line-in, .site-rail-pulse { animation: none; } }
 </style>
 <link rel="stylesheet" href="tailwind.css" />
 </head>

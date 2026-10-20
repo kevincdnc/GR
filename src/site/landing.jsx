@@ -708,18 +708,22 @@ function SiteOffers({ offer, onOffer, items, onImport, onCreate, opening }) {
 }
 
 // Étape : numéro, titre, texte puis son module
-function SiteStepPanel({ i, active, desktop, children }) {
+// Sur grand écran, l'étape active entre en cascade (numéro, titre, texte, module)
+// depuis le sens du scroll ; l'étape quittée glisse dans l'autre sens et s'efface.
+function SiteStepPanel({ i, active, desktop, dir = 1, children }) {
   const st = SITE_FLOW[i];
   const hidden = desktop && !active;
+  const anim = desktop && active ? 'site-step-in' : '';
+  const d = (k) => ({ animationDelay: `${k * 70}ms` });
   return (
-    <div aria-hidden={hidden || undefined} inert={hidden ? '' : undefined} style={{ gridArea: '1 / 1' }}
-      className={`self-center transition-all duration-500 ease-out ${hidden ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-      <div className="flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
-        <span className="tabular-nums text-white">0{i + 1}</span><span className="h-px w-6 bg-white/20" />Étape {i + 1} sur 3
+    <div aria-hidden={hidden || undefined} inert={hidden ? '' : undefined} style={{ '--site-dy': `${dir * 22}px`, transform: hidden ? `translateY(${-dir * 18}px)` : undefined }}
+      className={`self-start transition-[opacity,transform,filter] duration-300 ease-out ${hidden ? 'opacity-0 pointer-events-none blur-[2px]' : 'opacity-100'}`}>
+      <div className={`flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500 ${anim}`} style={d(0)}>
+        <span className="tabular-nums text-white">0{i + 1}</span><span className={`h-px bg-white/25 ${desktop && active ? 'site-line-in' : 'w-6'}`} />Étape {i + 1} sur 3
       </div>
-      <h2 className="mt-3 text-[26px] leading-tight font-semibold text-white tracking-[-0.02em]" style={{ fontFamily: 'var(--ds-font-site)' }}>{st.title}</h2>
-      <p className="mt-2 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
-      <div className="mt-6">{children}</div>
+      <h2 className={`mt-3 text-[26px] leading-tight font-semibold text-white tracking-[-0.02em] ${anim}`} style={{ fontFamily: 'var(--ds-font-site)', ...d(1) }}>{st.title}</h2>
+      <p className={`mt-2 text-[15px] leading-relaxed text-neutral-400 ${anim}`} style={d(2)}>{st.text}</p>
+      <div className={`mt-6 ${anim}`} style={d(3)}>{children}</div>
     </div>
   );
 }
@@ -735,7 +739,8 @@ function SiteStepRail({ step, progress, onGo }) {
         return (
           <li key={st.id}>
             <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group relative flex items-center gap-3.5 text-left">
-              <span className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12.5px] font-semibold tabular-nums ring-1 transition-colors ${on ? 'bg-white text-neutral-900 ring-white' : done ? 'bg-[#1a1a1a] text-white ring-white/50' : 'bg-[#121212] text-neutral-500 ring-white/15 group-hover:text-white'}`}>
+              {on && <span key={step} aria-hidden="true" className="site-rail-pulse absolute left-0 top-1/2 -mt-4 w-8 h-8 rounded-full" />}
+              <span className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12.5px] font-semibold tabular-nums ring-1 transition-all duration-300 ${on ? 'scale-110 bg-white text-neutral-900 ring-white' : done ? 'bg-[#1a1a1a] text-white ring-white/50' : 'bg-[#121212] text-neutral-500 ring-white/15 group-hover:text-white'}`}>
                 {done ? <I.Check size={14} /> : i + 1}
               </span>
               <span className={`text-[14px] transition-colors ${on ? 'text-white font-medium' : 'text-neutral-500 group-hover:text-neutral-300'}`}>{st.title}</span>
@@ -792,8 +797,21 @@ function PrintraceSite() {
     const p = total > 0 ? Math.min(1, Math.max(0, -el.getBoundingClientRect().top / total)) : 0;
     setProgress(p);
   };
-  const step = progress < 0.34 ? 0 : progress < 0.67 ? 1 : 2;
-  useSiteEffect(() => { if (step > 0) stop(); }, [step]);
+  const step = progress < 0.25 ? 0 : progress < 0.75 ? 1 : 2;
+  const lastStep = useSiteRef(0), [dir, setDir] = useSiteState(1);
+  const posterBox = useSiteRef(null);
+  useSiteEffect(() => {
+    if (step > 0) stop();
+    if (step === lastStep.current) return;
+    setDir(step > lastStep.current ? 1 : -1);
+    lastStep.current = step;
+    // Le poster « respire » à chaque étape : léger recul puis retour, avec un éclat
+    const el = posterBox.current;
+    if (el && el.animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: 'scale(0.975)', filter: 'brightness(1.12)', offset: 0.35 }, { transform: 'scale(1)', filter: 'brightness(1)' }],
+        { duration: 650, easing: 'cubic-bezier(.22,.8,.3,1)' });
+    }
+  }, [step]);
   const goTo = (i) => {
     const sc = scroller.current, el = flow.current;
     if (!sc || !el) return;
@@ -810,7 +828,7 @@ function PrintraceSite() {
   const finish = desktop && step < 2 ? 'frame' : desktop ? offer : 'frame';
 
   return (
-    <div ref={scroller} onScroll={onScroll} className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
+    <div ref={scroller} onScroll={onScroll} className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white lg:[scroll-snap-type:y_proximity]">
      <div className="relative isolate min-h-full overflow-x-clip">
       {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
@@ -842,28 +860,30 @@ function PrintraceSite() {
 
       {/* Parcours en 3 étapes : poster collé au centre, étape active à gauche, progression à droite */}
       <section ref={flow} aria-label="Créer votre poster" className="relative lg:h-[300vh]">
-        <div className="lg:sticky lg:top-0 lg:h-screen flex items-center">
-          <div className="w-full max-w-[1320px] mx-auto px-5 sm:px-8 pb-20 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-12 lg:gap-14 items-center">
+        {/* Points d'arrêt du scroll : un par étape */}
+        {[0, 1, 2].map((k) => <span key={k} aria-hidden="true" className="hidden lg:block absolute left-0 w-px h-px" style={{ top: `${k * 100}vh`, scrollSnapAlign: 'start' }} />)}
+        <div className="lg:sticky lg:top-0 lg:h-screen flex items-start lg:pt-[max(36px,5vh)]">
+          <div className="w-full max-w-[1360px] mx-auto px-5 sm:px-8 pb-20 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-12 lg:gap-10 items-start">
             {/* Étapes : superposées et en fondu sur grand écran, à la suite sur mobile */}
             {/* Mobile : étape 1, poster, étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
-            <div className="contents lg:grid lg:grid-cols-[minmax(0,1fr)] lg:order-1 lg:w-full lg:max-w-[420px] lg:mr-0 lg:ml-auto">
+            <div className="contents lg:grid lg:grid-cols-[minmax(0,1fr)] lg:order-1 lg:w-full lg:max-w-[420px] lg:mr-0 lg:ml-auto lg:pt-1">
               <div id="site-step-0" style={{ gridArea: desktop ? '1 / 1' : undefined }} className="order-1 lg:order-none grid grid-cols-[minmax(0,1fr)] w-full max-w-[420px] mx-auto lg:max-w-none">
-                <SiteStepPanel i={0} active={step === 0} desktop={desktop}><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></SiteStepPanel>
+                <SiteStepPanel i={0} active={step === 0} desktop={desktop} dir={dir}><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></SiteStepPanel>
               </div>
               <div id="site-step-1" style={{ gridArea: desktop ? '1 / 1' : undefined }} className="order-3 lg:order-none grid grid-cols-[minmax(0,1fr)] w-full max-w-[420px] mx-auto lg:max-w-none">
-                <SiteStepPanel i={1} active={step === 1} desktop={desktop}>
+                <SiteStepPanel i={1} active={step === 1} desktop={desktop} dir={dir}>
                   <SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} />
                   <button onClick={() => goTo(2)} className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-medium text-neutral-300 hover:text-white transition-colors">Choisir le format <I.ChevronDown size={15} /></button>
                 </SiteStepPanel>
               </div>
               <div id="site-step-2" style={{ gridArea: desktop ? '1 / 1' : undefined }} className="order-4 lg:order-none grid grid-cols-[minmax(0,1fr)] w-full max-w-[420px] mx-auto lg:max-w-none">
-                <SiteStepPanel i={2} active={step === 2} desktop={desktop}>
+                <SiteStepPanel i={2} active={step === 2} desktop={desktop} dir={dir}>
                   <SiteOffers offer={offer} onOffer={setOffer} items={items} onImport={() => goTo(0)} onCreate={create} opening={opening} />
                 </SiteStepPanel>
               </div>
             </div>
 
-            <div className="order-2 lg:order-2 relative w-full max-w-[400px] lg:max-w-none lg:w-[min(440px,calc((100vh_-_140px)/1.5))] mx-auto">
+            <div className="order-2 lg:order-2 relative w-full max-w-[400px] lg:max-w-none lg:w-[min(440px,calc((100vh_-_120px)/1.5))] mx-auto">
               {/* Photo du trip fondue dans le fond, décalée à droite du cadre */}
               {c.heroBg != null && photos[c.heroBg] && (
                 <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
@@ -871,10 +891,10 @@ function PrintraceSite() {
                   <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
                 </div>
               )}
-              <SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} />
+              <div ref={posterBox}><SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} /></div>
             </div>
 
-            <div className="hidden lg:flex lg:order-3 lg:mr-auto relative z-10">
+            <div className="hidden lg:flex lg:order-3 lg:mr-auto lg:pt-10 relative z-10">
               <SiteStepRail step={step} progress={progress} onGo={goTo} />
             </div>
           </div>
