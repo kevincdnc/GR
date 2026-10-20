@@ -128,15 +128,35 @@ function siteRoutesOf(c) {
   const r = c.poster.route;
   return [{ ...base, id: 'demo_' + c.id, name: r.name, coords: siteTrace(r.way, r), distance: 0, ascent: 0, descent: 0, durationMin: 0, altMax: null }];
 }
-// o : personnalisation du hero (nom du trip, couleur du tracé, photos affichées)
+// Tracés importés par le visiteur -> tracés du poster (affichés à la place de l'exemple)
+const siteItemLabel = (x) => (x.st.to ? x.st.from + ' → ' + x.st.to : x.st.from) || x.name.replace(/\.[^.]+$/, '');
+function siteUserRoutes(items, c) {
+  return items.map((x) => ({
+    id: 'user_' + x.id, name: siteItemLabel(x), color: '#ffffff', activity: c.activity, date: x.st.gpxDate ? x.st.gpxDate.slice(0, 10) : '',
+    coords: x.st.coords, distance: x.st.distanceKm || 0, ascent: x.st.elevationGain || 0, descent: x.st.elevationLoss || 0,
+    durationMin: x.st.gpxMovingMin || 0, durationReal: !!x.st.gpxMovingMin, altMax: x.st.altMax || null,
+  }));
+}
+// Titre et sous-titre par défaut : ceux de l'exemple, ou tirés des tracés importés
+function siteDefaultTitle(c, items) {
+  if (!items || !items.length) return c.poster.title;
+  return items.length > 1 ? 'Mon ' + c.word : siteItemLabel(items[0]);
+}
+function siteUserSubtitle(items) {
+  const a = items[0].st, b = items[items.length - 1].st;
+  if (items.length > 1 && a.from && b.to) return a.from + ' → ' + b.to;
+  return a.gpxDate ? ptDate(a.gpxDate) : '';
+}
+// o : personnalisation (nom du trip, couleur du tracé, photos) ; o.items : tracés du visiteur
 function sitePosterData(c, routes, photos = [], o = {}) {
   const p = c.poster, act = poActivity(c.activity);
-  if (o.photos === false && !p.bgPhoto) photos = [];
+  const user = !!(o.items && o.items.length);
+  if ((o.photos === false || user) && !p.bgPhoto) photos = [];
   const agg = poAggregate(routes, act);
   const stats = poStats(agg, p.metrics, { activity: act.label, start: routes[0].coords[0] })
-    .map((st) => (p.values[st.key] ? { ...st, value: p.values[st.key], unit: '' } : st));
+    .map((st) => (!user && p.values[st.key] ? { ...st, value: p.values[st.key], unit: '' } : st));
   return {
-    routes, agg, color: o.color || p.color, coords: true, activityLabel: act.label, title: (o.title || '').trim() || p.title, subtitle: p.subtitle, stats,
+    routes, agg, color: o.color || p.color, coords: true, activityLabel: act.label, title: (o.title || '').trim() || siteDefaultTitle(c, o.items), subtitle: user ? siteUserSubtitle(o.items) || act.label : p.subtitle, stats,
     photoSlot: false, photos: p.bgPhoto ? photos.slice(1) : photos, bgPhoto: p.bgPhoto && photos[0] ? photos[0].img : null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
     bg: p.bg || null, preview: false, typeScale: p.typeScale, marginColor: p.marginColor, photoShade: p.photoShade,
   };
@@ -342,12 +362,16 @@ function SitePhoto({ c, i, photo, className = '', rotate = 0, style }) {
 }
 
 // Poster d'exemple rendu par le moteur du studio, dans un cadre noir
-function SitePoster({ c, photos, custom = {}, children }) {
+// finish : { border: 'none' | 'fine' (liseré) | 'marge', frame: bool } — choisi à l'étape 3
+function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children }) {
   const ref = useSiteRef(null);
   const drawn = useSiteRef(null); // cas d'usage déjà dessiné sur le canvas
   const [ready, setReady] = useSiteState(false);
-  const routes = useSiteMemo(() => siteRoutesOf(c), [c.id]);
+  const user = items.length > 0;
+  const routes = useSiteMemo(() => (user ? siteUserRoutes(items, c) : siteRoutesOf(c)), [c.id, items]);
   const fmt = POSTER_FORMATS[1]; // A3
+  const border = finish.border || c.poster.border || 'none';
+  const framed = finish.frame !== false;
   useSiteEffect(() => {
     let live = true;
     const same = drawn.current === c.id; // simple retouche : on garde l'image affichée, sans spinner
@@ -363,32 +387,34 @@ function SitePoster({ c, photos, custom = {}, children }) {
       if (!live) return;
       // Rendu hors écran puis copie : pas de clignotement pendant les retouches
       const off = document.createElement('canvas'); off.width = w; off.height = h;
-      await renderPoster(off, tpl, sitePosterData(c, routes, ph, custom), fmt, c.poster.border || 'none', w / PO_W);
+      await renderPoster(off, tpl, sitePosterData(c, routes, ph, { ...custom, items }), fmt, border, w / PO_W);
       if (!live) return;
       cv.width = w; cv.height = h; cv.getContext('2d').drawImage(off, 0, 0);
       drawn.current = c.id;
       setReady(true);
     })();
     return () => { live = false; };
-  }, [c.id, photos && photos.map((p) => (p ? p.src : '')).join('|'), custom.photos, custom.title, custom.color]);
+  }, [c.id, routes, border, photos && photos.map((p) => (p ? p.src : '')).join('|'), custom.photos, custom.title, custom.color]);
+  const title = (custom.title || '').trim() || siteDefaultTitle(c, items);
   return (
     <div className="relative mx-auto w-full">
       {/* Éclairage : halo doux et large derrière le poster (plusieurs paliers pour un fondu sans marches) */}
       <div className="pointer-events-none absolute -inset-x-[90%] -top-[45%] -bottom-[40%] -z-10" style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.095) 40%, rgba(255,255,255,0.045) 62%, rgba(255,255,255,0.015) 82%, rgba(255,255,255,0) 100%)' }} />
       {children}
-      <div className="relative z-10 p-[3.2%] bg-[#151515] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.95),0_20px_40px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)]" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
-        <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.35)' }} />
-        {!ready && <div className="absolute inset-[3.2%] grid place-items-center bg-neutral-900"><UiSpinner size={20} className="text-neutral-500" /></div>}
+      {/* Cadre (bois noir, verre) ou poster seul */}
+      <div className={`relative z-10 transition-[padding,background-color,box-shadow] duration-500 ${framed ? 'p-[3.2%] bg-[#151515] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.95),0_20px_40px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)]' : 'p-0 bg-transparent shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)]'}`} style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
+        <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: framed ? 'inset 0 2px 6px rgba(0,0,0,0.35)' : 'none' }} />
+        {!ready && <div className={`absolute ${framed ? 'inset-[3.2%]' : 'inset-0'} grid place-items-center bg-neutral-900`}><UiSpinner size={20} className="text-neutral-500" /></div>}
         {/* Spot de galerie : lumière qui tombe du haut sur le cadre et la vitre */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 50%, transparent)' }} />
+        <div className={`pointer-events-none absolute inset-x-0 top-0 h-px transition-opacity duration-500 ${framed ? '' : 'opacity-0'}`} style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 50%, transparent)' }} />
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 35% at 50% 0%, rgba(255,255,255,0.10), transparent 70%)', mixBlendMode: 'screen' }} />
-        {/* Reflet léger sur le verre, en diagonale */}
-        <div className="pointer-events-none absolute inset-[3.2%]" style={{ background: 'linear-gradient(125deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 28%, transparent 45%)' }} />
+        {/* Reflet léger sur le verre, en diagonale (sous verre seulement) */}
+        <div className={`pointer-events-none absolute inset-[3.2%] transition-opacity duration-500 ${framed ? '' : 'opacity-0'}`} style={{ background: 'linear-gradient(125deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 28%, transparent 45%)' }} />
       </div>
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
       <div className="relative z-10 mt-3 flex justify-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300">
-          <I.Poster size={13} /> Exemple · {(custom.title || '').trim() || c.poster.title} · A3
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300 max-w-full">
+          <I.Poster size={13} /> <span className="truncate">{user ? 'Votre poster' : 'Exemple'} · {title} · A3{framed ? ' encadré' : ''}</span>
         </span>
       </div>
     </div>
@@ -403,29 +429,23 @@ const SITE_TRACE_COLORS = [
   { hex: '#34d399', name: 'Vert' }, { hex: '#60a5fa', name: 'Bleu' }, { hex: '#f472b6', name: 'Rose' },
 ];
 const SITE_TITLE_MAX = 24;
-function SiteCustomize({ c, value, onChange }) {
+function SiteCustomize({ c, value, onChange, items = [] }) {
   const set = (k, v) => onChange({ ...value, [k]: v });
   const defColor = c.poster.color === 'auto' ? '#ffffff' : c.poster.color;
   const color = value.color || defColor;
-  const canPhotos = (c.poster.photos || 0) > 0 && !c.poster.bgPhoto;
+  const canPhotos = (c.poster.photos || 0) > 0 && !c.poster.bgPhoto && !items.length;
   const photosOn = value.photos !== false;
   const touched = !!(value.title || value.color || value.photos === false);
   return (
-    <div data-drag-handle className="group/drag rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4 lg:cursor-grab">
+    <div className="rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
       <div className="flex items-center justify-between h-6">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Personnalisez</span>
-        <span className="flex items-center gap-3">
-          {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
-          {/* Poignée verticale en bout de ligne, sur grand écran (le bloc se déplace) */}
-          <span aria-hidden="true" className="hidden lg:grid grid-cols-2 gap-[3px] opacity-40 group-hover/drag:opacity-80 transition-opacity">
-            {[0, 1, 2, 3, 4, 5].map((k) => <span key={k} className="w-[3px] h-[3px] rounded-full bg-neutral-400" />)}
-          </span>
-        </span>
+        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Réglages</span>
+        {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
       </div>
       <label className="block mt-3">
         <span className="sr-only">Nom du trip</span>
         <span className="relative block">
-          <input value={value.title || ''} maxLength={SITE_TITLE_MAX} placeholder={c.poster.title} onChange={(e) => set('title', e.target.value)}
+          <input value={value.title || ''} maxLength={SITE_TITLE_MAX} placeholder={siteDefaultTitle(c, items)} onChange={(e) => set('title', e.target.value)}
             className="w-full h-11 rounded-lg bg-white/[0.05] ring-1 ring-white/10 focus:ring-white/30 outline-none pl-3.5 pr-12 text-[14.5px] text-white placeholder:text-neutral-500 transition-shadow" />
           <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11.5px] tabular-nums text-neutral-600">{(value.title || '').length}/{SITE_TITLE_MAX}</span>
         </span>
@@ -442,7 +462,7 @@ function SiteCustomize({ c, value, onChange }) {
         </div>
       </div>
       <button role="switch" aria-checked={canPhotos && photosOn} disabled={!canPhotos} onClick={() => set('photos', !photosOn)}
-        title={canPhotos ? undefined : 'Ce modèle n’affiche pas de photos'}
+        title={canPhotos ? undefined : items.length ? 'Vos photos s’ajoutent dans le studio' : 'Ce modèle n’affiche pas de photos'}
         className="mt-3.5 w-full flex items-center justify-between gap-3 text-left disabled:opacity-40 disabled:cursor-not-allowed group">
         <span className="text-[13.5px] text-neutral-300 group-enabled:group-hover:text-white transition-colors">Photos du voyage</span>
         <UiSwitch on={canPhotos && photosOn} />
@@ -451,42 +471,36 @@ function SiteCustomize({ c, value, onChange }) {
   );
 }
 
-// Bloc déplaçable à la souris (grand écran) : on l'attrape partout sauf sur ses
-// contrôles, il reste dans les limites du hero ; double-clic = retour à sa place.
-function SiteDraggable({ bounds, top, className = '', children }) {
-  const ref = useSiteRef(null), drag = useSiteRef(null);
-  const [off, setOff] = useSiteState({ x: 0, y: 0 });
-  const [moving, setMoving] = useSiteState(false);
-  const [enabled, setEnabled] = useSiteState(false);
-  useSiteEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const on = () => { setEnabled(mq.matches); if (!mq.matches) setOff({ x: 0, y: 0 }); };
-    on(); mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
-  const interactive = 'button, input, a, label, [role="switch"], [role="radio"]';
-  const down = (e) => {
-    if (!enabled || e.button !== 0 || !e.target.closest('[data-drag-handle]') || e.target.closest(interactive)) return;
-    const r = ref.current.getBoundingClientRect(), b = bounds.current.getBoundingClientRect();
-    const t = top && top.current ? top.current.getBoundingClientRect().bottom : b.top; // pas sous la navigation
-    drag.current = { px: e.clientX, py: e.clientY, ox: off.x, oy: off.y,
-      // limites du décalage pour rester dans le hero (8 px de marge)
-      minX: off.x + b.left + 8 - r.left, maxX: off.x + b.right - 8 - r.right, minY: off.y + t + 8 - r.top, maxY: off.y + b.bottom - 8 - r.bottom };
-    ref.current.setPointerCapture(e.pointerId);
-    setMoving(true);
-    e.preventDefault();
-  };
-  const move = (e) => {
-    const d = drag.current; if (!d) return;
-    const cl = (v, a, z) => Math.min(Math.max(v, a), z);
-    setOff({ x: cl(d.ox + e.clientX - d.px, d.minX, d.maxX), y: cl(d.oy + e.clientY - d.py, d.minY, d.maxY) });
-  };
-  const up = () => { drag.current = null; setMoving(false); };
+// ---------------------------------------------------------------- finition (étape 3)
+const SITE_BORDERS = [{ id: 'none', label: 'Aucune' }, { id: 'fine', label: 'Liseré' }, { id: 'marge', label: 'Marge' }];
+function SiteFinish({ c, value, onChange, ready, onDownload, onOrder, onImport, opening }) {
+  const border = value.border || c.poster.border || 'none';
+  const framed = value.frame !== false;
   return (
-    <div ref={ref} className={className} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
-      onDoubleClick={(e) => { if (enabled && !e.target.closest(interactive)) setOff({ x: 0, y: 0 }); }}
-      style={{ transform: `translate3d(${off.x}px, ${off.y}px, 0)`, transition: moving ? 'none' : 'transform .3s cubic-bezier(.22,.8,.3,1)', touchAction: enabled ? 'none' : undefined }}>
-      <div className={`rounded-2xl transition-[transform,box-shadow] duration-200 ${moving ? 'scale-[1.02] shadow-[0_30px_70px_-20px_rgba(0,0,0,0.9)] [&_[data-drag-handle]]:cursor-grabbing' : ''}`}>{children}</div>
+    <div>
+      <div className="rounded-2xl bg-[#0e0e0e]/70 ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
+        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Finition</span>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="text-[13.5px] text-neutral-300">Bordure</span>
+          <div className="inline-flex rounded-lg bg-white/[0.05] ring-1 ring-white/10 p-0.5" role="radiogroup" aria-label="Bordure">
+            {SITE_BORDERS.map((x) => (
+              <button key={x.id} role="radio" aria-checked={border === x.id} onClick={() => onChange({ ...value, border: x.id })}
+                className={`h-8 px-3 rounded-md text-[13px] font-medium transition-colors ${border === x.id ? 'bg-white text-neutral-900' : 'text-neutral-300 hover:text-white'}`}>{x.label}</button>
+            ))}
+          </div>
+        </div>
+        <button role="switch" aria-checked={framed} onClick={() => onChange({ ...value, frame: !framed })} className="mt-3.5 w-full flex items-center justify-between gap-3 text-left group">
+          <span className="text-[13.5px] text-neutral-300 group-hover:text-white transition-colors">Cadre bois noir et verre</span>
+          <UiSwitch on={framed} />
+        </button>
+      </div>
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <UiButton size="lg" icon="Download" block onClick={ready ? onDownload : onImport} loading={opening === 'download'}>Télécharger en HD</UiButton>
+        <UiButton variant="primary" size="lg" iconRight="ChevronRight" block onClick={ready ? onOrder : onImport} loading={opening === 'order'}>Commander le poster</UiButton>
+      </div>
+      <p className="mt-3 text-[12.5px] text-neutral-500 leading-snug">
+        {ready ? 'Fichier PDF et PNG 300 dpi prêt pour l’imprimeur, ou poster imprimé et livré chez vous.' : 'Importez d’abord votre tracé (étape 1) : l’exemple sert d’aperçu.'}
+      </p>
     </div>
   );
 }
@@ -551,103 +565,125 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
 function siteStudioUrl() {
   return (window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../') + 'printrace/studio/';
 }
-async function siteOpenStudio(stages, c, source) {
+// o : réglages du site repris dans le studio (nom du trip, couleur du tracé)
+async function siteOpenStudio(stages, c, source, o = {}) {
   const parts = stages.map(({ st, name }) => ({
     name: (st.to ? st.from + ' → ' + st.to : st.from) || name.replace(/\.[^.]+$/, ''),
-    color: '', distance: st.distanceKm, ascent: st.elevationGain, descent: st.elevationLoss,
+    color: o.color || '', distance: st.distanceKm, ascent: st.elevationGain, descent: st.elevationLoss,
     durationMin: st.gpxMovingMin || 0, date: st.gpxDate ? st.gpxDate.slice(0, 10) : '', coords: st.coords,
   }));
-  const code = await window.RoutdoorLink.encodeShare({ title: parts.length > 1 ? 'Mon ' + c.word : '', parts }, 6000);
-  const url = siteStudioUrl() + '#t=' + code + '&a=' + c.activity + '&src=site' + (source === 'strava' ? '&from=strava' : '');
+  const code = await window.RoutdoorLink.encodeShare({ title: (o.title || '').trim() || (parts.length > 1 ? 'Mon ' + c.word : ''), parts }, 6000);
+  const url = siteStudioUrl() + '#t=' + code + '&a=' + c.activity + '&src=site' + (source && source !== 'file' ? '&from=' + source : '');
   const sameSite = /github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
   if (sameSite) location.href = url; else window.open(url, '_blank', 'noopener');
 }
 
-function SiteImport({ c }) {
+// Lien Komoot (tour enregistré ou planifié) -> { kind, id }
+function siteParseKomoot(input) {
+  const v = String(input || '').trim();
+  if (!v) return null;
+  const m = v.match(/komoot\.[a-z.]+\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?tour\/(\d+)/i);
+  if (m) return { kind: 'tour', id: m[1] };
+  if (/^\d{5,}$/.test(v)) return { kind: 'tour', id: v };
+  return { kind: 'invalid' };
+}
+// Sources par lien : sans relais serveur, parcours guidé (télécharger le GPX puis le déposer)
+const SITE_LINK_SOURCES = [
+  { id: 'strava', name: 'Strava', color: '#fc4c02', logo: ['stravaLogo', 'assets/strava.svg'], placeholder: 'Collez une activité Strava',
+    parse: ptParseStrava, exportUrl: ptStravaExportUrl, label: (r) => 'Activité Strava n° ' + r.id,
+    invalid: "Ce lien n'est pas une activité Strava.", short: "Lien raccourci : ouvrez-le puis copiez l'adresse complète (strava.com/activities/…)." },
+  { id: 'komoot', name: 'Komoot', color: '#5f9f19', logo: ['komootLogo', 'assets/komoot.svg'], placeholder: 'Collez un tour Komoot',
+    parse: siteParseKomoot, exportUrl: (r) => `https://www.komoot.com/tour/${r.id}/download`, label: (r) => 'Tour Komoot n° ' + r.id,
+    invalid: "Ce lien n'est pas un tour Komoot (komoot.com/tour/…)." },
+];
+
+function SiteImport({ c, items, setItems, onNext }) {
   const fileRef = useSiteRef(null);
   const [busy, setBusy] = useSiteState(false);
   const [over, setOver] = useSiteState(false);
-  const [error, setError] = useSiteState('');
-  const [link, setLink] = useSiteState('');
-  const [stravaRef, setStravaRef] = useSiteState(null); // lien valide, en attente du fichier (sans relais)
-  const [stravaBusy, setStravaBusy] = useSiteState(false);
-  // Tracés ajoutés (lus dans le navigateur), affichés en liste avant de créer la carte
-  const [items, setItems] = useSiteState([]);
-  const [opening, setOpening] = useSiteState(false);
+  const [error, setError] = useSiteState({ src: '', msg: '' }); // erreur affichée sous son champ
+  const [links, setLinks] = useSiteState({ strava: '', komoot: '' });
+  const [guided, setGuided] = useSiteState({}); // lien valide en attente du fichier, par source
+  const [linkBusy, setLinkBusy] = useSiteState('');
+  // L'étape suivante s'affiche sous la liste du dernier import
+  const [lastSource, setLastSource] = useSiteState('file');
+  const pickSource = useSiteRef('file'); // provenance du prochain fichier choisi
 
-  const importFiles = async (list, source) => {
-    setError('');
+  const importFiles = async (list, source = 'file') => {
+    setError({ src: '', msg: '' });
     const files = [...(list || [])].filter(isTrackFile);
-    if (!files.length) { setError('Formats acceptés : GPX, FIT, TCX, KML, GeoJSON, IGC.'); return; }
+    if (!files.length) { setError({ src: source, msg: 'Formats acceptés : GPX, FIT, TCX, KML, GeoJSON, IGC.' }); return false; }
     setBusy(true);
     const res = await Promise.all(files.map((f) => readTrackFile(f).then((st) => ({ st, name: f.name })).catch(() => null)));
     const ok = res.filter((r) => r && r.st && r.st.coords && r.st.coords.length > 1);
     setBusy(false);
-    if (!ok.length) { setError('Impossible de lire ce fichier.'); return; }
-    setLastSource(source === 'strava' ? 'strava' : 'file');
-    if (ok.length < files.length) setError(`${files.length - ok.length} fichier(s) illisible(s) ignoré(s).`);
+    if (!ok.length) { setError({ src: source, msg: 'Impossible de lire ce fichier.' }); return false; }
+    setLastSource(source);
+    if (ok.length < files.length) setError({ src: source, msg: `${files.length - ok.length} fichier(s) illisible(s) ignoré(s).` });
     setItems((prev) => {
       const same = (a, b) => a.name === b.name && Math.abs((a.st.distanceKm || 0) - (b.st.distanceKm || 0)) < 0.01;
-      const fresh = ok.filter((r) => !prev.some((p) => same(p, r))).map((r, i) => ({ ...r, id: Date.now() + '_' + i, source }));
+      const fresh = ok.filter((r) => !prev.some((q) => same(q, r))).map((r, i) => ({ ...r, id: Date.now() + '_' + i, source }));
       return [...prev, ...fresh];
     });
+    return true;
   };
   const removeItem = (id) => setItems((l) => l.filter((x) => x.id !== id));
-  const createMap = async () => {
-    if (!items.length) return;
-    setOpening(true);
-    try { await siteOpenStudio(items, c, items.every((x) => x.source === 'strava') ? 'strava' : undefined); }
-    catch (e) { setError('Ouverture du studio impossible.'); }
-    setOpening(false);
+  const pick = (source = 'file') => { pickSource.current = source; if (fileRef.current) fileRef.current.click(); };
+  const submitLink = async (src) => {
+    setError({ src: '', msg: '' });
+    const r = src.parse(links[src.id]);
+    if (!r || r.kind === 'invalid') { setError({ src: src.id, msg: src.invalid }); return; }
+    if (r.kind === 'short') { setError({ src: src.id, msg: src.short }); return; }
+    if (src.id === 'strava' && ptStravaApi()) { // relais Strava configuré : import direct
+      setLinkBusy('strava');
+      try { const f = await ptFetchStravaGpx(r); if (f) await importFiles([f], 'strava'); }
+      catch (e) { setError({ src: 'strava', msg: e.message || 'Import Strava impossible.' }); }
+      setLinkBusy('');
+      return;
+    }
+    setGuided((g) => ({ ...g, [src.id]: r }));
   };
   const total = items.reduce((a, x) => a + (x.st.distanceKm || 0), 0);
-  const fileLabel = (x) => (x.st.to ? x.st.from + ' → ' + x.st.to : x.st.from) || x.name.replace(/\.[^.]+$/, '');
-  const submitStrava = async () => {
-    setError('');
-    const r = ptParseStrava(link);
-    if (!r || r.kind === 'invalid') { setError("Ce lien n'est pas une activité Strava."); return; }
-    if (r.kind === 'short') { setError("Lien raccourci : ouvrez-le puis copiez l'adresse complète (strava.com/activities/…)."); return; }
-    if (!ptStravaApi()) { setStravaRef(r); return; } // parcours guidé
-    setStravaBusy(true);
-    try { const f = await ptFetchStravaGpx(r); if (f) await importFiles([f], 'strava'); }
-    catch (e) { setError(e.message || 'Import Strava impossible.'); }
-    setStravaBusy(false);
-  };
-  // Provenance du prochain fichier choisi : le GPX téléchargé depuis Strava rejoint la liste Strava
-  const pickSource = useSiteRef(undefined);
-  // « Créer ma carte » suit le dernier import : sous la liste des fichiers ou sous celle de Strava
-  const [lastSource, setLastSource] = useSiteState('file');
-  const pick = (source) => { pickSource.current = source; if (fileRef.current) fileRef.current.click(); };
-  const fileItems = items.filter((x) => x.source !== 'strava'), stravaItems = items.filter((x) => x.source === 'strava');
-  const ctaUnder = (lastSource === 'strava' ? stravaItems : fileItems).length ? lastSource : stravaItems.length ? 'strava' : 'file';
-  const cta = (where) => items.length > 0 && ctaUnder === where && (
-    <UiButton variant="primary" size="lg" block iconRight="ChevronRight" loading={opening} onClick={createMap} className="mt-3 ds-fade-up">
-      Créer ma carte{items.length > 1 ? ` · ${items.length} tracés, ${ptKm(total)}` : ''}
+  const bySource = (id) => items.filter((x) => (x.source || 'file') === id);
+  const ctaUnder = bySource(lastSource).length ? lastSource : (['file', 'strava', 'komoot'].find((k) => bySource(k).length) || 'file');
+  const next = (where) => items.length > 0 && ctaUnder === where && (
+    <UiButton variant="primary" size="lg" block iconRight="ChevronDown" onClick={onNext} className="mt-3 ds-fade-up">
+      Personnaliser ma carte{items.length > 1 ? ` · ${items.length} tracés, ${ptKm(total)}` : ''}
     </UiButton>
   );
-  // Liste de tracés ajoutés, affichée sous le champ d'où ils viennent
-  const list = (xs) => xs.length > 0 && (
-    <ul className="mt-2 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] divide-y divide-white/[0.06] overflow-hidden ds-fade-up">
-      {xs.map((x) => (
-        <li key={x.id} className="flex items-center gap-3 pl-3.5 pr-2 h-14">
-          <span className="w-8 h-8 shrink-0 rounded-lg grid place-items-center bg-white/[0.06] text-neutral-300">
-            {x.source === 'strava' ? <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="18" height="18" className="rounded-[4px]" /> : <I.Route size={15} />}
-          </span>
-          <span className="flex-1 min-w-0">
-            <span className="block text-[13.5px] font-medium text-white truncate">{fileLabel(x)}</span>
-            <span className="block text-[11.5px] text-neutral-500 tabular-nums">{ptKm(x.st.distanceKm || 0)} · {ptM(x.st.elevationGain)} D+</span>
-          </span>
-          <UiIconButton icon="X" label={'Retirer ' + fileLabel(x)} size="sm" onClick={() => removeItem(x.id)} />
-        </li>
-      ))}
-    </ul>
-  );
+  const errorFor = (id) => error.msg && error.src === id && <p className="mt-2 text-[13px] text-red-300">{error.msg}</p>;
+  const srcIcon = (id) => {
+    const src = SITE_LINK_SOURCES.find((x) => x.id === id);
+    return src ? <img src={ptRes(src.logo[0], src.logo[1])} alt="" width="18" height="18" className="rounded-[4px]" /> : <I.Route size={15} />;
+  };
+  // Tracés ajoutés, affichés sous le champ d'où ils viennent
+  const list = (id) => {
+    const xs = bySource(id);
+    return xs.length > 0 && (
+      <ul className="mt-2 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] divide-y divide-white/[0.06] overflow-hidden ds-fade-up">
+        {xs.map((x) => (
+          <li key={x.id} className="flex items-center gap-3 pl-3.5 pr-2 h-14">
+            <span className="w-8 h-8 shrink-0 rounded-lg grid place-items-center bg-white/[0.06] text-neutral-300">{srcIcon(id)}</span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[13.5px] font-medium text-white truncate">{siteItemLabel(x)}</span>
+              <span className="block text-[11.5px] text-neutral-500 tabular-nums">{ptKm(x.st.distanceKm || 0)} · {ptM(x.st.elevationGain)} D+</span>
+            </span>
+            <UiIconButton icon="X" label={'Retirer ' + siteItemLabel(x)} size="sm" onClick={() => removeItem(x.id)} />
+          </li>
+        ))}
+      </ul>
+    );
+  };
 
   return (
-    <div className="w-full max-w-[520px] mx-auto lg:mx-0">
-      <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => { const src = pickSource.current; pickSource.current = undefined; importFiles(e.target.files, src).then(() => { if (src === 'strava') { setStravaRef(null); setLink(''); } }); e.target.value = ''; }} />
-      {/* Fichier puis lien Strava ; chaque tracé ajouté s'affiche sous le champ d'où il vient */}
+    <div className="w-full">
+      <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => {
+        const src = pickSource.current; pickSource.current = 'file';
+        importFiles(e.target.files, src).then((ok) => { if (ok && src !== 'file') { setGuided((g) => ({ ...g, [src]: null })); setLinks((l) => ({ ...l, [src]: '' })); } });
+        e.target.value = '';
+      }} />
       <div className="flex flex-col gap-3">
+        {/* Fichiers GPX, FIT… */}
         <div>
           <button onClick={() => pick()}
             onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
@@ -657,47 +693,54 @@ function SiteImport({ c }) {
               {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-[14px] sm:text-[15.5px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : fileItems.length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
+              <span className="block text-[14px] sm:text-[15.5px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : bySource('file').length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
               <span className="block text-[12px] sm:text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em] whitespace-nowrap">GPX · FIT · TCX · KML</span>
             </span>
             {!busy && <span className="shrink-0 w-[88px] sm:w-[104px] h-10 rounded-lg grid place-items-center text-[13px] sm:text-[14px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors">Parcourir</span>}
           </button>
-          {list(fileItems)}
-          {cta('file')}
+          {errorFor('file')}
+          {list('file')}
+          {next('file')}
         </div>
-        <div>
-          {/* Champ de saisie classique (même hauteur et même bouton que la zone de fichiers).
-              Tout le bloc est la zone de clic du champ (label) ; l'anneau de focus est celui du bloc */}
-          <label className={`h-[76px] sm:h-[84px] flex items-center gap-3 pl-4 sm:pl-5 pr-3.5 sm:pr-4 rounded-[20px] cursor-text bg-white/[0.03] ring-1 transition-colors hover:bg-white/[0.05] focus-within:bg-white/[0.05] ${error && link ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-2 focus-within:ring-[#fc4c02]/55 focus-within:hover:ring-[#fc4c02]/55'}`}>
-            <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="26" height="26" className="w-6 h-6 sm:w-[26px] sm:h-[26px] rounded-[6px] shrink-0" />
-            <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
-              placeholder="Collez une activité Strava" aria-label="Lien d'activité Strava" inputMode="url"
-              style={{ outline: 'none' }} className="flex-1 min-w-0 h-full bg-transparent text-[13.5px] sm:text-[15px] text-white placeholder:text-neutral-500 caret-[#fc4c02]" />
-            <UiButton variant="strava" size="md" className="w-[88px] sm:w-[104px] h-10 rounded-lg px-0 text-[13px] sm:text-[14px] shrink-0 justify-center" loading={stravaBusy} onClick={(e) => { e.preventDefault(); submitStrava(); }}>Importer</UiButton>
-          </label>
-          {stravaRef && (
-            <div className="mt-2 text-left rounded-2xl bg-[#fc4c02]/[0.07] ring-1 ring-[#fc4c02]/25 p-4 ds-fade-up">
-              <div className="flex items-start gap-3">
-                <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="28" height="28" className="rounded-md shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[14px] font-semibold text-white">Activité Strava n° {stravaRef.id}</div>
-                  <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">Téléchargez le GPX depuis votre compte Strava, puis déposez-le ici : il s'ajoute à vos tracés.</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <a href={ptStravaExportUrl(stravaRef)} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white bg-[#fc4c02] hover:brightness-110"><I.Download size={15} /> Télécharger le GPX</a>
-                    <UiButton icon="Upload" onClick={() => pick('strava')}>Déposer le fichier</UiButton>
+        {/* Liens Strava et Komoot : même gabarit, tout le bloc est la zone de clic du champ */}
+        {SITE_LINK_SOURCES.map((src) => {
+          const g = guided[src.id], bad = error.src === src.id && error.msg && links[src.id];
+          return (
+            <div key={src.id} style={{ '--src': src.color }}>
+              <label className={`h-[76px] sm:h-[84px] flex items-center gap-3 pl-4 sm:pl-5 pr-3.5 sm:pr-4 rounded-[20px] cursor-text bg-white/[0.03] ring-1 transition-colors hover:bg-white/[0.05] focus-within:bg-white/[0.05] ${bad ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-2 focus-within:ring-[color:var(--src)] focus-within:hover:ring-[color:var(--src)]'}`}>
+                <img src={ptRes(src.logo[0], src.logo[1])} alt="" width="26" height="26" className="w-6 h-6 sm:w-[26px] sm:h-[26px] rounded-[6px] shrink-0" />
+                <input value={links[src.id]} onChange={(e) => { const v = e.target.value; setLinks((l) => ({ ...l, [src.id]: v })); setError({ src: '', msg: '' }); setGuided((x) => ({ ...x, [src.id]: null })); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') submitLink(src); }}
+                  placeholder={src.placeholder} aria-label={'Lien ' + src.name} inputMode="url"
+                  style={{ outline: 'none', caretColor: src.color }} className="flex-1 min-w-0 h-full bg-transparent text-[13.5px] sm:text-[15px] text-white placeholder:text-neutral-500" />
+                <button onClick={(e) => { e.preventDefault(); submitLink(src); }} disabled={linkBusy === src.id}
+                  className="w-[88px] sm:w-[104px] h-10 shrink-0 rounded-lg grid place-items-center text-[13px] sm:text-[14px] font-semibold text-white transition-[filter] hover:brightness-110 disabled:opacity-70" style={{ background: src.color }}>
+                  {linkBusy === src.id ? <UiSpinner size={16} /> : 'Importer'}
+                </button>
+              </label>
+              {errorFor(src.id)}
+              {g && (
+                <div className="mt-2 text-left rounded-2xl ring-1 p-4 ds-fade-up" style={{ background: src.color + '12', boxShadow: `inset 0 0 0 1px ${src.color}40` }}>
+                  <div className="flex items-start gap-3">
+                    <img src={ptRes(src.logo[0], src.logo[1])} alt="" width="28" height="28" className="rounded-md shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-semibold text-white">{src.label(g)}</div>
+                      <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">Téléchargez le GPX depuis votre compte {src.name}, puis déposez-le ici : il s'ajoute à vos tracés.</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <a href={src.exportUrl(g)} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white hover:brightness-110" style={{ background: src.color }}><I.Download size={15} /> Télécharger le GPX</a>
+                        <UiButton icon="Upload" onClick={() => pick(src.id)}>Déposer le fichier</UiButton>
+                      </div>
+                    </div>
+                    <UiIconButton icon="X" label="Fermer" size="sm" onClick={() => setGuided((x) => ({ ...x, [src.id]: null }))} />
                   </div>
                 </div>
-                <UiIconButton icon="X" label="Fermer" size="sm" onClick={() => setStravaRef(null)} />
-              </div>
+              )}
+              {list(src.id)}
+              {next(src.id)}
             </div>
-          )}
-          {list(stravaItems)}
-          {cta('strava')}
-        </div>
+          );
+        })}
       </div>
-      {error && <p className="mt-2.5 text-[13px] text-red-300">{error}</p>}
-
-
     </div>
   );
 }
@@ -705,158 +748,20 @@ function SiteImport({ c }) {
 // Grain très fin (bruit SVG) : adoucit les dégradés sur écran Retina
 const SITE_GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>')}")`;
 
-// ---------------------------------------------------------------- comment ça marche
-// Illustrations sobres au trait (monochrome, une touche de couleur du cas d'usage)
-const SITE_LINE = 'rgba(255,255,255,0.14)';
-
-// Fond commun : grille de points qui s'efface sur les bords
-function SiteIllusFrame({ children, dots = true }) {
-  return (
-    <div className="relative aspect-[4/3]">
-      {dots && <div className="absolute inset-0" style={{
-        backgroundImage: 'radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)', backgroundSize: '16px 16px',
-        maskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)', WebkitMaskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)' }} />}
-      <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full" fill="none" aria-hidden="true">{children}</svg>
-    </div>
-  );
-}
-// Tracé type utilisé dans les illustrations
-const SITE_ROUTE_D = 'M0 34 C10 26 16 40 26 40 S38 52 42 64 S56 72 62 68 S74 80 80 86';
-
-// 1 · Import : le fichier au centre, les sources reliées par des traits fins
-function SiteIllusImport({ c }) {
-  // Reprend les champs du hero : zone de fichiers (une ligne, formats en étiquettes
-  // flottantes qui y « tombent »), séparateur « ou », lien Strava
-  const f = { fontFamily: 'var(--ds-font-site)' };
-  const mono = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' };
-  // Étiquette de fichier flottante, légèrement inclinée
-  const chip = (x, y, label, rot) => (
-    <g transform={`translate(${x} ${y}) rotate(${rot})`}>
-      <rect x="-22" y="-11" width="44" height="22" rx="5" fill="#141414" stroke="rgba(255,255,255,0.35)" />
-      <text x="0" y="3.6" textAnchor="middle" fontSize="9.5" fontWeight="600" fill="#fff" letterSpacing="0.4" style={mono}>{label}</text>
-    </g>
-  );
-  return (
-    <SiteIllusFrame dots={false}>
-      {/* Zone d'import (pointillés), une seule ligne */}
-      <rect x="50" y="78" width="300" height="64" rx="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" strokeDasharray="4 3" />
-      <rect x="62" y="90" width="40" height="40" rx="10" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.10)" />
-      {/* Icône « Upload » du hero (même dessin que I.Upload) */}
-      <g transform="translate(72.5 100.5) scale(0.79)" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
-        <path d="M21 15v3a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-3" /><path d="M17 8l-5-5-5 5M12 3v13" />
-      </g>
-      <text x="114" y="114.5" fontSize="12.5" fontWeight="600" fill="#fff" style={f}>Importez vos tracés</text>
-      <rect x="276" y="95" width="62" height="30" rx="7" fill="rgba(255,255,255,0.07)" />
-      <text x="307" y="114" textAnchor="middle" fontSize="10.5" fontWeight="500" fill="rgba(255,255,255,0.85)" style={f}>Parcourir</text>
-      {/* Formats qui arrivent dans la zone */}
-      {chip(262, 46, '.FIT', -6)}
-      <path d="M248 58 C244 64 242 68 240 74" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M236.5 70.5 L240 75 L244.5 72" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      {chip(352, 62, '.GPX', 5)}
-      <path d="M346 75 C344 82 344 88 352 96" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M346.5 95 L352.5 96.5 L352 90.5" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      {/* Séparateur « ou » */}
-      <path d="M50 171 H182 M218 171 H350" stroke="rgba(255,255,255,0.12)" />
-      <text x="200" y="174.5" textAnchor="middle" fontSize="9.5" fontWeight="600" fill="rgba(255,255,255,0.45)" letterSpacing="1.4" style={f}>OU</text>
-      {/* Lien Strava */}
-      <rect x="50" y="200" width="300" height="56" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.10)" />
-      <image href={ptRes('stravaLogo', 'assets/strava.svg')} x="64" y="216" width="24" height="24" />
-      <text x="98" y="232" fontSize="10.5" fill="rgba(255,255,255,0.45)" style={f}>Collez le lien d’une activité Strava</text>
-      <rect x="276" y="210" width="64" height="36" rx="8" fill="#fc4c02" />
-      <text x="308" y="232" textAnchor="middle" fontSize="10.5" fontWeight="600" fill="#fff" style={f}>Importer</text>
-    </SiteIllusFrame>
-  );
-}
-
-// 2 · Personnalisation : le bloc « Personnalisez » du hero
-function SiteIllusCustomize({ c }) {
-  const f = { fontFamily: 'var(--ds-font-site)' };
-  const sel = 4; // couleur choisie dans l'exemple
-  return (
-    <SiteIllusFrame>
-      <rect x="50" y="56" width="300" height="188" rx="16" fill="#0e0e0e" fillOpacity="0.85" stroke="rgba(255,255,255,0.08)" />
-      {/* En-tête : titre, réinitialiser */}
-      <text x="64" y="88" fontSize="9.5" fontWeight="600" letterSpacing="1.4" fill="rgba(255,255,255,0.45)" style={f}>PERSONNALISEZ</text>
-      <text x="334" y="88" textAnchor="end" fontSize="9.5" fill="rgba(255,255,255,0.55)" style={f}>Réinitialiser</text>
-      {/* Nom du trip */}
-      <rect x="64" y="102" width="272" height="40" rx="8" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.10)" />
-      <text x="77" y="126" fontSize="12" fill="#fff" style={f}>Ouessant</text>
-      <path d="M128 114 v16" stroke="#fff" strokeWidth="1" />
-      <text x="323" y="125.5" textAnchor="end" fontSize="8.5" fill="rgba(255,255,255,0.35)" style={f}>8/24</text>
-      {/* Couleur du tracé */}
-      <text x="64" y="175" fontSize="11" fill="rgba(255,255,255,0.8)" style={f}>Couleur du tracé</text>
-      {SITE_TRACE_COLORS.map((x, i) => (
-        <g key={x.hex}>
-          <circle cx={208 + i * 25} cy="171" r="8" fill={x.hex} />
-          {i === sel && <circle cx={208 + i * 25} cy="171" r="11" stroke="#fff" strokeWidth="1.6" />}
-        </g>
-      ))}
-      {/* Photos du voyage */}
-      <text x="64" y="213" fontSize="11" fill="rgba(255,255,255,0.8)" style={f}>Photos du voyage</text>
-      <rect x="312" y="202" width="24" height="14" rx="7" fill="#3b82f6" />
-      <circle cx="329" cy="209" r="5" fill="#fff" />
-    </SiteIllusFrame>
-  );
-}
-
-// 3 · Impression : dessin technique du poster encadré avec ses cotes
-function SiteIllusPrint({ c }) {
-  const mono = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: 9.5, fill: 'rgba(255,255,255,0.5)' };
-  return (
-    <SiteIllusFrame>
-      {/* Cadre + poster */}
-      <rect x="128" y="58" width="144" height="200" rx="2" fill="#0e0e10" stroke="rgba(255,255,255,0.32)" strokeWidth="5" />
-      <rect x="140" y="70" width="120" height="176" stroke={SITE_LINE} />
-      <g transform="translate(152 96) scale(1.2)"><path d={SITE_ROUTE_D} stroke={c.accent} strokeOpacity="0.25" strokeWidth="5" strokeLinecap="round" /><path d={SITE_ROUTE_D} stroke={c.accent} strokeWidth="1.6" strokeLinecap="round" /></g>
-      <path d="M150 80 H170" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
-      {/* Cotes */}
-      <path d="M128 40 H272 M128 36 V44 M272 36 V44" stroke="rgba(255,255,255,0.3)" />
-      <rect x="176" y="33" width="48" height="14" fill="#0a0a0a" />
-      <text x="200" y="43.5" textAnchor="middle" {...mono}>297 mm</text>
-      <path d="M296 58 V258 M292 58 H300 M292 258 H300" stroke="rgba(255,255,255,0.3)" />
-      <text x="304" y="161" {...mono}>420 mm</text>
-      {/* Sorties */}
-      <g transform="translate(64 120)">
-        {['PNG · 300 dpi', 'SVG vectoriel'].map((t, i) => (
-          <g key={t} transform={`translate(0 ${i * 26})`}>
-            <rect width="54" height="18" rx="5" stroke={SITE_LINE} fill="#0e0e10" />
-            <text x="27" y="12.5" textAnchor="middle" {...mono} fontSize="7.5">{t.split(' · ')[0].split(' ')[0]}</text>
-          </g>
-        ))}
-        <path d="M54 9 C62 9 62 30 64 30 M54 35 C60 35 60 30 64 30" stroke={SITE_LINE} />
-      </g>
-      <circle cx="272" cy="258" r="8" fill={c.accent} /><path d="M268.5 258 l2.5 2.5 l4.5 -5" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </SiteIllusFrame>
-  );
-}
-
-const SITE_STEPS = [
-  { title: 'Importez votre tracé', text: 'Fichier GPX ou FIT, lien Strava, export Garmin ou Komoot : votre aventure arrive en un glisser-déposer.', Illus: SiteIllusImport },
-  { title: 'Personnalisez votre carte', text: 'Modèle, couleurs, style de carte, infos affichées, photos : chaque détail se règle en direct.', Illus: SiteIllusCustomize },
-  { title: 'Imprimez-le', text: 'Téléchargez le fichier HD prêt pour l’imprimeur, ou recevez votre poster encadré chez vous.', Illus: SiteIllusPrint },
+// ---------------------------------------------------------------- étapes
+// Le hero se lit en 3 étapes au fil du scroll : le poster reste à l'écran (à droite),
+// l'étape au centre de l'écran est mise en avant, les autres s'estompent.
+const SITE_FLOW = [
+  { id: 'import', label: 'Importez vos tracés' },
+  { id: 'custom', label: 'Personnalisez', title: 'Personnalisez votre carte', text: 'Nommez votre aventure, choisissez la couleur du tracé, gardez ou non vos photos.' },
+  { id: 'print', label: 'Imprimez', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
-
-function SiteHowItWorks({ c }) {
+function SiteStepTag({ i, active }) {
   return (
-    <section className="relative" style={{ background: 'radial-gradient(70% 60% at 50% 55%, rgba(255,255,255,0.045), rgba(255,255,255,0.015) 55%, transparent 80%)' }}>
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pt-20 sm:pt-28 pb-24 sm:pb-32">
-        <h2 className="text-center text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500" style={{ fontFamily: 'var(--ds-font-site)' }}>Comment ça marche</h2>
-        <ol className="mt-10 sm:mt-14 grid gap-12 lg:gap-10 lg:grid-cols-3">
-          {SITE_STEPS.map((st, i) => (
-            <li key={st.title} className="flex flex-col">
-              <div className="flex items-center gap-3">
-                <span className="h-7 px-2.5 shrink-0 rounded-lg grid place-items-center bg-white/[0.06] ring-1 ring-white/[0.12] text-[12px] font-semibold text-white tabular-nums" style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>0{i + 1}</span>
-                <span className="text-[12px] font-medium uppercase tracking-[0.12em] text-neutral-500" style={{ fontFamily: 'var(--ds-font-site)' }}>Étape {i + 1}</span>
-                <span className="flex-1 h-px bg-gradient-to-r from-white/15 to-transparent" />
-              </div>
-              <h3 className="mt-4 text-[18px] font-semibold text-white" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '-0.01em' }}>{st.title}</h3>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-neutral-400 max-w-[360px] min-h-[4.9em]">{st.text}</p>
-              <div className="mt-6"><st.Illus c={c} /></div>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
+    <div className="flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.14em]">
+      <span className={`h-6 min-w-6 px-1.5 rounded-md grid place-items-center tabular-nums text-[11.5px] ring-1 transition-colors ${active ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.05] text-neutral-400 ring-white/10'}`}>{i + 1}</span>
+      <span className={active ? 'text-neutral-300' : 'text-neutral-500'}>{SITE_FLOW[i].label}</span>
+    </div>
   );
 }
 
@@ -872,7 +777,7 @@ function PrintraceSite() {
   }, [caseId, auto]);
   const stop = () => setAuto(false);
   const [customs, setCustoms] = useSiteState({}); // personnalisation par cas d'usage
-  const heroRef = useSiteRef(null), navRef = useSiteRef(null); // limites du bloc « Personnalisez » déplaçable
+  const custom = customs[caseId] || {};
   // Photos du cas d'usage (fichiers locaux, Unsplash ou illustration)
   const [photoSet, setPhotoSet] = useSiteState({});
   useSiteEffect(() => {
@@ -882,64 +787,105 @@ function PrintraceSite() {
     return () => { live = false; };
   }, [caseId]);
   const photos = photoSet[caseId] || [];
+  // Tracés importés (affichés sur le poster), finition choisie à l'étape 3
+  const [items, setItems] = useSiteState([]);
+  const [finish, setFinish] = useSiteState({});
+  const [opening, setOpening] = useSiteState('');
+  useSiteEffect(() => { if (items.length) stop(); }, [items.length]);
+
+  // Étape active : celle qui passe au milieu de l'écran (grand écran)
+  const scroller = useSiteRef(null);
+  const stepRefs = [useSiteRef(null), useSiteRef(null), useSiteRef(null)];
+  const [step, setStep] = useSiteState(0);
+  const [desktop, setDesktop] = useSiteState(false);
+  useSiteEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const on = () => setDesktop(mq.matches);
+    on(); mq.addEventListener('change', on);
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) setStep(+e.target.dataset.step); }),
+      { root: scroller.current, rootMargin: '-50% 0px -50% 0px' });
+    stepRefs.forEach((r) => r.current && io.observe(r.current));
+    return () => { mq.removeEventListener('change', on); io.disconnect(); };
+  }, []);
+  useSiteEffect(() => { if (step > 0) stop(); }, [step]);
+  const goTo = (i) => { const el = stepRefs[i].current; if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  const open = async (kind) => {
+    setOpening(kind);
+    const src = items.every((x) => x.source === items[0].source) ? items[0].source : undefined;
+    try { await siteOpenStudio(items, c, src, { title: custom.title, color: custom.color }); } catch (e) { /* le studio reste joignable */ }
+    setOpening('');
+  };
+  // Mise en avant : étape active nette, les autres estompées (cliquables pour y aller)
+  const dim = (i) => (desktop && step !== i ? 'lg:opacity-35 lg:hover:opacity-60 lg:cursor-pointer' : 'opacity-100');
+  const stepProps = (i) => ({
+    ref: stepRefs[i], 'data-step': i,
+    onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); } : undefined,
+  });
 
   return (
-    <div className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
+    <div ref={scroller} className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
      <div className="relative isolate min-h-full overflow-x-clip">
       {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
         backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)',
         backgroundSize: '32px 32px', backgroundPosition: 'center top',
-        // Grille bien visible en haut de page, qui s'estompe sous le titre et disparaît avant le poster
+        // Grille bien visible en haut de page, qui s'estompe sous le titre et disparaît ensuite
         maskImage: 'linear-gradient(to bottom, #000 0, rgba(0,0,0,0.75) 160px, rgba(0,0,0,0.3) 340px, transparent 480px), radial-gradient(75% 100% at 50% 0%, #000 40%, transparent 100%)',
         WebkitMaskImage: 'linear-gradient(to bottom, #000 0, rgba(0,0,0,0.75) 160px, rgba(0,0,0,0.3) 340px, transparent 480px), radial-gradient(75% 100% at 50% 0%, #000 40%, transparent 100%)',
         maskComposite: 'intersect', WebkitMaskComposite: 'source-in' }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
-      {/* Fond noir ; seule la zone du poster est éclairée */}
-      <div ref={heroRef} className="relative overflow-x-clip">
-        <nav ref={navRef} className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
-          <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
-          <SiteProof />
-        </nav>
+      <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
+        <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
+        <SiteProof />
+      </nav>
 
-        {/* Titre centré en haut, puis deux colonnes : import à gauche, poster d'exemple à droite */}
-        <section className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-12 lg:pt-20 pb-20 lg:pb-24">
-          <div className="text-center">
-            {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
-            <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.08] text-[clamp(34px,4.4vw,62px)]">
+      {/* Étapes à gauche (elles défilent), poster à droite (il reste à l'écran) ; l'ensemble est centré */}
+      <section aria-label="Créer votre poster" className="relative max-w-[1080px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:justify-center gap-x-16 xl:gap-x-24 gap-y-12">
+        {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
+        <div className="contents lg:block">
+          {/* 1 · Import */}
+          <div {...stepProps(0)} className={`order-1 lg:min-h-[calc(100vh-80px)] flex flex-col justify-center pt-6 lg:pt-0 lg:pb-16 transition-opacity duration-500 ${dim(0)}`}>
+            <SiteStepTag i={0} active={!desktop || step === 0} />
+            <h1 className="mt-5 font-display font-extrabold tracking-[-0.035em] leading-[1.06] text-[clamp(34px,4vw,54px)]">
               <span className="block text-white/90">Imprimez votre</span>
               <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
             </h1>
-            <p key={c.id} className="ds-fade-up mt-5 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[560px] mx-auto">
-              {c.pitch}
-            </p>
+            <p key={c.id} className="ds-fade-up mt-4 min-h-[3.4em] text-[16.5px] leading-relaxed text-neutral-400">{c.pitch}</p>
+            <div className="mt-6"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
           </div>
-          {/* Poster centré sous le titre ; champs dans la colonne de gauche (la droite reste libre pour l'équilibre) */}
-          <div className="mt-10 lg:mt-14 lg:-mx-10 xl:-mx-20 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-14 lg:gap-10 items-center">
-          <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto lg:self-start lg:pt-[150px]"><SiteImport c={c} /></div>
+          {/* 2 · Personnalisation */}
+          <div {...stepProps(1)} className={`order-3 lg:min-h-[90vh] flex flex-col justify-center transition-opacity duration-500 ${dim(1)}`}>
+            <SiteStepTag i={1} active={!desktop || step === 1} />
+            <h2 className="mt-4 text-[28px] leading-tight font-semibold tracking-[-0.02em]">{SITE_FLOW[1].title}</h2>
+            <p className="mt-2 text-[15.5px] leading-relaxed text-neutral-400">{SITE_FLOW[1].text}</p>
+            <div className="mt-6"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
+          </div>
+          {/* 3 · Impression */}
+          <div {...stepProps(2)} className={`order-4 lg:min-h-screen flex flex-col justify-center transition-opacity duration-500 ${dim(2)}`}>
+            <SiteStepTag i={2} active={!desktop || step === 2} />
+            <h2 className="mt-4 text-[28px] leading-tight font-semibold tracking-[-0.02em]">{SITE_FLOW[2].title}</h2>
+            <p className="mt-2 text-[15.5px] leading-relaxed text-neutral-400">{SITE_FLOW[2].text}</p>
+            <div className="mt-6"><SiteFinish c={c} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
+              onDownload={() => open('download')} onOrder={() => open('order')} onImport={() => goTo(0)} /></div>
+          </div>
+        </div>
 
-          <div className="relative w-full max-w-[400px] lg:w-[400px] xl:w-[440px] lg:max-w-none mx-auto">
-            {/* Photo du trip fondue dans le fond, décalée à droite du cadre (occupe la colonne vide) */}
-            {c.heroBg != null && photos[c.heroBg] && (
-              <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
-                maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
-                <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
-              </div>
-            )}
-            <SitePoster c={c} photos={photoSet[caseId] || null} custom={customs[caseId] || {}} />
+        {/* Poster : reste au centre de l'écran pendant que les étapes défilent */}
+        <div className="order-2 lg:order-none lg:col-start-2 lg:row-start-1">
+          <div className="lg:sticky lg:top-0 lg:h-screen flex items-center justify-center">
+            <div className="relative w-full max-w-[400px] lg:max-w-none lg:w-[min(440px,calc((100vh_-_120px)/1.5))] mx-auto">
+              {/* Photo du trip fondue dans le fond, décalée à droite du cadre */}
+              {c.heroBg != null && photos[c.heroBg] && (
+                <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
+                  maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
+                  <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
+                </div>
+              )}
+              <SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} />
+            </div>
           </div>
-
-          {/* Réglages de l'exemple, de l'autre côté du poster et plus bas : l'import reste le premier regard */}
-          <div className="relative z-20 w-full max-w-[420px] lg:max-w-[320px] mx-auto lg:ml-0 lg:mr-auto lg:self-start lg:pt-[380px]">
-            {/* Déplaçable dans le hero (glisser-déposer), position de départ inchangée */}
-            <SiteDraggable bounds={heroRef} top={navRef}>
-              <SiteCustomize c={c} value={customs[caseId] || {}} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} />
-            </SiteDraggable>
-          </div>
-          </div>
-        </section>
-      </div>
-      <SiteHowItWorks c={c} />
+        </div>
+      </section>
      </div>
     </div>
   );
