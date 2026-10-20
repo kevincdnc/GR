@@ -677,59 +677,66 @@ const SITE_ROUTE_D = 'M0 34 C10 26 16 40 26 40 S38 52 42 64 S56 72 62 68 S74 80 
 
 // 1 · Import : le fichier au centre, les sources reliées par des traits fins
 function SiteIllusImport({ c }) {
-  const mono = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' };
+  // Reprend les champs du hero, à l'échelle : zone de fichiers, lien Strava, tracé ajouté
+  const f = { fontFamily: 'var(--ds-font-site)' };
   return (
     <SiteIllusFrame>
-      {/* Champ fichier (même gabarit que le hero) : 280 × 76, rayon 16, marges 16 */}
-      <rect x="60" y="66" width="280" height="76" rx="16" fill="#0e0e10" stroke="rgba(255,255,255,0.22)" strokeDasharray="4 4" />
-      <rect x="76" y="82" width="44" height="44" rx="11" fill="rgba(255,255,255,0.06)" stroke={SITE_LINE} />
-      <path d="M98 110 V94 M91.5 100.5 L98 94 L104.5 100.5 M90 114 H106" stroke="rgba(255,255,255,0.75)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="134" y="90" width="92" height="7" rx="3.5" fill="rgba(255,255,255,0.55)" />
-      <text x="134" y="117" {...mono} fontSize="9.5" fill="rgba(255,255,255,0.45)">trace.gpx · 179 km</text>
-      <circle cx="316" cy="104" r="9" fill={c.accent} /><path d="M312 104 l3 3 l5 -5.5" stroke="#0a0a0a" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      {/* Séparateur « ou » */}
-      <path d="M60 172 H184 M216 172 H340" stroke={SITE_LINE} />
-      <text x="200" y="175.5" textAnchor="middle" fontSize="9.5" fill="rgba(255,255,255,0.4)" style={{ fontFamily: 'var(--ds-font-site)', letterSpacing: '0.14em' }}>OU</text>
-      {/* Champ lien Strava : 280 × 60, rayon 16, bouton rayon 8 */}
-      <rect x="60" y="202" width="280" height="60" rx="16" fill="#0e0e10" stroke="rgba(255,255,255,0.16)" />
-      <image href={ptRes('stravaLogo', 'assets/strava.svg')} x="76" y="219" width="26" height="26" />
-      <text x="114" y="236" {...mono} fontSize="9.5" fill="rgba(255,255,255,0.5)">strava.com/activities/…</text>
-      <rect x="258" y="214" width="70" height="36" rx="8" fill="#fc4c02" />
-      <text x="293" y="236" textAnchor="middle" fontSize="11" fontWeight="600" fill="#fff" style={{ fontFamily: 'var(--ds-font-site)' }}>Importer</text>
+      {/* Zone d'import (pointillés) */}
+      <rect x="50" y="50" width="300" height="72" rx="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" strokeDasharray="4 3" />
+      <rect x="62" y="66" width="40" height="40" rx="10" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.10)" />
+      <path d="M82 93 V78 M76.5 83.5 L82 78 L87.5 83.5 M75 96.5 H89" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <text x="114" y="84" fontSize="12.5" fontWeight="600" fill="#fff" style={f}>Importez vos tracés</text>
+      <text x="114" y="100" fontSize="9.5" fill="rgba(255,255,255,0.45)" letterSpacing="0.3" style={f}>GPX · FIT · TCX · KML</text>
+      <rect x="276" y="71" width="62" height="30" rx="7" fill="rgba(255,255,255,0.07)" />
+      <text x="307" y="90" textAnchor="middle" fontSize="10.5" fontWeight="500" fill="rgba(255,255,255,0.85)" style={f}>Parcourir</text>
+      {/* Lien Strava */}
+      <rect x="50" y="132" width="300" height="54" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.10)" />
+      <image href={ptRes('stravaLogo', 'assets/strava.svg')} x="64" y="147" width="24" height="24" />
+      <text x="98" y="163" fontSize="10.5" fill="rgba(255,255,255,0.45)" style={f}>Collez le lien d’une activité Strava</text>
+      <rect x="276" y="141" width="64" height="36" rx="8" fill="#fc4c02" />
+      <text x="308" y="163" textAnchor="middle" fontSize="10.5" fontWeight="600" fill="#fff" style={f}>Importer</text>
+      {/* Tracé ajouté */}
+      <rect x="50" y="196" width="300" height="48" rx="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" />
+      <rect x="62" y="208" width="24" height="24" rx="7" fill="rgba(255,255,255,0.06)" />
+      <path d="M69 226 c3 -6 6 1 9 -4 s3 -5 3 -7" stroke={c.accent} strokeWidth="1.5" strokeLinecap="round" />
+      <text x="96" y="218.5" fontSize="10.5" fontWeight="500" fill="#fff" style={f}>Ouessant</text>
+      <text x="96" y="232" fontSize="8.5" fill="rgba(255,255,255,0.45)" style={f}>23,7 km · 319 m D+</text>
+      <circle cx="330" cy="220" r="8" fill={c.accent} /><path d="M326.5 220 l2.5 2.5 l4.5 -5" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </SiteIllusFrame>
   );
 }
 
-// 2 · Personnalisation : poster au trait et réglages simplifiés
+// 2 · Personnalisation : le bloc « Personnalisez » du hero
 function SiteIllusCustomize({ c }) {
-  // Poster à gauche (x 60..192), panneau de réglages à droite (x 212..340), mêmes hauts et bas que l'étape 1
-  const rows = [96, 140, 184, 228]; // centres des 4 lignes de réglages
+  const f = { fontFamily: 'var(--ds-font-site)' };
+  const sel = 4; // couleur choisie dans l'exemple
   return (
     <SiteIllusFrame>
-      <rect x="60" y="66" width="136" height="196" rx="3" fill="#0e0e10" stroke="rgba(255,255,255,0.22)" />
-      <rect x="68" y="74" width="120" height="180" stroke={SITE_LINE} />
-      <path d="M76 84 H96" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
-      <g transform="translate(82 104) scale(1.15)"><path d={SITE_ROUTE_D} stroke={c.accent} strokeOpacity="0.25" strokeWidth="5" strokeLinecap="round" /><path d={SITE_ROUTE_D} stroke={c.accent} strokeWidth="1.6" strokeLinecap="round" /></g>
-      <rect x="132" y="218" width="48" height="28" stroke={SITE_LINE} />
-      <path d="M138 227 H164 M138 234 H156 M138 240 H160" stroke="rgba(255,255,255,0.25)" />
-      {/* Panneau de réglages */}
-      <rect x="212" y="66" width="128" height="196" rx="16" fill="#0e0e10" stroke="rgba(255,255,255,0.16)" />
-      {rows.slice(1).map((y) => <path key={y} d={`M224 ${y - 22} H328`} stroke="rgba(255,255,255,0.06)" />)}
-      {/* 1 · onglets */}
-      <rect x="224" y={rows[0] - 12} width="104" height="24" rx="8" stroke={SITE_LINE} />
-      <rect x="227" y={rows[0] - 9} width="49" height="18" rx="6" fill="rgba(255,255,255,0.09)" />
-      <path d={`M238 ${rows[0]} H264 M290 ${rows[0]} H316`} stroke="rgba(255,255,255,0.3)" strokeLinecap="round" />
-      {/* 2 · couleurs */}
-      {[0, 1, 2, 3].map((i) => <circle key={i} cx={233 + i * 26} cy={rows[1]} r="8" fill={i === 0 ? c.accent : ['', '#ffffff', '#fc5200', '#3b82f6'][i]} fillOpacity={i === 0 ? 1 : 0.18} stroke={i === 0 ? 'none' : SITE_LINE} />)}
-      <circle cx="233" cy={rows[1]} r="11.5" stroke={c.accent} strokeOpacity="0.55" />
-      {/* 3 · curseur */}
-      <path d={`M224 ${rows[2]} H328`} stroke={SITE_LINE} strokeWidth="2" strokeLinecap="round" />
-      <path d={`M224 ${rows[2]} H290`} stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="290" cy={rows[2]} r="6" fill="#0e0e10" stroke="rgba(255,255,255,0.7)" />
-      {/* 4 · interrupteur */}
-      <path d={`M224 ${rows[3]} H276`} stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeLinecap="round" />
-      <rect x="302" y={rows[3] - 7} width="26" height="14" rx="7" fill="rgba(255,255,255,0.8)" />
-      <circle cx="321" cy={rows[3]} r="4.5" fill="#0a0a0a" />
+      <rect x="50" y="56" width="300" height="188" rx="16" fill="#0e0e0e" fillOpacity="0.85" stroke="rgba(255,255,255,0.08)" />
+      {/* En-tête : icône réglages, titre, réinitialiser */}
+      <g stroke="rgba(255,255,255,0.45)" strokeWidth="1.3" strokeLinecap="round">
+        <path d="M66 80.5 h7 M77 80.5 h3 M66 88.5 h3 M73 88.5 h7" />
+        <circle cx="75" cy="80.5" r="1.8" fill="none" /><circle cx="71" cy="88.5" r="1.8" fill="none" />
+      </g>
+      <text x="88" y="88" fontSize="9.5" fontWeight="600" letterSpacing="1.4" fill="rgba(255,255,255,0.45)" style={f}>PERSONNALISEZ</text>
+      <text x="334" y="88" textAnchor="end" fontSize="9.5" fill="rgba(255,255,255,0.55)" style={f}>Réinitialiser</text>
+      {/* Nom du trip */}
+      <rect x="64" y="102" width="272" height="40" rx="8" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.10)" />
+      <text x="77" y="126" fontSize="12" fill="#fff" style={f}>Ouessant</text>
+      <path d="M128 114 v16" stroke="#fff" strokeWidth="1" />
+      <text x="323" y="125.5" textAnchor="end" fontSize="8.5" fill="rgba(255,255,255,0.35)" style={f}>8/24</text>
+      {/* Couleur du tracé */}
+      <text x="64" y="175" fontSize="11" fill="rgba(255,255,255,0.8)" style={f}>Couleur du tracé</text>
+      {SITE_TRACE_COLORS.map((x, i) => (
+        <g key={x.hex}>
+          <circle cx={208 + i * 25} cy="171" r="8" fill={x.hex} />
+          {i === sel && <circle cx={208 + i * 25} cy="171" r="11" stroke="#fff" strokeWidth="1.6" />}
+        </g>
+      ))}
+      {/* Photos du voyage */}
+      <text x="64" y="213" fontSize="11" fill="rgba(255,255,255,0.8)" style={f}>Photos du voyage</text>
+      <rect x="312" y="202" width="24" height="14" rx="7" fill="#3b82f6" />
+      <circle cx="329" cy="209" r="5" fill="#fff" />
     </SiteIllusFrame>
   );
 }
