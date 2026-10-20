@@ -566,75 +566,87 @@ function SiteImport({ c }) {
     catch (e) { setError(e.message || 'Import Strava impossible.'); }
     setStravaBusy(false);
   };
-  const pick = () => fileRef.current && fileRef.current.click();
+  // Provenance du prochain fichier choisi : le GPX téléchargé depuis Strava rejoint la liste Strava
+  const pickSource = useSiteRef(undefined);
+  const pick = (source) => { pickSource.current = source; if (fileRef.current) fileRef.current.click(); };
+  const fileItems = items.filter((x) => x.source !== 'strava'), stravaItems = items.filter((x) => x.source === 'strava');
+  // Liste de tracés ajoutés, affichée sous le champ d'où ils viennent
+  const list = (xs) => xs.length > 0 && (
+    <ul className="mt-2 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] divide-y divide-white/[0.06] overflow-hidden ds-fade-up">
+      {xs.map((x) => (
+        <li key={x.id} className="flex items-center gap-3 pl-3.5 pr-2 h-14">
+          <span className="w-8 h-8 shrink-0 rounded-lg grid place-items-center bg-white/[0.06] text-neutral-300">
+            {x.source === 'strava' ? <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="18" height="18" className="rounded-[4px]" /> : <I.Route size={15} />}
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[13.5px] font-medium text-white truncate">{fileLabel(x)}</span>
+            <span className="block text-[11.5px] text-neutral-500 tabular-nums">{ptKm(x.st.distanceKm || 0)} · {ptM(x.st.elevationGain)} D+</span>
+          </span>
+          <UiIconButton icon="X" label={'Retirer ' + fileLabel(x)} size="sm" onClick={() => removeItem(x.id)} />
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <div className="w-full max-w-[520px] mx-auto lg:mx-0">
-      <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => { importFiles(e.target.files); e.target.value = ''; }} />
-      {/* Fichier et lien Strava côte à côte, sur une seule ligne (empilés sur mobile) */}
+      <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => { const src = pickSource.current; pickSource.current = undefined; importFiles(e.target.files, src).then(() => { if (src === 'strava') { setStravaRef(null); setLink(''); } }); e.target.value = ''; }} />
+      {/* Fichier puis lien Strava ; chaque tracé ajouté s'affiche sous le champ d'où il vient */}
       <div className="flex flex-col gap-3">
-        <button onClick={pick}
-          onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
-          onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
-          className={`group min-h-[84px] rounded-2xl border-[1.5px] border-dashed flex items-center gap-4 px-4 py-4 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
-          <span className={`w-12 h-12 shrink-0 rounded-xl grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
-            {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
-          </span>
-          <span className="flex-1 min-w-0">
-            <span className="block text-[15.5px] font-semibold text-white leading-snug">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : items.length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
-            <span className="block text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em]">GPX · FIT · TCX · KML</span>
-          </span>
-          {!busy && <span className="shrink-0 h-10 px-3.5 rounded-lg grid place-items-center text-[13px] font-medium text-neutral-200 bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors">Parcourir</span>}
-        </button>
-        <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
-          <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="30" height="30" className="rounded-[6px] shrink-0" />
-          <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
-            placeholder="Collez le lien d’une activité Strava" aria-label="Lien d'activité Strava"
-            className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
-          <UiButton variant="strava" size="md" className="h-11 rounded-lg px-4 text-[14px] shrink-0" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
+        <div>
+          <button onClick={() => pick()}
+            onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
+            onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
+            className={`group w-full min-h-[84px] rounded-2xl border-[1.5px] border-dashed flex items-center gap-4 px-4 py-4 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
+            <span className={`w-12 h-12 shrink-0 rounded-xl grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
+              {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[15.5px] font-semibold text-white leading-snug">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : fileItems.length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
+              <span className="block text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em]">GPX · FIT · TCX · KML</span>
+            </span>
+            {!busy && <span className="shrink-0 h-10 px-3.5 rounded-lg grid place-items-center text-[13px] font-medium text-neutral-200 bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors">Parcourir</span>}
+          </button>
+          {list(fileItems)}
+        </div>
+        <div>
+          <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
+            <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="30" height="30" className="rounded-[6px] shrink-0" />
+            <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
+              placeholder="Collez le lien d’une activité Strava" aria-label="Lien d'activité Strava"
+              className="flex-1 min-w-0 bg-transparent outline-none text-[15px] text-white placeholder:text-neutral-500" />
+            <UiButton variant="strava" size="md" className="h-11 rounded-lg px-4 text-[14px] shrink-0" loading={stravaBusy} onClick={submitStrava}>Importer</UiButton>
+          </div>
+          {stravaRef && (
+            <div className="mt-2 text-left rounded-2xl bg-[#fc4c02]/[0.07] ring-1 ring-[#fc4c02]/25 p-4 ds-fade-up">
+              <div className="flex items-start gap-3">
+                <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="28" height="28" className="rounded-md shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[14px] font-semibold text-white">Activité Strava n° {stravaRef.id}</div>
+                  <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">Téléchargez le GPX depuis votre compte Strava, puis déposez-le ici : il s'ajoute à vos tracés.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a href={ptStravaExportUrl(stravaRef)} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white bg-[#fc4c02] hover:brightness-110"><I.Download size={15} /> Télécharger le GPX</a>
+                    <UiButton icon="Upload" onClick={() => pick('strava')}>Déposer le fichier</UiButton>
+                  </div>
+                </div>
+                <UiIconButton icon="X" label="Fermer" size="sm" onClick={() => setStravaRef(null)} />
+              </div>
+            </div>
+          )}
+          {list(stravaItems)}
         </div>
       </div>
       {error && <p className="mt-2.5 text-[13px] text-red-300">{error}</p>}
 
-      {/* Tracés ajoutés : supprimables, puis création de la carte */}
+      {/* Création de la carte avec tous les tracés ajoutés */}
       {items.length > 0 && (
-        <div className="mt-4 text-left ds-fade-up">
-          <ul className="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
-            {items.map((x) => (
-              <li key={x.id} className="flex items-center gap-3 pl-3.5 pr-2 h-14">
-                <span className="w-8 h-8 shrink-0 rounded-lg grid place-items-center bg-white/[0.06] text-neutral-300">
-                  {x.source === 'strava' ? <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="18" height="18" className="rounded-[4px]" /> : <I.Route size={15} />}
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-[13.5px] font-medium text-white truncate">{fileLabel(x)}</span>
-                  <span className="block text-[11.5px] text-neutral-500 tabular-nums">{ptKm(x.st.distanceKm || 0)} · {ptM(x.st.elevationGain)} D+</span>
-                </span>
-                <UiIconButton icon="X" label={'Retirer ' + fileLabel(x)} size="sm" onClick={() => removeItem(x.id)} />
-              </li>
-            ))}
-          </ul>
-          <UiButton variant="primary" size="lg" block iconRight="ChevronRight" loading={opening} onClick={createMap} className="mt-3">
+        <div className="mt-4 ds-fade-up">
+          <UiButton variant="primary" size="lg" block iconRight="ChevronRight" loading={opening} onClick={createMap}>
             Créer ma carte{items.length > 1 ? ` · ${items.length} tracés, ${ptKm(total)}` : ''}
           </UiButton>
         </div>
       )}
 
-      {stravaRef && (
-        <div className="mt-4 text-left rounded-2xl bg-[#fc4c02]/[0.07] ring-1 ring-[#fc4c02]/25 p-4 ds-fade-up">
-          <div className="flex items-start gap-3">
-            <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="28" height="28" className="rounded-md shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-semibold text-white">Activité Strava n° {stravaRef.id}</div>
-              <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">Téléchargez le GPX depuis votre compte Strava, puis déposez-le ici : il s'ajoute à vos tracés.</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <a href={ptStravaExportUrl(stravaRef)} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white bg-[#fc4c02] hover:brightness-110"><I.Download size={15} /> Télécharger le GPX</a>
-                <UiButton icon="Upload" onClick={pick}>Déposer le fichier</UiButton>
-              </div>
-            </div>
-            <UiIconButton icon="X" label="Fermer" size="sm" onClick={() => setStravaRef(null)} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
