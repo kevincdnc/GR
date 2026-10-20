@@ -445,7 +445,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children 
         {!ready && <div className={`absolute ${framed ? 'inset-[3.2%]' : 'inset-0'} grid place-items-center bg-neutral-900`}><UiSpinner size={20} className="text-neutral-500" /></div>}
         {/* Spot de galerie : lumière qui tombe du haut sur le cadre et la vitre */}
         <div className={`pointer-events-none absolute inset-x-0 top-0 h-px transition-opacity duration-500 ${framed ? '' : 'opacity-0'}`} style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35) 50%, transparent)' }} />
-        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 35% at 50% 0%, rgba(255,255,255,0.10), transparent 70%)', mixBlendMode: 'screen' }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(60% 35% at 50% 0%, rgba(255,255,255,0.08), transparent 70%)' }} />
         {/* Reflet léger sur le verre, en diagonale (sous verre seulement) */}
         <div className={`pointer-events-none absolute inset-[3.2%] transition-opacity duration-500 ${framed ? '' : 'opacity-0'}`} style={{ background: 'linear-gradient(125deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 28%, transparent 45%)' }} />
       </div>
@@ -923,6 +923,18 @@ function PrintraceSite() {
     return () => { live = false; };
   }, [caseId]);
   const photos = photoSet[caseId] || [];
+  useSiteEffect(() => {
+    let live = true;
+    const t = setTimeout(async () => {
+      for (const x of SITE_CASES) {
+        if (!live) return;
+        const ps = await Promise.all([0, 1].map((i) => siteResolvePhoto(x, i)));
+        await Promise.all(ps.filter(Boolean).map((ph) => siteLoadImg(ph.src).then((im) => im && im.decode && im.decode().catch(() => {}))));
+        if (live) setPhotoSet((m) => (m[x.id] ? m : { ...m, [x.id]: ps }));
+      }
+    }, 1200);
+    return () => { live = false; clearTimeout(t); };
+  }, []);
   // Tracés importés (affichés sur le poster), finition choisie à l'étape 3
   const [items, setItems] = useSiteState([]);
   const [finish, setFinish] = useSiteState({});
@@ -981,26 +993,30 @@ function PrintraceSite() {
     const nums = () => [...sc.querySelectorAll('[data-step-num]')];
     if (!desktop || !sc) { if (sc) nums().forEach((n) => { n.style.opacity = ''; }); return; }
     let raf = 0;
+    let railOn = null;
     const paint = () => {
       raf = 0;
       const po = posterRef.current; if (!po) return;
-      const top = sc.getBoundingClientRect().top + (parseFloat(getComputedStyle(po).top) || 0);
+      // 1) lectures seulement (aucune écriture avant) : pas de recalcul de mise en page forcé
+      const y = sc.scrollTop, top = sc.getBoundingClientRect().top + (parseFloat(getComputedStyle(po).top) || 0);
+      const s0 = snapFor(0), s2 = snapFor(2), ph = sc.querySelector('[data-hero-photo]');
+      const ns = nums(), tops = ns.map((n) => n.getBoundingClientRect().top);
+      // 2) écritures
       // Stepper de droite : visible à partir de l'arrêt de l'étape 1 (avec 12 px de marge)
-      const rail = railRef.current, s0 = snapFor(0);
+      const rail = railRef.current;
       if (rail && s0 != null) {
-        const on = sc.scrollTop >= s0 - 12;
-        rail.classList.toggle('opacity-0', !on); rail.classList.toggle('pointer-events-none', !on); rail.classList.toggle('translate-x-2', !on);
+        const on = y >= s0 - 12;
+        if (on !== railOn) { railOn = on; rail.classList.toggle('opacity-0', !on); rail.classList.toggle('pointer-events-none', !on); rail.classList.toggle('translate-x-2', !on); }
       }
       // Photo de fond : s'estompe progressivement de l'étape 1 (30 %) à l'étape 3 (7 %)
-      const ph = sc.querySelector('[data-hero-photo]'), s2 = snapFor(2);
       if (ph && s0 != null && s2 != null && s2 > s0) {
-        const k = Math.max(0, Math.min(1, (sc.scrollTop - s0) / (s2 - s0)));
-        ph.style.opacity = String(0.3 - 0.23 * k);
+        const k = Math.max(0, Math.min(1, (y - s0) / (s2 - s0)));
+        ph.style.opacity = (0.3 - 0.23 * k).toFixed(3);
       }
-      nums().forEach((n) => {
-        const d = Math.abs(n.getBoundingClientRect().top - top);
+      ns.forEach((n, i) => {
+        const d = Math.abs(tops[i] - top);
         const t = Math.max(0, Math.min(1, 1 - (d - 160) / 460)); // 1 dès 160 px du cadre
-        n.style.opacity = String(t * t);
+        n.style.opacity = (t * t).toFixed(3);
       });
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(paint); };
@@ -1038,14 +1054,14 @@ function PrintraceSite() {
     <div ref={scroller} className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white" style={desktop ? { scrollSnapType: 'y mandatory' } : undefined}>
      <div className="relative isolate min-h-full overflow-x-clip">
       {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[560px] -z-10" style={{
         backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)',
         backgroundSize: '32px 32px', backgroundPosition: 'center top',
         // Grille bien visible en haut de page, qui s'estompe sous le titre et disparaît ensuite
         maskImage: 'linear-gradient(to bottom, #000 0, rgba(0,0,0,0.75) 160px, rgba(0,0,0,0.3) 340px, transparent 480px), radial-gradient(75% 100% at 50% 0%, #000 40%, transparent 100%)',
         WebkitMaskImage: 'linear-gradient(to bottom, #000 0, rgba(0,0,0,0.75) 160px, rgba(0,0,0,0.3) 340px, transparent 480px), radial-gradient(75% 100% at 50% 0%, #000 40%, transparent 100%)',
         maskComposite: 'intersect', WebkitMaskComposite: 'source-in' }} />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[560px] -z-10 opacity-[0.025]" style={{ backgroundImage: SITE_GRAIN }} />
       <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between" style={desktop ? { scrollSnapAlign: 'start' } : undefined}>
         <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
         <div className="flex items-center gap-3">
@@ -1089,14 +1105,14 @@ function PrintraceSite() {
         </div>
 
         {/* Poster : collé au centre de l'écran pendant que les étapes défilent */}
-        <div ref={posterRef} className="order-2 lg:order-none lg:col-start-2 lg:row-start-1 lg:self-start lg:sticky" style={desktop ? { top: SITE_POSTER_TOP } : undefined}>
+        <div ref={posterRef} className="order-2 lg:order-none lg:col-start-2 lg:row-start-1 lg:self-start lg:sticky" style={desktop ? { top: SITE_POSTER_TOP, willChange: 'transform', transform: 'translateZ(0)' } : undefined}>
           <div className="relative w-full max-w-[400px] lg:max-w-none mx-auto" style={desktop ? { width: SITE_POSTER_W } : undefined}>
             {/* Photo du trip fondue dans le fond, décalée à droite du cadre */}
             {c.heroBg != null && photos[c.heroBg] && (
               <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
                 maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
                 {/* De plus en plus discrète au fil des étapes 2 et 3 (opacité réglée au scroll) */}
-                <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" data-hero-photo className="w-full h-full object-cover saturate-[0.8] opacity-[0.3]" />
+                <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" data-hero-photo className="w-full h-full object-cover saturate-[0.8] opacity-[0.3]" style={{ willChange: 'opacity' }} />
               </div>
             )}
             <SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} />
