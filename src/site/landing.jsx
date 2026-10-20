@@ -822,23 +822,23 @@ function SiteStepHead({ i, accent }) {
 }
 // Progression verticale (à droite du poster), cliquable pour aller à une étape.
 // Lignes de hauteur fixe : le trait relie exactement les centres des pastilles.
-const SITE_RAIL_ROW = 40, SITE_RAIL_GAP = 28;
+const SITE_RAIL_ROW = 26, SITE_RAIL_GAP = 18;
 function SiteStepRail({ step, onGo, accent = '#ffffff' }) {
   const pitch = SITE_RAIL_ROW + SITE_RAIL_GAP, n = SITE_FLOW.length;
   return (
     <nav aria-label="Étapes" className="relative">
-      <span aria-hidden="true" className="absolute left-[19.5px] w-px bg-white/10" style={{ top: SITE_RAIL_ROW / 2, height: pitch * (n - 1) }} />
-      <span aria-hidden="true" className="absolute left-[19.5px] w-px transition-[height,background-color] duration-500 ease-out" style={{ top: SITE_RAIL_ROW / 2, height: pitch * step, background: accent }} />
+      <span aria-hidden="true" className="absolute left-[12.5px] w-px bg-white/[0.08]" style={{ top: SITE_RAIL_ROW / 2, height: pitch * (n - 1) }} />
+      <span aria-hidden="true" className="absolute left-[12.5px] w-px opacity-70 transition-[height,background-color] duration-500 ease-out" style={{ top: SITE_RAIL_ROW / 2, height: pitch * step, background: accent }} />
       <ol className="relative flex flex-col" style={{ gap: SITE_RAIL_GAP }}>
         {SITE_FLOW.map((st, i) => {
           const on = i === step, done = i < step;
           return (
             <li key={st.id} style={{ height: SITE_RAIL_ROW }}>
-              <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group h-full flex items-center gap-3.5 text-left">
-                <span className={`w-10 h-10 shrink-0 rounded-full grid place-items-center text-[13.5px] font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-300 ${on ? 'bg-white text-neutral-900 shadow-[0_0_0_5px_rgba(255,255,255,0.07)]' : done ? 'bg-[#1c1c1c] text-white ring-1 ring-white/35' : 'bg-[#121212] text-neutral-500 ring-1 ring-white/15 group-hover:text-white group-hover:ring-white/30'}`}>
-                  {done ? <I.Check size={15} /> : i + 1}
+              <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group h-full flex items-center gap-2.5 text-left">
+                <span className={`w-[26px] h-[26px] shrink-0 rounded-full grid place-items-center text-[11px] font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-300 ${on ? 'bg-white/90 text-neutral-900' : done ? 'bg-[#161616] text-neutral-300 ring-1 ring-white/20' : 'bg-[#111] text-neutral-600 ring-1 ring-white/10 group-hover:text-neutral-300 group-hover:ring-white/25'}`}>
+                  {done ? <I.Check size={12} /> : i + 1}
                 </span>
-                <span className={`text-[14.5px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-white font-semibold' : done ? 'text-neutral-300 group-hover:text-white' : 'text-neutral-500 group-hover:text-neutral-200'}`}>{st.title}</span>
+                <span className={`text-[12.5px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-neutral-200 font-medium' : done ? 'text-neutral-500 group-hover:text-neutral-300' : 'text-neutral-600 group-hover:text-neutral-300'}`}>{st.title}</span>
               </button>
             </li>
           );
