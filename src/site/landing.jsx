@@ -128,13 +128,15 @@ function siteRoutesOf(c) {
   const r = c.poster.route;
   return [{ ...base, id: 'demo_' + c.id, name: r.name, coords: siteTrace(r.way, r), distance: 0, ascent: 0, descent: 0, durationMin: 0, altMax: null }];
 }
-function sitePosterData(c, routes, photos = []) {
+// o : personnalisation du hero (nom du trip, couleur du tracé, photos affichées)
+function sitePosterData(c, routes, photos = [], o = {}) {
   const p = c.poster, act = poActivity(c.activity);
+  if (o.photos === false && !p.bgPhoto) photos = [];
   const agg = poAggregate(routes, act);
   const stats = poStats(agg, p.metrics, { activity: act.label, start: routes[0].coords[0] })
     .map((st) => (p.values[st.key] ? { ...st, value: p.values[st.key], unit: '' } : st));
   return {
-    routes, agg, color: p.color, coords: true, activityLabel: act.label, title: p.title, subtitle: p.subtitle, stats,
+    routes, agg, color: o.color || p.color, coords: true, activityLabel: act.label, title: (o.title || '').trim() || p.title, subtitle: p.subtitle, stats,
     photoSlot: false, photos: p.bgPhoto ? photos.slice(1) : photos, bgPhoto: p.bgPhoto && photos[0] ? photos[0].img : null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
     bg: p.bg || null, preview: false, typeScale: p.typeScale, marginColor: p.marginColor, photoShade: p.photoShade,
   };
@@ -340,27 +342,35 @@ function SitePhoto({ c, i, photo, className = '', rotate = 0, style }) {
 }
 
 // Poster d'exemple rendu par le moteur du studio, dans un cadre noir
-function SitePoster({ c, photos, children }) {
+function SitePoster({ c, photos, custom = {}, children }) {
   const ref = useSiteRef(null);
+  const drawn = useSiteRef(null); // cas d'usage déjà dessiné sur le canvas
   const [ready, setReady] = useSiteState(false);
   const routes = useSiteMemo(() => siteRoutesOf(c), [c.id]);
   const fmt = POSTER_FORMATS[1]; // A3
   useSiteEffect(() => {
     let live = true;
-    setReady(false);
+    const same = drawn.current === c.id; // simple retouche : on garde l'image affichée, sans spinner
+    if (!same) setReady(false);
     if (!photos) return; // photos du cas d'usage encore en cours de résolution
     (async () => {
+      if (same) await new Promise((r) => setTimeout(r, 140)); // saisie du nom : un rendu quand on s'arrête de taper
       await storyFontsReady({ vintage: false }); // modèles du site : pas d'italique « ancienne carte »
       const cv = ref.current; if (!cv || !live) return;
       const tpl = POSTER_TEMPLATES.find((t) => t.id === c.poster.tpl) || POSTER_TEMPLATES[0];
-      const w = 900; cv.width = w; cv.height = Math.round(w * fmt.mm[1] / fmt.mm[0]);
+      const w = 900, h = Math.round(w * fmt.mm[1] / fmt.mm[0]);
       const ph = await sitePosterPhotos(c, photos);
       if (!live) return;
-      await renderPoster(cv, tpl, sitePosterData(c, routes, ph), fmt, c.poster.border || 'none', w / PO_W);
-      if (live) setReady(true);
+      // Rendu hors écran puis copie : pas de clignotement pendant les retouches
+      const off = document.createElement('canvas'); off.width = w; off.height = h;
+      await renderPoster(off, tpl, sitePosterData(c, routes, ph, custom), fmt, c.poster.border || 'none', w / PO_W);
+      if (!live) return;
+      cv.width = w; cv.height = h; cv.getContext('2d').drawImage(off, 0, 0);
+      drawn.current = c.id;
+      setReady(true);
     })();
     return () => { live = false; };
-  }, [c.id, photos && photos.map((p) => (p ? p.src : '')).join('|')]);
+  }, [c.id, photos && photos.map((p) => (p ? p.src : '')).join('|'), custom.photos, custom.title, custom.color]);
   return (
     <div className="relative mx-auto w-full">
       {/* Éclairage : halo doux et large derrière le poster (plusieurs paliers pour un fondu sans marches) */}
@@ -378,9 +388,59 @@ function SitePoster({ c, photos, children }) {
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
       <div className="relative z-10 mt-3 flex justify-center">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300">
-          <I.Poster size={13} /> Exemple · {c.poster.title} · A3
+          <I.Poster size={13} /> Exemple · {(custom.title || '').trim() || c.poster.title} · A3
         </span>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- personnalisation
+// Trois réglages volontairement simples sur le poster d'exemple : ils ne peuvent
+// pas casser la mise en page (nom limité, couleurs choisies, photos on/off).
+const SITE_TRACE_COLORS = [
+  { hex: '#ffffff', name: 'Blanc' }, { hex: '#fc5200', name: 'Orange' }, { hex: '#facc15', name: 'Jaune' },
+  { hex: '#34d399', name: 'Vert' }, { hex: '#60a5fa', name: 'Bleu' }, { hex: '#f472b6', name: 'Rose' },
+];
+const SITE_TITLE_MAX = 24;
+function SiteCustomize({ c, value, onChange }) {
+  const set = (k, v) => onChange({ ...value, [k]: v });
+  const defColor = c.poster.color === 'auto' ? '#ffffff' : c.poster.color;
+  const color = value.color || defColor;
+  const canPhotos = (c.poster.photos || 0) > 0 && !c.poster.bgPhoto;
+  const photosOn = value.photos !== false;
+  const touched = !!(value.title || value.color || value.photos === false);
+  return (
+    <div className="mt-4 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] px-4 pt-3.5 pb-4">
+      <div className="flex items-center justify-between h-6">
+        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Personnalisez</span>
+        {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
+      </div>
+      <label className="block mt-3">
+        <span className="sr-only">Nom du trip</span>
+        <span className="relative block">
+          <input value={value.title || ''} maxLength={SITE_TITLE_MAX} placeholder={c.poster.title} onChange={(e) => set('title', e.target.value)}
+            className="w-full h-11 rounded-lg bg-white/[0.05] ring-1 ring-white/10 focus:ring-white/30 outline-none pl-3.5 pr-12 text-[14.5px] text-white placeholder:text-neutral-500 transition-shadow" />
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11.5px] tabular-nums text-neutral-600">{(value.title || '').length}/{SITE_TITLE_MAX}</span>
+        </span>
+      </label>
+      <div className="mt-3.5 flex items-center justify-between gap-3">
+        <span className="text-[13.5px] text-neutral-300">Couleur du tracé</span>
+        <div className="flex items-center gap-2" role="radiogroup" aria-label="Couleur du tracé">
+          {SITE_TRACE_COLORS.map((x) => (
+            <button key={x.hex} role="radio" aria-checked={color === x.hex} title={x.name} aria-label={x.name}
+              onClick={() => set('color', x.hex === defColor ? null : x.hex)}
+              className={`w-[22px] h-[22px] rounded-full transition-transform hover:scale-110 ${color === x.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-[#121212]' : 'ring-1 ring-white/20'}`}
+              style={{ background: x.hex }} />
+          ))}
+        </div>
+      </div>
+      <button role="switch" aria-checked={canPhotos && photosOn} disabled={!canPhotos} onClick={() => set('photos', !photosOn)}
+        title={canPhotos ? undefined : 'Ce modèle n’affiche pas de photos'}
+        className="mt-3.5 w-full flex items-center justify-between gap-3 text-left disabled:opacity-40 disabled:cursor-not-allowed group">
+        <span className="text-[13.5px] text-neutral-300 group-enabled:group-hover:text-white transition-colors">Photos du voyage</span>
+        <UiSwitch on={canPhotos && photosOn} />
+      </button>
     </div>
   );
 }
@@ -731,6 +791,7 @@ function PrintraceSite() {
     return () => clearTimeout(t);
   }, [caseId, auto]);
   const stop = () => setAuto(false);
+  const [customs, setCustoms] = useSiteState({}); // personnalisation par cas d'usage
   // Photos du cas d'usage (fichiers locaux, Unsplash ou illustration)
   const [photoSet, setPhotoSet] = useSiteState({});
   useSiteEffect(() => {
@@ -771,7 +832,10 @@ function PrintraceSite() {
           </div>
           {/* Poster centré sous le titre ; champs dans la colonne de gauche (la droite reste libre pour l'équilibre) */}
           <div className="mt-10 lg:mt-14 lg:-mx-10 xl:-mx-20 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-14 lg:gap-10 items-center">
-          <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto lg:self-start lg:pt-[150px]"><SiteImport c={c} /></div>
+          <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto lg:self-start lg:pt-[150px]">
+            <SiteImport c={c} />
+            <SiteCustomize c={c} value={customs[caseId] || {}} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} />
+          </div>
 
           <div className="relative w-full max-w-[400px] lg:w-[400px] xl:w-[440px] lg:max-w-none mx-auto">
             {/* Photo du trip fondue dans le fond, décalée à droite du cadre (occupe la colonne vide) */}
@@ -781,7 +845,7 @@ function PrintraceSite() {
                 <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
               </div>
             )}
-            <SitePoster c={c} photos={photoSet[caseId] || null} />
+            <SitePoster c={c} photos={photoSet[caseId] || null} custom={customs[caseId] || {}} />
           </div>
           </div>
         </section>
