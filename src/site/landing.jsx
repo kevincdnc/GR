@@ -411,9 +411,9 @@ function SiteCustomize({ c, value, onChange }) {
   const photosOn = value.photos !== false;
   const touched = !!(value.title || value.color || value.photos === false);
   return (
-    <div className="mt-4 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] px-4 pt-3.5 pb-4">
+    <div className="rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
       <div className="flex items-center justify-between h-6">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Personnalisez</span>
+        <span className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500"><I.Sparkle size={13} />Personnalisez</span>
         {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
       </div>
       <label className="block mt-3">
@@ -425,12 +425,12 @@ function SiteCustomize({ c, value, onChange }) {
         </span>
       </label>
       <div className="mt-3.5 flex items-center justify-between gap-3">
-        <span className="text-[13.5px] text-neutral-300">Couleur du tracé</span>
-        <div className="flex items-center gap-2" role="radiogroup" aria-label="Couleur du tracé">
+        <span className="text-[13.5px] text-neutral-300 whitespace-nowrap">Couleur du tracé</span>
+        <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Couleur du tracé">
           {SITE_TRACE_COLORS.map((x) => (
             <button key={x.hex} role="radio" aria-checked={color === x.hex} title={x.name} aria-label={x.name}
               onClick={() => set('color', x.hex === defColor ? null : x.hex)}
-              className={`w-[22px] h-[22px] rounded-full transition-transform hover:scale-110 ${color === x.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-[#121212]' : 'ring-1 ring-white/20'}`}
+              className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${color === x.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-[#121212]' : 'ring-1 ring-white/20'}`}
               style={{ background: x.hex }} />
           ))}
         </div>
@@ -832,10 +832,7 @@ function PrintraceSite() {
           </div>
           {/* Poster centré sous le titre ; champs dans la colonne de gauche (la droite reste libre pour l'équilibre) */}
           <div className="mt-10 lg:mt-14 lg:-mx-10 xl:-mx-20 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-14 lg:gap-10 items-center">
-          <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto lg:self-start lg:pt-[150px]">
-            <SiteImport c={c} />
-            <SiteCustomize c={c} value={customs[caseId] || {}} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} />
-          </div>
+          <div className="w-full max-w-[420px] mx-auto lg:mr-0 lg:ml-auto lg:self-start lg:pt-[150px]"><SiteImport c={c} /></div>
 
           <div className="relative w-full max-w-[400px] lg:w-[400px] xl:w-[440px] lg:max-w-none mx-auto">
             {/* Photo du trip fondue dans le fond, décalée à droite du cadre (occupe la colonne vide) */}
@@ -846,6 +843,11 @@ function PrintraceSite() {
               </div>
             )}
             <SitePoster c={c} photos={photoSet[caseId] || null} custom={customs[caseId] || {}} />
+          </div>
+
+          {/* Réglages de l'exemple, de l'autre côté du poster : secondaires face à l'import */}
+          <div className="relative z-10 w-full max-w-[420px] lg:max-w-[320px] mx-auto lg:ml-0 lg:mr-auto lg:self-start lg:pt-[150px]">
+            <SiteCustomize c={c} value={customs[caseId] || {}} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} />
           </div>
           </div>
         </section>
