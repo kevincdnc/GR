@@ -38,6 +38,17 @@ function siteTrace(way, { seed = 7, rough = 0.22, depth = 6 } = {}) {
 // ~800 × 1000 px) ; tant qu'elles manquent, une illustration prend leur place.
 const SITE_CASES = [
   {
+    id: 'roadtrip', heroBg: 0, accent: '#facc15', word: 'road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
+    pitch: 'Toutes les étapes de votre road trip, réunies sur un seul poster.',
+    poster: {
+      tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Pacific Coast Hwy', subtitle: 'San Francisco → Los Angeles',
+      metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '11 h 30' }, photos: 2,
+      route: { name: 'Pacific Coast Highway', seed: 3, rough: 0.14, depth: 5, way: [[37.7749, -122.4194, 20], [37.50, -122.47, 30], [37.25, -122.40, 40], [36.97, -122.03, 10], [36.60, -121.89, 20], [36.27, -121.81, 200], [35.95, -121.48, 300], [35.66, -121.25, 80], [35.37, -120.85, 20], [35.28, -120.66, 70], [34.95, -120.43, 100], [34.42, -119.70, 15], [34.27, -119.23, 10], [34.03, -118.78, 20], [34.05, -118.24, 90]] },
+    },
+    unsplash: ['big sur highway coast', 'desert road trip'],
+    photos: [{ src: ptRes('siteRoad1', 'assets/site/roadtrip-1.webp'), caption: 'Big Sur' }, { src: null, caption: 'Highway 1' }],
+  },
+  {
     id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
     pitch: 'Votre course mythique et votre temps, en poster prêt à encadrer.',
     poster: {
@@ -78,17 +89,6 @@ const SITE_CASES = [
     },
     unsplash: ['corsica mountains hiking', 'gr20 corsica'],
     photos: [{ src: ptRes('siteTrek1', 'assets/site/trek-1.webp'), caption: 'Balisage' }, { src: ptRes('siteTrek2', 'assets/site/trek-2.webp'), caption: 'En chemin' }],
-  },
-  {
-    id: 'roadtrip', heroBg: 0, accent: '#facc15', word: 'road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
-    pitch: 'Toutes les étapes de votre road trip, réunies sur un seul poster.',
-    poster: {
-      tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Pacific Coast Hwy', subtitle: 'San Francisco → Los Angeles',
-      metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '11 h 30' }, photos: 2,
-      route: { name: 'Pacific Coast Highway', seed: 3, rough: 0.14, depth: 5, way: [[37.7749, -122.4194, 20], [37.50, -122.47, 30], [37.25, -122.40, 40], [36.97, -122.03, 10], [36.60, -121.89, 20], [36.27, -121.81, 200], [35.95, -121.48, 300], [35.66, -121.25, 80], [35.37, -120.85, 20], [35.28, -120.66, 70], [34.95, -120.43, 100], [34.42, -119.70, 15], [34.27, -119.23, 10], [34.03, -118.78, 20], [34.05, -118.24, 90]] },
-    },
-    unsplash: ['big sur highway coast', 'desert road trip'],
-    photos: [{ src: ptRes('siteRoad1', 'assets/site/roadtrip-1.webp'), caption: 'Big Sur' }, { src: null, caption: 'Highway 1' }],
   },
   {
     id: 'moto', heroBg: 0, accent: '#f87171', word: 'moto trip', label: 'Moto trip', example: 'Route des Grandes Alpes, cols pyrénéens…', icon: 'Moto', activity: 'moto',
