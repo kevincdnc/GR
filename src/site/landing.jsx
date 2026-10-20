@@ -823,15 +823,15 @@ function SiteStepHead({ i, accent }) {
 // Repère des étapes (à droite du poster) : simple consultation, cliquable pour y aller
 function SiteStepRail({ step, onGo }) {
   return (
-    <nav aria-label="Étapes">
+    <nav aria-label="Étapes" className="pl-8 xl:pl-12">
       <ol className="flex flex-col gap-4">
         {SITE_FLOW.map((st, i) => {
           const on = i === step;
           return (
             <li key={st.id}>
               <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group flex items-center gap-3 text-left">
-                <span className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12.5px] font-semibold tabular-nums transition-colors duration-300 ${on ? 'bg-white text-neutral-900' : 'bg-white/[0.04] text-neutral-500 ring-1 ring-white/15 group-hover:text-neutral-200 group-hover:ring-white/30'}`}>{i + 1}</span>
-                <span className={`text-[14px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-white font-medium' : 'text-neutral-500 group-hover:text-neutral-300'}`}>{st.title}</span>
+                <span className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12.5px] font-semibold tabular-nums transition-colors duration-300 ${on ? 'bg-white/[0.12] text-neutral-100 ring-1 ring-white/25' : 'bg-white/[0.04] text-neutral-500 ring-1 ring-white/15 group-hover:text-neutral-200 group-hover:ring-white/30'}`}>{i + 1}</span>
+                <span className={`text-[14px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-neutral-200 font-medium' : 'text-neutral-500 group-hover:text-neutral-300'}`}>{st.title}</span>
               </button>
             </li>
           );
