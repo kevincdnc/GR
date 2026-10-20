@@ -809,7 +809,7 @@ const SITE_FLOW = [
 function SiteStepHead({ i, accent }) {
   const st = SITE_FLOW[i];
   return (
-    <div>
+    <div data-step-head>
       <div className="flex items-center gap-3 text-[11.5px] font-semibold uppercase tracking-[0.18em] transition-colors duration-500" style={{ color: accent }}>
         <span>Étape <span className="tabular-nums">0{i + 1}</span></span>
         <span aria-hidden="true" className="h-px w-10 transition-colors duration-500" style={{ background: `linear-gradient(90deg, ${accent}99, transparent)` }} />
@@ -904,10 +904,51 @@ function PrintraceSite() {
   useSiteEffect(() => { if (step > 0) stop(); }, [step]);
   // Aller à une étape : la progression passe tout de suite sur la cible, puis suit le scroll
   const jumpTo = useSiteRef(null), jumpT = useSiteRef(0);
+  // Arrêt d'une étape : position de scroll où son en-tête s'aligne sur le haut du cadre (poster collé)
+  const posterRef = useSiteRef(null);
+  const snapFor = (i) => {
+    const sc = scroller.current, el = stepRefs[i].current, po = posterRef.current;
+    if (!sc || !el || !po) return null;
+    const head = el.querySelector('[data-step-head]') || el;
+    const stuckTop = sc.getBoundingClientRect().top + (parseFloat(getComputedStyle(po).top) || 0);
+    return Math.round(sc.scrollTop + head.getBoundingClientRect().top - stuckTop);
+  };
+  // Résistance au scroll (grand écran) : à chaque étape alignée sur le haut du cadre, la molette
+  // marque un temps d'arrêt ; il faut insister un peu pour passer à l'étape suivante.
+  useSiteEffect(() => {
+    const sc = scroller.current;
+    if (!desktop || !sc || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const HOLD = 240; // « force » à accumuler pour repartir (px de molette)
+    let holdAt = null, held = 0, lastT = 0;
+    const onWheel = (e) => {
+      if (e.ctrlKey || e.target.closest('[role="listbox"]')) return;
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? sc.clientHeight : 1);
+      if (!dy) return;
+      const now = performance.now(), y = sc.scrollTop;
+      if (now - lastT > 450) held = 0; // pause : la résistance se recharge
+      lastT = now;
+      if (holdAt != null && Math.abs(y - holdAt) < 2) {
+        if (Math.sign(dy) !== Math.sign(held || dy)) held = 0;
+        held += dy;
+        if (Math.abs(held) < HOLD) { e.preventDefault(); return; }
+        holdAt = null; held = 0; return; // assez insisté : on repart
+      }
+      holdAt = null;
+      const max = sc.scrollHeight - sc.clientHeight;
+      const snaps = [0, 1, 2].map(snapFor).filter((v) => v != null && v > 0 && v < max);
+      const next = y + dy;
+      const hit = dy > 0 ? snaps.filter((v) => v > y + 1 && v <= next).sort((a, b) => a - b)[0]
+                         : snaps.filter((v) => v < y - 1 && v >= next).sort((a, b) => b - a)[0];
+      if (hit != null) { e.preventDefault(); sc.scrollTop = hit; holdAt = hit; held = 0; }
+    };
+    sc.addEventListener('wheel', onWheel, { passive: false });
+    return () => sc.removeEventListener('wheel', onWheel);
+  }, [desktop]);
   const goTo = (i) => {
     const el = stepRefs[i].current, sc = scroller.current; if (!el || !sc) return;
     setStep(i); jumpTo.current = i; clearTimeout(jumpT.current);
-    const r = el.getBoundingClientRect(), top = sc.scrollTop + r.top - sc.getBoundingClientRect().top - Math.max(0, (sc.clientHeight - r.height) / 2);
+    const r = el.getBoundingClientRect(), snap = desktop ? snapFor(i) : null;
+    const top = snap != null ? snap : sc.scrollTop + r.top - sc.getBoundingClientRect().top - Math.max(0, (sc.clientHeight - r.height) / 2);
     sc.scrollTo({ top, behavior: 'smooth' });
     const release = () => { clearTimeout(jumpT.current); jumpT.current = setTimeout(() => { jumpTo.current = null; sc.removeEventListener('scroll', release); }, 160); };
     sc.addEventListener('scroll', release, { passive: true }); release();
@@ -966,7 +1007,7 @@ function PrintraceSite() {
             <SiteStepHead i={1} accent={c.accent} />
             <div className="mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
           </div>
-          <div {...stepProps(2)} className={`order-4 ${stepBox} ${dim(2)}`}>
+          <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[24vh] ${dim(2)}`}>
             <SiteStepHead i={2} accent={c.accent} />
             <div className="mt-9"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
               onDownload={() => open('download')} onOrder={() => open('order')} onImport={() => goTo(0)} /></div>
@@ -974,7 +1015,7 @@ function PrintraceSite() {
         </div>
 
         {/* Poster : collé au centre de l'écran pendant que les étapes défilent */}
-        <div className="order-2 lg:order-none lg:col-start-2 lg:row-start-1 lg:self-start lg:sticky" style={desktop ? { top: SITE_POSTER_TOP } : undefined}>
+        <div ref={posterRef} className="order-2 lg:order-none lg:col-start-2 lg:row-start-1 lg:self-start lg:sticky" style={desktop ? { top: SITE_POSTER_TOP } : undefined}>
           <div className="relative w-full max-w-[400px] lg:max-w-none mx-auto" style={desktop ? { width: SITE_POSTER_W } : undefined}>
             {/* Photo du trip fondue dans le fond, décalée à droite du cadre */}
             {c.heroBg != null && photos[c.heroBg] && (
