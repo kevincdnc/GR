@@ -820,25 +820,18 @@ function SiteStepHead({ i, accent }) {
     </div>
   );
 }
-// Progression verticale (à droite du poster), cliquable pour aller à une étape.
-// Lignes de hauteur fixe : le trait relie exactement les centres des pastilles.
-const SITE_RAIL_ROW = 26, SITE_RAIL_GAP = 18;
-function SiteStepRail({ step, onGo, accent = '#ffffff' }) {
-  const pitch = SITE_RAIL_ROW + SITE_RAIL_GAP, n = SITE_FLOW.length;
+// Repère des étapes (à droite du poster) : simple consultation, cliquable pour y aller
+function SiteStepRail({ step, onGo }) {
   return (
-    <nav aria-label="Étapes" className="relative">
-      <span aria-hidden="true" className="absolute left-[12.5px] w-px bg-white/[0.08]" style={{ top: SITE_RAIL_ROW / 2, height: pitch * (n - 1) }} />
-      <span aria-hidden="true" className="absolute left-[12.5px] w-px opacity-70 transition-[height,background-color] duration-500 ease-out" style={{ top: SITE_RAIL_ROW / 2, height: pitch * step, background: accent }} />
-      <ol className="relative flex flex-col" style={{ gap: SITE_RAIL_GAP }}>
+    <nav aria-label="Étapes">
+      <ol className="flex flex-col gap-4">
         {SITE_FLOW.map((st, i) => {
-          const on = i === step, done = i < step;
+          const on = i === step;
           return (
-            <li key={st.id} style={{ height: SITE_RAIL_ROW }}>
-              <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group h-full flex items-center gap-2.5 text-left">
-                <span className={`w-[26px] h-[26px] shrink-0 rounded-full grid place-items-center text-[11px] font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-300 ${on ? 'bg-white/90 text-neutral-900' : done ? 'bg-[#161616] text-neutral-300 ring-1 ring-white/20' : 'bg-[#111] text-neutral-600 ring-1 ring-white/10 group-hover:text-neutral-300 group-hover:ring-white/25'}`}>
-                  {done ? <I.Check size={12} /> : i + 1}
-                </span>
-                <span className={`text-[12.5px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-neutral-200 font-medium' : done ? 'text-neutral-500 group-hover:text-neutral-300' : 'text-neutral-600 group-hover:text-neutral-300'}`}>{st.title}</span>
+            <li key={st.id}>
+              <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group flex items-center gap-3 text-left">
+                <span className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12.5px] font-semibold tabular-nums transition-colors duration-300 ${on ? 'bg-white text-neutral-900' : 'bg-white/[0.04] text-neutral-500 ring-1 ring-white/15 group-hover:text-neutral-200 group-hover:ring-white/30'}`}>{i + 1}</span>
+                <span className={`text-[14px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-white font-medium' : 'text-neutral-500 group-hover:text-neutral-300'}`}>{st.title}</span>
               </button>
             </li>
           );
@@ -996,7 +989,7 @@ function PrintraceSite() {
 
         {/* Progression : à droite, à mi-hauteur du poster */}
         <div className="hidden lg:flex lg:col-start-3 lg:row-start-1 lg:self-start lg:sticky items-center relative z-10" style={{ top: SITE_POSTER_TOP, height: SITE_POSTER_H }}>
-          <SiteStepRail step={step} onGo={goTo} accent={c.accent} />
+          <SiteStepRail step={step} onGo={goTo} />
         </div>
       </section>
      </div>
