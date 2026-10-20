@@ -911,11 +911,6 @@ function PrintraceSite() {
   const [caseId, setCaseId] = useSiteState(SITE_CASES[0].id);
   const [auto, setAuto] = useSiteState(true); // défilement des cas d'usage tant qu'on n'a pas choisi
   const c = SITE_CASES.find((x) => x.id === caseId);
-  useSiteEffect(() => {
-    if (!auto) return;
-    const t = setTimeout(() => setCaseId((id) => SITE_CASES[(SITE_CASES.findIndex((x) => x.id === id) + 1) % SITE_CASES.length].id), SITE_ROTATE_MS);
-    return () => clearTimeout(t);
-  }, [caseId, auto]);
   const stop = () => setAuto(false);
   const [customs, setCustoms] = useSiteState({}); // personnalisation par cas d'usage
   const custom = customs[caseId] || {};
@@ -961,7 +956,13 @@ function PrintraceSite() {
     sc.addEventListener('scroll', onScroll, { passive: true }); update();
     return () => { mq.removeEventListener('change', on); sc.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
   }, []);
-  useSiteEffect(() => { if (step > 0) stop(); }, [step]);
+  // Le défilement des cas d'usage se met seulement en pause pendant l'étape 2 (réglages)
+  const paused = desktop && step === 1;
+  useSiteEffect(() => {
+    if (!auto || paused) return;
+    const t = setTimeout(() => setCaseId((id) => SITE_CASES[(SITE_CASES.findIndex((x) => x.id === id) + 1) % SITE_CASES.length].id), SITE_ROTATE_MS);
+    return () => clearTimeout(t);
+  }, [caseId, auto, paused]);
   // Aller à une étape : la progression passe tout de suite sur la cible, puis suit le scroll
   const jumpTo = useSiteRef(null), jumpT = useSiteRef(0);
   // Arrêt d'une étape : position de scroll où son en-tête s'aligne sur le haut du cadre (poster collé)
