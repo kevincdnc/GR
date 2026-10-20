@@ -178,8 +178,8 @@ function sitePosterData(c, routes, photos = [], o = {}) {
     .map((st) => (!user && p.values[st.key] ? { ...st, value: p.values[st.key], unit: '' } : st));
   return {
     routes, agg, color: o.color || p.color, coords: true, activityLabel: act.label, title: (o.title || '').trim() || siteDefaultTitle(c, o.items), subtitle: user ? siteUserSubtitle(o.items) || act.label : p.subtitle, stats,
-    photoSlot: false, photos: p.bgPhoto ? photos.slice(1) : photos, bgPhoto: p.bgPhoto && photos[0] ? photos[0].img : null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: true,
-    bg: p.bg || null, preview: false, typeScale: p.typeScale, marginColor: p.marginColor, photoShade: p.photoShade,
+    photoSlot: false, photos: p.bgPhoto ? photos.slice(1) : photos, bgPhoto: p.bgPhoto && photos[0] ? photos[0].img : null, showMap: true, mapStyle: p.mapStyle, mapOpacity: p.mapOpacity / 100, mapLabels: o.labels !== false,
+    bg: (p.tpl === 'blueprint' && o.bg) || p.bg || null, preview: false, typeScale: p.typeScale, marginColor: p.marginColor, photoShade: p.photoShade,
   };
 }
 
@@ -432,7 +432,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children 
       setReady(true);
     })();
     return () => { live = false; };
-  }, [c.id, routes, border, photos && photos.map((p) => (p ? p.src : '')).join('|'), custom.photos, custom.title, custom.color, custom.tpl, custom.info, custom.stages, custom.duration]);
+  }, [c.id, routes, border, photos && photos.map((p) => (p ? p.src : '')).join('|'), custom.photos, custom.title, custom.color, custom.tpl, custom.info, custom.stages, custom.duration, custom.labels, custom.bg]);
   const title = (custom.title || '').trim() || siteDefaultTitle(c, items);
   return (
     <div className="relative mx-auto w-full">
@@ -467,6 +467,11 @@ const SITE_TRACE_COLORS = [
   { hex: '#34d399', name: 'Vert' }, { hex: '#60a5fa', name: 'Bleu' }, { hex: '#f472b6', name: 'Rose' },
 ];
 const SITE_TITLE_MAX = 24;
+// Fonds du style « Plan » : tous foncés, pour garder le tracé et les textes lisibles
+const SITE_PLAN_BGS = [
+  { hex: '#121212', name: 'Noir' }, { hex: '#0f1d33', name: 'Bleu marine' },
+  { hex: '#0f2a26', name: 'Vert forêt' }, { hex: '#2a1424', name: 'Aubergine' },
+];
 function SiteCustomize({ c, value, onChange, items = [] }) {
   const set = (k, v) => onChange({ ...value, [k]: v });
   const p = sitePosterOf(c, value.tpl);
@@ -502,7 +507,7 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
         {siteStyles(c).map((t) => {
           const on = p.tpl === t.id;
           return (
-            <button key={t.id} role="radio" aria-checked={on} onClick={() => onChange({ ...value, tpl: t.id === c.poster.tpl ? null : t.id, color: null })}
+            <button key={t.id} role="radio" aria-checked={on} onClick={() => onChange({ ...value, tpl: t.id === c.poster.tpl ? null : t.id, color: null, bg: null })}
               className={`h-9 rounded-md text-[13px] font-medium transition-colors ${on ? 'bg-white text-neutral-900' : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'}`}>{t.name}</button>
           );
         })}
@@ -518,7 +523,24 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
           ))}
         </div>
       </div>
+      {p.tpl === 'blueprint' && (
+        <div className="mt-3.5 flex items-center justify-between gap-3">
+          <span className="text-[13.5px] text-neutral-300 whitespace-nowrap">Fond</span>
+          <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Fond du poster">
+            {SITE_PLAN_BGS.map((x) => {
+              const on = (value.bg || p.bg || '#0f1d33') === x.hex;
+              return (
+                <button key={x.hex} role="radio" aria-checked={on} title={x.name} aria-label={x.name}
+                  onClick={() => set('bg', x.hex === (p.bg || '#0f1d33') ? null : x.hex)}
+                  className={`w-5 h-5 rounded-md transition-transform hover:scale-110 ${on ? 'ring-2 ring-white ring-offset-2 ring-offset-[#121212]' : 'ring-1 ring-white/25'}`}
+                  style={{ background: x.hex }} />
+              );
+            })}
+          </div>
+        </div>
+      )}
       {sw('photos', photosOn, 'Ajoutez des photos', !canPhotos, canPhotos ? undefined : items.length ? 'Vos photos s’ajoutent dans le studio' : 'Ce style n’affiche pas de photos')}
+      {sw('labels', value.labels !== false, 'Noms des villes')}
       <div className="mt-3.5 h-px bg-white/[0.06]" />
       {sw('info', value.info !== false, 'Afficher les infos')}
       {sw('stages', metrics.includes('stages'), 'Nombre d’étapes', value.info === false)}
