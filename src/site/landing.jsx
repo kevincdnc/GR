@@ -590,12 +590,15 @@ function SiteFinish({ c, tplId, value, onChange, onOpen, opening, ready }) {
       </div>
       {/* Passage vers le vrai produit : l'app Printrace (connexion puis studio) */}
       <button onClick={onOpen} disabled={!!opening}
-        className="group mt-4 w-full rounded-2xl bg-white text-neutral-900 pl-5 pr-4 py-4 flex items-center gap-4 text-left shadow-[0_18px_50px_-18px_rgba(255,255,255,0.35)] hover:bg-neutral-100 transition-colors disabled:opacity-70">
-        <span className="flex-1 min-w-0">
+        className="group relative mt-4 w-full overflow-hidden rounded-2xl pl-5 pr-3.5 py-4 flex items-center gap-4 text-left text-white ring-1 ring-inset ring-white/15 shadow-[0_22px_50px_-20px_rgba(37,99,235,0.85),inset_0_1px_0_rgba(255,255,255,0.22)] hover:-translate-y-px hover:shadow-[0_26px_60px_-18px_rgba(37,99,235,1),inset_0_1px_0_rgba(255,255,255,0.28)] active:translate-y-0 transition-[transform,box-shadow] duration-200 disabled:opacity-70"
+        style={{ background: 'linear-gradient(180deg, #3b82f6 0%, #2563eb 100%)' }}>
+        {/* Reflet qui balaie le bouton au survol */}
+        <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-[450%] transition-transform duration-700 ease-out" />
+        <span className="relative flex-1 min-w-0">
           <span className="block text-[16px] font-semibold leading-tight">Créer mon poster sur Printrace</span>
-          <span className="block mt-1 text-[12.5px] text-neutral-500 leading-snug">{ready ? 'Vos tracés et réglages vous suivent dans l’app.' : 'Fichier HD ou poster livré, dans l’app.'}</span>
+          <span className="block mt-1 text-[12.5px] text-blue-100/80 leading-snug">{ready ? 'Vos tracés et réglages vous suivent dans l’app.' : 'Fichier HD ou poster livré, dans l’app.'}</span>
         </span>
-        <span className="w-10 h-10 shrink-0 rounded-full bg-neutral-900 text-white grid place-items-center transition-transform group-hover:translate-x-0.5">
+        <span className="relative w-10 h-10 shrink-0 rounded-full bg-white text-blue-600 grid place-items-center shadow-[0_4px_12px_rgba(15,23,42,0.25)] transition-transform group-hover:translate-x-0.5">
           {opening ? <UiSpinner size={16} /> : <I.ChevronRight size={18} />}
         </span>
       </button>
