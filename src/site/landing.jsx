@@ -804,22 +804,22 @@ const SITE_FLOW = [
   { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
 // En-tête d'étape : bulle numérotée (comme le stepper de droite), nom de l'étape, puis description
-// Aux couleurs du site : surtitre « Étape 01 » dans la couleur du cas d'usage (comme le
-// mot du grand titre), nom de l'étape en Mont, description en Inter
+// Aux couleurs du site : grand chiffre en Mont italique (comme le logo et le mot du titre),
+// en dégradé de la couleur du cas d'usage, puis nom de l'étape en Mont italique, puis description
 function SiteStepHead({ i, accent }) {
   const st = SITE_FLOW[i];
   return (
     <div data-step-head>
-      <div className="flex items-center gap-3 text-[11.5px] font-semibold uppercase tracking-[0.18em] transition-colors duration-500" style={{ color: accent }}>
-        <span>Étape <span className="tabular-nums">0{i + 1}</span></span>
-        <span aria-hidden="true" className="h-px w-10 transition-colors duration-500" style={{ background: `linear-gradient(90deg, ${accent}99, transparent)` }} />
-        <span className="text-neutral-600 tabular-nums tracking-[0.12em]">/ 03</span>
-      </div>
-      <h2 className="mt-5 font-display font-bold tracking-[-0.02em] leading-[1.15] text-[24px] text-white">{st.title}</h2>
+      <span aria-hidden="true" className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[46px] tabular-nums select-none transition-[background-image] duration-500"
+        style={{ backgroundImage: `linear-gradient(180deg, ${accent} 10%, ${accent}22 95%)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em' }}>
+        0{i + 1}
+      </span>
+      <h2 className="mt-3 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[24px] text-white"><span className="sr-only">Étape {i + 1} : </span>{st.title}</h2>
       <p className="mt-3.5 text-[15px] leading-[1.7] text-neutral-400 max-w-[400px]">{st.text}</p>
     </div>
   );
 }
+
 // Repère des étapes (à droite du poster) : simple consultation, cliquable pour y aller
 function SiteStepRail({ step, onGo }) {
   return (
