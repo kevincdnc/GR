@@ -647,6 +647,14 @@ function SiteImport({ c, items, setItems, onNext }) {
   // L'étape suivante s'affiche sous la liste du dernier import
   const [lastSource, setLastSource] = useSiteState('file');
   const pickSource = useSiteRef('file'); // provenance du prochain fichier choisi
+  // Colonne étroite (écrans 1024-1279 px) : textes d'aide raccourcis, jamais coupés
+  const [narrow, setNarrow] = useSiteState(false);
+  useSiteEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px) and (max-width: 1279px)');
+    const on = () => setNarrow(mq.matches);
+    on(); mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
 
   const importFiles = async (list, source = 'file') => {
     setError({ src: '', msg: '' });
@@ -735,7 +743,7 @@ function SiteImport({ c, items, setItems, onNext }) {
               <span className="block text-[14px] sm:text-[15px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : bySource('file').length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
               <span className="block text-[12px] sm:text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em] whitespace-nowrap">GPX · FIT · TCX · KML</span>
             </span>
-            {!busy && <span className="shrink-0 w-[88px] h-10 rounded-lg grid place-items-center text-[13px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors">Parcourir</span>}
+            {!busy && <span className="shrink-0 w-[88px] h-10 rounded-lg grid lg:hidden xl:grid place-items-center text-[13px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors">Parcourir</span>}
           </button>
           {errorFor('file')}
           {list('file')}
@@ -750,7 +758,7 @@ function SiteImport({ c, items, setItems, onNext }) {
                 <img src={ptRes(src.logo[0], src.logo[1])} alt="" width="26" height="26" className="w-6 h-6 sm:w-[26px] sm:h-[26px] rounded-[6px] shrink-0" />
                 <input value={links[src.id]} onChange={(e) => { const v = e.target.value; setLinks((l) => ({ ...l, [src.id]: v })); setError({ src: '', msg: '' }); setGuided((x) => ({ ...x, [src.id]: null })); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') submitLink(src); }}
-                  placeholder={src.placeholder} aria-label={'Lien ' + src.name} inputMode="url"
+                  placeholder={narrow ? 'Lien ' + src.name : src.placeholder} aria-label={'Lien ' + src.name} inputMode="url"
                   style={{ outline: 'none', caretColor: src.color }} className="flex-1 min-w-0 h-full bg-transparent text-[14px] text-white placeholder:text-neutral-500" />
                 <button onClick={(e) => { e.preventDefault(); submitLink(src); }} disabled={linkBusy === src.id}
                   className="w-[88px] h-10 shrink-0 rounded-lg grid place-items-center text-[13px] font-semibold text-white transition-[filter] hover:brightness-110 disabled:opacity-70" style={{ background: src.color }}>
@@ -795,16 +803,15 @@ const SITE_FLOW = [
   { id: 'custom', title: 'Personnalisez votre carte', text: 'Choisissez le style, la couleur du tracé, vos photos et les infos affichées.' },
   { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
-// En-tête d'étape : « 01 —— Étape 1 sur 3 », titre, description
+// En-tête d'étape : « 01 —— Importez vos tracés » (libellé de l'étape), puis description
 function SiteStepHead({ i }) {
   const st = SITE_FLOW[i];
   return (
     <div>
-      <div className="flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
-        <span className="tabular-nums text-white">0{i + 1}</span><span className="h-px w-6 bg-white/25" />Étape {i + 1} sur 3
-      </div>
-      <h2 className="mt-3 text-[26px] leading-tight font-semibold text-white tracking-[-0.02em]" style={{ fontFamily: 'var(--ds-font-site)' }}>{st.title}</h2>
-      <p className="mt-2 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
+      <h2 className="flex items-center gap-2.5 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-neutral-200">
+        <span className="tabular-nums text-white">0{i + 1}</span><span className="h-px w-6 bg-white/25" />{st.title}
+      </h2>
+      <p className="mt-3 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
     </div>
   );
 }
@@ -833,7 +840,8 @@ function SiteStepRail({ step, onGo }) {
 
 // ---------------------------------------------------------------- page
 // Poster (grand écran) : largeur selon la hauteur d'écran, centré verticalement quand il est collé
-const SITE_POSTER_W = 'min(480px, calc((100vh - 120px) / 1.48))';
+// largeur bornée par la hauteur d'écran et par la place des colonnes de côté (≈ 380 px chacune)
+const SITE_POSTER_W = 'max(340px, min(480px, calc((100vh - 120px) / 1.48), calc(100vw - 880px)))';
 const SITE_POSTER_H = `calc(${SITE_POSTER_W} * 1.414 + 48px)`; // cadre A3 + étiquette
 const SITE_POSTER_TOP = `max(20px, calc((100vh - ${SITE_POSTER_H}) / 2))`;
 function PrintraceSite() {
@@ -912,7 +920,7 @@ function PrintraceSite() {
       </nav>
 
       {/* Titre et description, centrés en haut */}
-      <header className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 lg:pt-12 pb-8 lg:pb-4 text-center">
+      <header className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 lg:pt-12 pb-10 lg:pb-14 text-center">
         {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
         <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.08] text-[clamp(34px,4.4vw,62px)]">
           <span className="block text-white/90">Imprimez votre</span>
@@ -921,8 +929,8 @@ function PrintraceSite() {
         <p key={c.id} className="ds-fade-up mt-5 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[560px] mx-auto">{c.pitch}</p>
       </header>
 
-      {/* Étapes à gauche (elles défilent), poster au centre et progression à droite (ils restent à l'écran) */}
-      <section aria-label="Créer votre poster" className="relative max-w-[1320px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.3fr)_auto_minmax(0,1fr)] gap-x-10 xl:gap-x-14 gap-y-12">
+      {/* Étapes à gauche (elles défilent), poster centré sur la page et progression à droite (ils restent à l'écran) */}
+      <section aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-12">
         {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
         <div className="contents lg:block lg:w-full lg:max-w-[400px] lg:ml-auto">
           <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!justify-start lg:!pt-0 ${dim(0)}`}>
