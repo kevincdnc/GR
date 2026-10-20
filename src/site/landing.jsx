@@ -803,45 +803,40 @@ const SITE_FLOW = [
   { id: 'custom', title: 'Personnalisez votre carte', text: 'Choisissez le style, la couleur du tracé, vos photos et les infos affichées.' },
   { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
-// En-tête d'étape : « 01 —— Importez vos tracés » (libellé de l'étape), puis description
+// En-tête d'étape : numéro (pastille), nom de l'étape en Mont, puis description
 function SiteStepHead({ i }) {
   const st = SITE_FLOW[i];
   return (
     <div>
-      <h2 className="flex items-center gap-3 text-white">
-        <span className="text-[12px] font-semibold tabular-nums tracking-[0.14em] text-neutral-500">0{i + 1}</span>
-        <span aria-hidden="true" className="h-px w-6 bg-white/25" />
-        <span className="font-display font-extrabold tracking-[-0.025em] leading-[1.1] text-[clamp(22px,1.9vw,27px)] whitespace-nowrap">{st.title}</span>
-      </h2>
+      <span className="inline-flex items-center gap-2.5">
+        <span className="h-7 min-w-7 px-2 rounded-lg grid place-items-center bg-white/[0.08] ring-1 ring-white/15 text-[13px] font-bold tabular-nums text-white">0{i + 1}</span>
+        <span aria-hidden="true" className="h-px w-8 bg-gradient-to-r from-white/30 to-transparent" />
+      </span>
+      <h2 className="mt-3.5 font-display font-bold tracking-[-0.02em] leading-[1.12] text-[clamp(22px,1.9vw,27px)] text-white">{st.title}</h2>
       <p className="mt-3 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
     </div>
   );
 }
-// Progression verticale (à droite du poster), cliquable pour aller à une étape :
-// pastilles reliées par un trait qui se remplit, étape active mise en avant
+// Progression verticale (à droite du poster), cliquable pour aller à une étape.
+// Lignes de hauteur fixe : le trait relie exactement les centres des pastilles.
+const SITE_RAIL_ROW = 40, SITE_RAIL_GAP = 28;
 function SiteStepRail({ step, onGo }) {
+  const pitch = SITE_RAIL_ROW + SITE_RAIL_GAP, n = SITE_FLOW.length;
   return (
-    <nav aria-label="Étapes" className="w-[240px]">
-      <ol className="flex flex-col">
+    <nav aria-label="Étapes" className="relative">
+      <span aria-hidden="true" className="absolute left-[19.5px] w-px bg-white/10" style={{ top: SITE_RAIL_ROW / 2, height: pitch * (n - 1) }} />
+      <span aria-hidden="true" className="absolute left-[19.5px] w-px bg-white/60 transition-[height] duration-500 ease-out" style={{ top: SITE_RAIL_ROW / 2, height: pitch * step }} />
+      <ol className="relative flex flex-col" style={{ gap: SITE_RAIL_GAP }}>
         {SITE_FLOW.map((st, i) => {
-          const on = i === step, done = i < step, last = i === SITE_FLOW.length - 1;
+          const on = i === step, done = i < step;
           return (
-            <li key={st.id} className="relative">
-              {/* Trait vers l'étape suivante */}
-              {!last && <span aria-hidden="true" className="absolute left-[19px] top-[44px] h-[calc(100%-36px)] w-px bg-white/10 overflow-hidden">
-                <span className="block w-full bg-white/60 transition-[height] duration-500 ease-out" style={{ height: done ? '100%' : '0%' }} />
-              </span>}
-              <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined}
-                className={`group w-full flex items-center gap-3.5 rounded-xl pl-1 pr-3 py-1 text-left transition-colors ${on ? '' : 'hover:bg-white/[0.03]'}`}>
-                <span className={`relative w-[38px] h-[38px] shrink-0 rounded-full grid place-items-center text-[13px] font-semibold tabular-nums transition-all duration-500 ${on ? 'bg-white text-neutral-900 shadow-[0_0_0_5px_rgba(255,255,255,0.07),0_8px_24px_-6px_rgba(255,255,255,0.35)]' : done ? 'bg-white/[0.08] text-white ring-1 ring-white/30' : 'bg-[#121212] text-neutral-500 ring-1 ring-white/12 group-hover:text-neutral-200 group-hover:ring-white/25'}`}>
+            <li key={st.id} style={{ height: SITE_RAIL_ROW }}>
+              <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group h-full flex items-center gap-3.5 text-left">
+                <span className={`w-10 h-10 shrink-0 rounded-full grid place-items-center text-[13.5px] font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-300 ${on ? 'bg-white text-neutral-900 shadow-[0_0_0_5px_rgba(255,255,255,0.07)]' : done ? 'bg-[#1c1c1c] text-white ring-1 ring-white/35' : 'bg-[#121212] text-neutral-500 ring-1 ring-white/15 group-hover:text-white group-hover:ring-white/30'}`}>
                   {done ? <I.Check size={15} /> : i + 1}
                 </span>
-                <span className="min-w-0 py-2">
-                  <span className={`block text-[10.5px] font-semibold uppercase tracking-[0.14em] transition-colors ${on ? 'text-neutral-400' : 'text-neutral-500'}`}>Étape {i + 1}</span>
-                  <span className={`block mt-0.5 text-[14.5px] whitespace-nowrap transition-colors ${on ? 'text-white font-semibold' : done ? 'text-neutral-300' : 'text-neutral-500 group-hover:text-neutral-300'}`}>{st.title}</span>
-                </span>
+                <span className={`text-[14.5px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-white font-semibold' : done ? 'text-neutral-300 group-hover:text-white' : 'text-neutral-500 group-hover:text-neutral-200'}`}>{st.title}</span>
               </button>
-              {!last && <span aria-hidden="true" className="block h-6" />}
             </li>
           );
         })}
@@ -892,13 +887,35 @@ function PrintraceSite() {
     const mq = window.matchMedia('(min-width: 1024px)');
     const on = () => setDesktop(mq.matches);
     on(); mq.addEventListener('change', on);
-    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) setStep(+e.target.dataset.step); }),
-      { root: scroller.current, rootMargin: '-50% 0px -50% 0px' });
-    stepRefs.forEach((r) => r.current && io.observe(r.current));
-    return () => { mq.removeEventListener('change', on); io.disconnect(); };
+    const sc = scroller.current;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      if (jumpTo.current != null) return; // saut vers une étape en cours : pas de clignotement
+      const mid = sc.getBoundingClientRect().top + sc.clientHeight / 2;
+      let best = 0, dist = Infinity;
+      stepRefs.forEach((r, i) => {
+        const el = r.current; if (!el) return;
+        const b = el.getBoundingClientRect(), d = mid < b.top ? b.top - mid : mid > b.bottom ? mid - b.bottom : 0;
+        if (d < dist) { dist = d; best = i; }
+      });
+      setStep(best);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    sc.addEventListener('scroll', onScroll, { passive: true }); update();
+    return () => { mq.removeEventListener('change', on); sc.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
   }, []);
   useSiteEffect(() => { if (step > 0) stop(); }, [step]);
-  const goTo = (i) => { const el = stepRefs[i].current; if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  // Aller à une étape : la progression passe tout de suite sur la cible, puis suit le scroll
+  const jumpTo = useSiteRef(null), jumpT = useSiteRef(0);
+  const goTo = (i) => {
+    const el = stepRefs[i].current, sc = scroller.current; if (!el || !sc) return;
+    setStep(i); jumpTo.current = i; clearTimeout(jumpT.current);
+    const r = el.getBoundingClientRect(), top = sc.scrollTop + r.top - sc.getBoundingClientRect().top - Math.max(0, (sc.clientHeight - r.height) / 2);
+    sc.scrollTo({ top, behavior: 'smooth' });
+    const release = () => { clearTimeout(jumpT.current); jumpT.current = setTimeout(() => { jumpTo.current = null; sc.removeEventListener('scroll', release); }, 160); };
+    sc.addEventListener('scroll', release, { passive: true }); release();
+  };
   const open = async (kind) => {
     setOpening(kind);
     const src = items.every((x) => x.source === items[0].source) ? items[0].source : undefined;
