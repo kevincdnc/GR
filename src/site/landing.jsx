@@ -662,12 +662,12 @@ const SITE_GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmln
 const SITE_LINE = 'rgba(255,255,255,0.14)';
 
 // Fond commun : grille de points qui s'efface sur les bords
-function SiteIllusFrame({ children }) {
+function SiteIllusFrame({ children, dots = true }) {
   return (
     <div className="relative aspect-[4/3]">
-      <div className="absolute inset-0" style={{
+      {dots && <div className="absolute inset-0" style={{
         backgroundImage: 'radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)', backgroundSize: '16px 16px',
-        maskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)', WebkitMaskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)' }} />
+        maskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)', WebkitMaskImage: 'radial-gradient(60% 60% at 50% 50%, #000 20%, transparent 80%)' }} />}
       <svg viewBox="0 0 400 300" className="absolute inset-0 w-full h-full" fill="none" aria-hidden="true">{children}</svg>
     </div>
   );
@@ -677,31 +677,45 @@ const SITE_ROUTE_D = 'M0 34 C10 26 16 40 26 40 S38 52 42 64 S56 72 62 68 S74 80 
 
 // 1 · Import : le fichier au centre, les sources reliées par des traits fins
 function SiteIllusImport({ c }) {
-  // Reprend les champs du hero, à l'échelle : zone de fichiers, lien Strava, tracé ajouté
+  // Reprend les champs du hero : zone de fichiers (une ligne, formats en étiquettes
+  // flottantes qui y « tombent »), séparateur « ou », lien Strava
   const f = { fontFamily: 'var(--ds-font-site)' };
+  const mono = { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' };
+  // Étiquette de fichier flottante, légèrement inclinée
+  const chip = (x, y, label, rot) => (
+    <g transform={`translate(${x} ${y}) rotate(${rot})`}>
+      <rect x="-22" y="-11" width="44" height="22" rx="5" fill="#141414" stroke="rgba(255,255,255,0.35)" />
+      <text x="0" y="3.6" textAnchor="middle" fontSize="9.5" fontWeight="600" fill="#fff" letterSpacing="0.4" style={mono}>{label}</text>
+    </g>
+  );
   return (
-    <SiteIllusFrame>
-      {/* Zone d'import (pointillés) */}
-      <rect x="50" y="50" width="300" height="72" rx="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" strokeDasharray="4 3" />
-      <rect x="62" y="66" width="40" height="40" rx="10" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.10)" />
-      <path d="M82 93 V78 M76.5 83.5 L82 78 L87.5 83.5 M75 96.5 H89" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-      <text x="114" y="84" fontSize="12.5" fontWeight="600" fill="#fff" style={f}>Importez vos tracés</text>
-      <text x="114" y="100" fontSize="9.5" fill="rgba(255,255,255,0.45)" letterSpacing="0.3" style={f}>GPX · FIT · TCX · KML</text>
-      <rect x="276" y="71" width="62" height="30" rx="7" fill="rgba(255,255,255,0.07)" />
-      <text x="307" y="90" textAnchor="middle" fontSize="10.5" fontWeight="500" fill="rgba(255,255,255,0.85)" style={f}>Parcourir</text>
+    <SiteIllusFrame dots={false}>
+      {/* Zone d'import (pointillés), une seule ligne */}
+      <rect x="50" y="78" width="300" height="64" rx="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" strokeDasharray="4 3" />
+      <rect x="62" y="90" width="40" height="40" rx="10" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.10)" />
+      {/* Icône « Upload » du hero (même dessin que I.Upload) */}
+      <g transform="translate(72.5 100.5) scale(0.79)" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+        <path d="M21 15v3a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-3" /><path d="M17 8l-5-5-5 5M12 3v13" />
+      </g>
+      <text x="114" y="114.5" fontSize="12.5" fontWeight="600" fill="#fff" style={f}>Importez vos tracés</text>
+      <rect x="276" y="95" width="62" height="30" rx="7" fill="rgba(255,255,255,0.07)" />
+      <text x="307" y="114" textAnchor="middle" fontSize="10.5" fontWeight="500" fill="rgba(255,255,255,0.85)" style={f}>Parcourir</text>
+      {/* Formats qui arrivent dans la zone */}
+      {chip(262, 46, '.FIT', -6)}
+      <path d="M248 58 C244 64 242 68 240 74" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M236.5 70.5 L240 75 L244.5 72" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      {chip(352, 62, '.GPX', 5)}
+      <path d="M346 75 C344 82 344 88 352 96" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M346.5 95 L352.5 96.5 L352 90.5" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      {/* Séparateur « ou » */}
+      <path d="M50 171 H182 M218 171 H350" stroke="rgba(255,255,255,0.12)" />
+      <text x="200" y="174.5" textAnchor="middle" fontSize="9.5" fontWeight="600" fill="rgba(255,255,255,0.45)" letterSpacing="1.4" style={f}>OU</text>
       {/* Lien Strava */}
-      <rect x="50" y="132" width="300" height="54" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.10)" />
-      <image href={ptRes('stravaLogo', 'assets/strava.svg')} x="64" y="147" width="24" height="24" />
-      <text x="98" y="163" fontSize="10.5" fill="rgba(255,255,255,0.45)" style={f}>Collez le lien d’une activité Strava</text>
-      <rect x="276" y="141" width="64" height="36" rx="8" fill="#fc4c02" />
-      <text x="308" y="163" textAnchor="middle" fontSize="10.5" fontWeight="600" fill="#fff" style={f}>Importer</text>
-      {/* Tracé ajouté */}
-      <rect x="50" y="196" width="300" height="48" rx="14" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" />
-      <rect x="62" y="208" width="24" height="24" rx="7" fill="rgba(255,255,255,0.06)" />
-      <path d="M69 226 c3 -6 6 1 9 -4 s3 -5 3 -7" stroke={c.accent} strokeWidth="1.5" strokeLinecap="round" />
-      <text x="96" y="218.5" fontSize="10.5" fontWeight="500" fill="#fff" style={f}>Ouessant</text>
-      <text x="96" y="232" fontSize="8.5" fill="rgba(255,255,255,0.45)" style={f}>23,7 km · 319 m D+</text>
-      <circle cx="330" cy="220" r="8" fill={c.accent} /><path d="M326.5 220 l2.5 2.5 l4.5 -5" stroke="#0a0a0a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="50" y="200" width="300" height="56" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.10)" />
+      <image href={ptRes('stravaLogo', 'assets/strava.svg')} x="64" y="216" width="24" height="24" />
+      <text x="98" y="232" fontSize="10.5" fill="rgba(255,255,255,0.45)" style={f}>Collez le lien d’une activité Strava</text>
+      <rect x="276" y="210" width="64" height="36" rx="8" fill="#fc4c02" />
+      <text x="308" y="232" textAnchor="middle" fontSize="10.5" fontWeight="600" fill="#fff" style={f}>Importer</text>
     </SiteIllusFrame>
   );
 }
