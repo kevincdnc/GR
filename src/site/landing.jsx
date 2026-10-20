@@ -808,9 +808,9 @@ function SiteStepHead({ i }) {
   const st = SITE_FLOW[i];
   return (
     <div>
-      {/* Même bulle et même police que le stepper de droite */}
-      <span className="w-10 h-10 rounded-full grid place-items-center bg-white text-neutral-900 text-[13.5px] font-semibold tabular-nums shadow-[0_0_0_5px_rgba(255,255,255,0.07)]">{i + 1}</span>
-      <h2 className="mt-4 text-[21px] font-semibold leading-tight tracking-[-0.01em] text-white" style={{ fontFamily: 'var(--ds-font-site)' }}>{st.title}</h2>
+      {/* Bulle discrète, même police que le stepper de droite */}
+      <span className="w-8 h-8 rounded-full grid place-items-center bg-white/[0.06] ring-1 ring-white/20 text-[13px] font-semibold tabular-nums text-neutral-200">{i + 1}</span>
+      <h2 className="mt-3.5 text-[21px] font-semibold leading-tight tracking-[-0.01em] text-white" style={{ fontFamily: 'var(--ds-font-site)' }}>{st.title}</h2>
       <p className="mt-3 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
     </div>
   );
