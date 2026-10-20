@@ -839,9 +839,10 @@ function PrintraceSite() {
      <div className="relative isolate min-h-full overflow-x-clip">
       {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
-        backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)',
+        backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.022) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.022) 1px, transparent 1px)',
         backgroundSize: '32px 32px', backgroundPosition: 'center top',
-        maskImage: 'radial-gradient(90% 60% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 45%, transparent 85%)', WebkitMaskImage: 'radial-gradient(90% 60% at 50% 0%, #000 0%, rgba(0,0,0,0.5) 45%, transparent 85%)' }} />
+        // Grille surtout autour du titre, très discrète, et effacée avant le poster
+        maskImage: 'radial-gradient(80% 42% at 50% 0%, #000 0%, rgba(0,0,0,0.4) 40%, transparent 72%)', WebkitMaskImage: 'radial-gradient(80% 42% at 50% 0%, #000 0%, rgba(0,0,0,0.4) 40%, transparent 72%)' }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
       {/* Fond noir ; seule la zone du poster est éclairée */}
       <div className="relative overflow-x-clip">
