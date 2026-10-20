@@ -808,33 +808,45 @@ function SiteStepHead({ i }) {
   const st = SITE_FLOW[i];
   return (
     <div>
-      <h2 className="flex items-center gap-2.5 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-neutral-200">
-        <span className="tabular-nums text-white">0{i + 1}</span><span className="h-px w-6 bg-white/25" />{st.title}
+      <h2 className="flex items-center gap-3 text-white">
+        <span className="text-[12px] font-semibold tabular-nums tracking-[0.14em] text-neutral-500">0{i + 1}</span>
+        <span aria-hidden="true" className="h-px w-6 bg-white/25" />
+        <span className="font-display font-extrabold tracking-[-0.025em] leading-[1.1] text-[clamp(22px,1.9vw,27px)] whitespace-nowrap">{st.title}</span>
       </h2>
       <p className="mt-3 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
     </div>
   );
 }
-// Progression verticale (à droite du poster), cliquable pour aller à une étape
+// Progression verticale (à droite du poster), cliquable pour aller à une étape :
+// pastilles reliées par un trait qui se remplit, étape active mise en avant
 function SiteStepRail({ step, onGo }) {
   return (
-    <ol className="relative flex flex-col gap-7">
-      <span aria-hidden="true" className="absolute left-[15px] top-4 bottom-4 w-px bg-white/10" />
-      <span aria-hidden="true" className="absolute left-[15px] top-4 w-px bg-white/60 transition-[height] duration-500" style={{ height: `calc((100% - 32px) * ${step / 2})` }} />
-      {SITE_FLOW.map((st, i) => {
-        const on = i === step, done = i < step;
-        return (
-          <li key={st.id}>
-            <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group relative flex items-center gap-3.5 text-left">
-              <span className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12.5px] font-semibold tabular-nums ring-1 transition-colors ${on ? 'bg-white text-neutral-900 ring-white' : done ? 'bg-[#1a1a1a] text-white ring-white/50' : 'bg-[#121212] text-neutral-500 ring-white/15 group-hover:text-white'}`}>
-                {done ? <I.Check size={14} /> : i + 1}
-              </span>
-              <span className={`text-[14px] whitespace-nowrap transition-colors ${on ? 'text-white font-medium' : 'text-neutral-500 group-hover:text-neutral-300'}`}>{st.title}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ol>
+    <nav aria-label="Étapes" className="w-[240px]">
+      <ol className="flex flex-col">
+        {SITE_FLOW.map((st, i) => {
+          const on = i === step, done = i < step, last = i === SITE_FLOW.length - 1;
+          return (
+            <li key={st.id} className="relative">
+              {/* Trait vers l'étape suivante */}
+              {!last && <span aria-hidden="true" className="absolute left-[19px] top-[44px] h-[calc(100%-36px)] w-px bg-white/10 overflow-hidden">
+                <span className="block w-full bg-white/60 transition-[height] duration-500 ease-out" style={{ height: done ? '100%' : '0%' }} />
+              </span>}
+              <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined}
+                className={`group w-full flex items-center gap-3.5 rounded-xl pl-1 pr-3 py-1 text-left transition-colors ${on ? '' : 'hover:bg-white/[0.03]'}`}>
+                <span className={`relative w-[38px] h-[38px] shrink-0 rounded-full grid place-items-center text-[13px] font-semibold tabular-nums transition-all duration-500 ${on ? 'bg-white text-neutral-900 shadow-[0_0_0_5px_rgba(255,255,255,0.07),0_8px_24px_-6px_rgba(255,255,255,0.35)]' : done ? 'bg-white/[0.08] text-white ring-1 ring-white/30' : 'bg-[#121212] text-neutral-500 ring-1 ring-white/12 group-hover:text-neutral-200 group-hover:ring-white/25'}`}>
+                  {done ? <I.Check size={15} /> : i + 1}
+                </span>
+                <span className="min-w-0 py-2">
+                  <span className={`block text-[10.5px] font-semibold uppercase tracking-[0.14em] transition-colors ${on ? 'text-neutral-400' : 'text-neutral-500'}`}>Étape {i + 1}</span>
+                  <span className={`block mt-0.5 text-[14.5px] whitespace-nowrap transition-colors ${on ? 'text-white font-semibold' : done ? 'text-neutral-300' : 'text-neutral-500 group-hover:text-neutral-300'}`}>{st.title}</span>
+                </span>
+              </button>
+              {!last && <span aria-hidden="true" className="block h-6" />}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }
 
@@ -933,7 +945,7 @@ function PrintraceSite() {
       <section aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-12">
         {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
         <div className="contents lg:block lg:w-full lg:max-w-[400px] lg:ml-auto">
-          <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!justify-start lg:!pt-0 ${dim(0)}`}>
+          <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!py-0 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : undefined}>
             <SiteStepHead i={0} />
             <div className="mt-6"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
           </div>
