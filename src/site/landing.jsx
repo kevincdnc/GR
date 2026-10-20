@@ -990,112 +990,6 @@ function SiteInstaWall({ snap }) {
   );
 }
 
-// ---------------------------------------------------------------- contenu SEO
-// Texte de fond de page : usages (requêtes « poster GPX », « poster marathon »…),
-// fonctionnement, formats et FAQ (données structurées FAQPage, rendues au build)
-const SITE_SEO_USES = [
-  { id: 'trek', h: 'Poster de randonnée et de trek', t: 'GR20, Tour du Mont-Blanc, GR34, chemin de Compostelle : réunissez toutes les étapes de votre itinérance sur une seule carte, avec le dénivelé, la distance et le nombre de jours de marche.' },
-  { id: 'marathon', h: 'Poster de marathon et de course', t: 'Marathon de Paris, de Berlin ou de New York, premier semi ou trail : le parcours exact de votre course, votre temps et votre allure, prêts à encadrer à côté de la médaille.' },
-  { id: 'roadtrip', h: 'Carte de road trip personnalisée', t: 'Pacific Coast Highway, Route 66, tour d’Islande ou van life : chaque étape de votre road trip tracée sur la carte, avec vos photos et les villes traversées.' },
-  { id: 'moto', h: 'Poster de road trip moto', t: 'Route des Grandes Alpes, cols pyrénéens, Transfăgărășan : les lacets et les cols de votre virée à moto, l’altitude maximale et les kilomètres parcourus.' },
-  { id: 'gpx', h: 'Poster GPX de vélo, trail ou ski', t: 'Sortie vélo, bikepacking, VTT, ski de randonnée ou tour d’île : n’importe quelle trace GPX, FIT, TCX ou KML devient une affiche personnalisée.' },
-];
-const SITE_FAQ = [
-  ['Quels fichiers puis-je importer ?', 'Les fichiers GPX, FIT, TCX et KML exportés de votre montre GPS ou de votre application (Garmin, Suunto, Coros, Polar, Wahoo…), ainsi que le lien d’une activité Strava ou d’un tour Komoot.'],
-  ['Faut-il un compte Strava ou une montre GPS ?', 'Non. Un simple fichier GPX suffit, quelle que soit sa source. Vous pouvez aussi dessiner votre itinéraire dans Routdoor, notre application de tracés, puis l’envoyer sur Printrace.'],
-  ['Puis-je mettre plusieurs tracés sur un même poster ?', 'Oui. Importez plusieurs fichiers ou activités : les étapes d’un trek ou d’un road trip s’affichent ensemble sur la même carte, avec la distance et le dénivelé cumulés.'],
-  ['Quels formats d’affiche sont disponibles ?', 'A4 (21 × 29,7 cm), A3 (29,7 × 42 cm), A2 (42 × 59,4 cm), 30 × 40 cm et 50 × 70 cm, avec ou sans bordure, et un cadre noir, argent ou bois clair.'],
-  ['Quelle est la qualité d’impression ?', 'Le poster est exporté en haute définition, à 300 dpi (jusqu’à 6 000 pixels sur le grand côté). La carte est vectorielle : le tracé, les routes et les textes restent nets même en grand format.'],
-  ['Puis-je ajouter mes photos et modifier les textes ?', 'Oui. Ajoutez vos photos du voyage, changez le titre, le sous-titre, la couleur du tracé et les informations affichées : distance, dénivelé, durée, allure ou nombre d’étapes.'],
-  ['D’où viennent les cartes ?', 'Les fonds de carte sont dessinés à partir des données OpenStreetMap, en six styles : Plan, Nuit, Satellite, Éditorial, Galerie et Photo.'],
-  ['Puis-je imprimer le poster moi-même ?', 'Oui. Téléchargez le fichier HD pour l’imprimer chez l’imprimeur de votre choix, ou commandez le poster directement depuis l’app Printrace.'],
-];
-
-function SiteSeo({ snap, onPick }) {
-  const sec = 'relative border-t border-white/[0.06] py-20 lg:py-24';
-  const h2 = 'font-display italic font-bold tracking-[-0.02em] text-[clamp(26px,2.8vw,36px)] leading-tight text-white';
-  const faqLd = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: SITE_FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
-  return (
-    <>
-      {/* Usages : un poster pour chaque aventure */}
-      <section aria-labelledby="seo-uses" className={sec} style={snap ? { scrollSnapAlign: 'start' } : undefined}>
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-          <h2 id="seo-uses" className={h2}>Un poster personnalisé pour chaque aventure</h2>
-          <p className="mt-4 max-w-[680px] text-[16px] leading-relaxed text-neutral-400">Printrace transforme votre trace GPS en affiche à encadrer : la carte de votre parcours, son nom, vos chiffres et vos photos. Un souvenir pour votre mur, ou une idée cadeau pour un randonneur, un coureur ou un motard.</p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {SITE_SEO_USES.map((u) => {
-              const c = SITE_CASES.find((x) => x.id === u.id);
-              return (
-                <article key={u.id} className="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.07] p-6 flex flex-col">
-                  <span className="w-8 h-1 rounded-full" style={{ background: c.accent }} />
-                  <h3 className="mt-4 text-[17px] font-semibold text-white">{u.h}</h3>
-                  <p className="mt-2.5 text-[14.5px] leading-relaxed text-neutral-400 flex-1">{u.t}</p>
-                  <button type="button" onClick={() => onPick(u.id)} className="mt-5 self-start text-[13.5px] font-medium text-neutral-300 hover:text-white transition-colors">
-                    Voir l’exemple <span aria-hidden="true">→</span>
-                  </button>
-                </article>
-              );
-            })}
-            <a href={ptLoginUrl()} className="group rounded-2xl p-6 flex flex-col text-white ring-1 ring-inset ring-white/15 shadow-[0_22px_50px_-24px_rgba(37,99,235,0.8)]" style={{ background: 'linear-gradient(160deg, #3b82f6 0%, #1d4ed8 100%)' }}>
-              <h3 className="text-[17px] font-semibold">Et votre aventure à vous ?</h3>
-              <p className="mt-2.5 text-[14.5px] leading-relaxed text-blue-100/85 flex-1">Importez votre trace, personnalisez la carte et recevez votre poster, ou téléchargez-le en haute définition.</p>
-              <span className="mt-5 inline-flex items-center gap-2 text-[14px] font-semibold">Créer mon poster <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">→</span></span>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Fonctionnement, formats et styles */}
-      <section aria-labelledby="seo-how" className={sec} style={snap ? { scrollSnapAlign: 'start' } : undefined}>
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-12 lg:grid-cols-[1.1fr_1fr]">
-          <div>
-            <h2 id="seo-how" className={h2}>Comment transformer un fichier GPX en poster ?</h2>
-            <div className="mt-6 space-y-4 text-[15.5px] leading-[1.75] text-neutral-400 max-w-[600px]">
-              <p><strong className="font-semibold text-neutral-200">Importez votre trace.</strong> Déposez un fichier GPX, FIT, TCX ou KML, ou collez le lien d’une activité Strava ou d’un tour Komoot. Le parcours s’affiche aussitôt sur la carte, avec sa distance, son dénivelé et sa durée.</p>
-              <p><strong className="font-semibold text-neutral-200">Personnalisez la carte.</strong> Choisissez un style, la couleur du tracé, le titre, vos photos et les informations à afficher. Plusieurs tracés peuvent être réunis sur le même poster.</p>
-              <p><strong className="font-semibold text-neutral-200">Imprimez-la.</strong> Choisissez le format, la bordure et le cadre, puis téléchargez le fichier haute définition ou commandez votre affiche.</p>
-            </div>
-          </div>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-px rounded-2xl overflow-hidden ring-1 ring-white/[0.07] bg-white/[0.07] self-start">
-            {[
-              ['Fichiers acceptés', 'GPX · FIT · TCX · KML, Strava, Komoot'],
-              ['Formats', 'A4 · A3 · A2 · 30 × 40 · 50 × 70 cm'],
-              ['Styles de carte', 'Plan · Nuit · Satellite · Éditorial · Galerie · Photo'],
-              ['Finitions', 'Sans bordure, liseré ou marge ; cadre noir, argent ou bois clair'],
-              ['Qualité', 'Fichier HD 300 dpi, carte vectorielle'],
-              ['Données', 'Fonds de carte OpenStreetMap'],
-            ].map(([k, v]) => (
-              <div key={k} className="bg-[#0d0d0e] p-5">
-                <dt className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-neutral-500">{k}</dt>
-                <dd className="mt-2 text-[14.5px] leading-snug text-neutral-200">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section aria-labelledby="seo-faq" className={sec} style={snap ? { scrollSnapAlign: 'start' } : undefined}>
-        <div className="max-w-[860px] mx-auto px-5 sm:px-8">
-          <h2 id="seo-faq" className={h2 + ' text-center'}>Questions fréquentes</h2>
-          <div className="mt-10 divide-y divide-white/[0.07] border-y border-white/[0.07]">
-            {SITE_FAQ.map(([q, a]) => (
-              <details key={q} className="group py-1">
-                <summary className="flex items-center justify-between gap-4 py-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                  <h3 className="text-[16px] font-medium text-neutral-100">{q}</h3>
-                  <span aria-hidden="true" className="shrink-0 w-7 h-7 rounded-full grid place-items-center bg-white/[0.05] text-neutral-400 transition-transform group-open:rotate-45 text-[18px] leading-none">+</span>
-                </summary>
-                <p className="pb-5 pr-10 text-[15px] leading-[1.7] text-neutral-400">{a}</p>
-              </details>
-            ))}
-          </div>
-        </div>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd).replace(/</g, '\\u003c') }} />
-      </section>
-    </>
-  );
-}
-
 // Pied de page : petit logo, liens utiles
 function SiteFooter({ snap }) {
   const root = window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../';
@@ -1350,7 +1244,6 @@ function PrintraceSite() {
       </section>
 
       <SiteInstaWall snap />
-      <SiteSeo snap onPick={(id) => { setCaseId(id); stop(); scroller.current && scroller.current.scrollTo({ top: 0, behavior: 'smooth' }); }} />
       <SiteFooter snap />
      </div>
     </div>
