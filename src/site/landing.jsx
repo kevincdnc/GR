@@ -1005,6 +1005,11 @@ function PrintraceSite() {
           <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
             <SiteStepHead i={1} accent={c.accent} snap={desktop} />
             <div className="mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
+            {/* Le site n'est qu'un aperçu : la personnalisation complète se fait dans l'app */}
+            <a href={siteStudioUrl()} className="group mt-4 flex items-start gap-3 rounded-xl px-1 py-1 text-[13px] leading-relaxed text-neutral-500 hover:text-neutral-300 transition-colors">
+              <I.Info size={15} className="mt-[3px] shrink-0 text-neutral-600 group-hover:text-neutral-400" />
+              <span>Ceci n’est qu’un aperçu. Modèles, fonds de carte, photos, formats : tout se règle dans l’app <span className="font-medium text-neutral-300 group-hover:text-white underline decoration-white/20 underline-offset-[3px] group-hover:decoration-white/60">printrace.app</span> <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">→</span></span>
+            </a>
           </div>
           <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[40vh] ${dim(2)}`}>
             <SiteStepHead i={2} accent={c.accent} snap={desktop} />
