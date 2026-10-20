@@ -622,12 +622,15 @@ function SiteImport({ c }) {
         <div>
           {/* Champ de saisie classique (même hauteur et même bouton que la zone de fichiers).
               Tout le bloc est la zone de clic du champ (label) ; l'anneau de focus est celui du bloc */}
-          <label className={`h-[76px] sm:h-[84px] flex items-center gap-3 pl-4 sm:pl-5 pr-3.5 sm:pr-4 rounded-[20px] cursor-text bg-black/40 ring-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] transition-colors focus-within:bg-black/50 ${error && link ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-2 focus-within:ring-[#fc4c02]/55 focus-within:hover:ring-[#fc4c02]/55'}`}>
+          <label className={`h-[76px] sm:h-[84px] flex items-center gap-3 pl-4 sm:pl-5 pr-3.5 sm:pr-4 rounded-[20px] cursor-text bg-white/[0.03] ring-1 transition-colors hover:bg-white/[0.05] focus-within:bg-white/[0.05] ${error && link ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-2 focus-within:ring-[#fc4c02]/55 focus-within:hover:ring-[#fc4c02]/55'}`}>
             <img src={ptRes('stravaLogo', 'assets/strava.svg')} alt="" width="26" height="26" className="w-6 h-6 sm:w-[26px] sm:h-[26px] rounded-[6px] shrink-0" />
             <input value={link} onChange={(e) => { setLink(e.target.value); setError(''); setStravaRef(null); }} onKeyDown={(e) => { if (e.key === 'Enter') submitStrava(); }}
-              placeholder="Lien d’une activité Strava" aria-label="Lien d'activité Strava" inputMode="url"
-              style={{ outline: 'none' }} className="flex-1 min-w-0 h-full bg-transparent text-[14px] sm:text-[15px] text-white placeholder:text-neutral-500 caret-[#fc4c02]" />
-            <UiButton variant="strava" size="md" className="w-[88px] sm:w-[104px] h-10 rounded-lg px-0 text-[13px] sm:text-[14px] shrink-0 justify-center" loading={stravaBusy} onClick={(e) => { e.preventDefault(); submitStrava(); }}>Importer</UiButton>
+              placeholder="Collez le lien d’une activité Strava" aria-label="Lien d'activité Strava" inputMode="url"
+              style={{ outline: 'none' }} className="flex-1 min-w-0 h-full bg-transparent text-[13.5px] sm:text-[15px] text-white placeholder:text-neutral-500 caret-[#fc4c02]" />
+            {/* Petite flèche d'envoi, alignée sur le bord droit de « Parcourir » */}
+            <UiButton variant="strava" size="md" aria-label="Importer l'activité Strava" title="Importer" className="w-10 h-10 rounded-lg px-0 shrink-0 justify-center" loading={stravaBusy} onClick={(e) => { e.preventDefault(); submitStrava(); }}>
+              {!stravaBusy && <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>}
+            </UiButton>
           </label>
           {stravaRef && (
             <div className="mt-2 text-left rounded-2xl bg-[#fc4c02]/[0.07] ring-1 ring-[#fc4c02]/25 p-4 ds-fade-up">
