@@ -409,7 +409,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children 
   const routes = useSiteMemo(() => (user ? siteUserRoutes(items, c) : siteRoutesOf(c)), [c.id, items]);
   const fmt = POSTER_FORMATS[1]; // A3
   const border = finish.border || sitePosterOf(c, custom.tpl).border || 'none';
-  const framed = finish.frame !== false;
+  const frame = siteFrameOf(finish), framed = frame.id !== 'none';
   useSiteEffect(() => {
     let live = true;
     const same = drawn.current === c.id; // simple retouche : on garde l'image affichée, sans spinner
@@ -440,7 +440,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children 
       <div className="pointer-events-none absolute -inset-x-[90%] -top-[45%] -bottom-[40%] -z-10" style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.095) 40%, rgba(255,255,255,0.045) 62%, rgba(255,255,255,0.015) 82%, rgba(255,255,255,0) 100%)' }} />
       {children}
       {/* Cadre (bois noir, verre) ou poster seul */}
-      <div className={`relative z-10 transition-[padding,background-color,box-shadow] duration-500 ${framed ? 'p-[3.2%] bg-[#151515] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.95),0_20px_40px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08)]' : 'p-0 bg-transparent shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)]'}`} style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
+      <div className={`relative z-10 transition-[padding,box-shadow] duration-500 ${framed ? 'p-[3.2%] shadow-[0_60px_120px_-30px_rgba(0,0,0,0.95),0_20px_40px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.08),inset_0_0_0_1px_rgba(0,0,0,0.25)]' : 'p-0 shadow-[0_40px_90px_-30px_rgba(0,0,0,0.9)]'}`} style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, background: frame.bg || 'transparent' }}>
         <canvas ref={ref} className={`block w-full h-full transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`} style={{ boxShadow: framed ? 'inset 0 2px 6px rgba(0,0,0,0.35)' : 'none' }} />
         {!ready && <div className={`absolute ${framed ? 'inset-[3.2%]' : 'inset-0'} grid place-items-center bg-neutral-900`}><UiSpinner size={20} className="text-neutral-500" /></div>}
         {/* Spot de galerie : lumière qui tombe du haut sur le cadre et la vitre */}
@@ -452,7 +452,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children 
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
       <div className="relative z-10 mt-3 flex justify-center">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300 max-w-full">
-          <I.Poster size={13} /> <span className="truncate">{user ? 'Votre poster' : 'Exemple'} · {title} · A3{framed ? ' encadré' : ''}</span>
+          <I.Poster size={13} /> <span className="truncate">{user ? 'Votre poster' : 'Exemple'} · {title} · A3{framed ? ' · cadre ' + frame.label.toLowerCase() : ''}</span>
         </span>
       </div>
     </div>
@@ -547,34 +547,58 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
 
 // ---------------------------------------------------------------- finition (étape 3)
 const SITE_BORDERS = [{ id: 'none', label: 'Aucune' }, { id: 'fine', label: 'Liseré' }, { id: 'marge', label: 'Marge' }];
-function SiteFinish({ c, tplId, value, onChange, ready, onDownload, onOrder, onImport, opening }) {
+// Cadres : matière de la baguette autour du poster (aperçu)
+const SITE_FRAMES = [
+  { id: 'none', label: 'Sans', swatch: 'transparent' },
+  { id: 'black', label: 'Noir', swatch: '#151515', bg: '#151515' },
+  { id: 'silver', label: 'Argent', swatch: 'linear-gradient(135deg,#eceef1,#9ea4ab 45%,#e3e6e9 70%,#8c9299)', bg: 'linear-gradient(135deg,#e6e8eb 0%,#a4aab1 35%,#dfe2e6 60%,#8f959c 100%)' },
+  { id: 'wood', label: 'Bois clair', swatch: 'linear-gradient(135deg,#e2c79f,#c39a68 50%,#d8b88a)', bg: 'repeating-linear-gradient(100deg,rgba(120,80,40,0.10) 0 2px,transparent 2px 7px),linear-gradient(135deg,#e0c49a 0%,#c79f6d 40%,#dcbd90 70%,#bb8f5c 100%)' },
+];
+const siteFrameOf = (finish) => SITE_FRAMES.find((f) => f.id === (finish.frame === false ? 'none' : finish.frame || 'black')) || SITE_FRAMES[1];
+function SiteFinish({ c, tplId, value, onChange, onOpen, opening, ready }) {
   const border = value.border || sitePosterOf(c, tplId).border || 'none';
-  const framed = value.frame !== false;
+  const frame = siteFrameOf(value);
+  const lbl = 'text-[13px] text-neutral-400';
   return (
     <div>
       <div className="rounded-2xl bg-[#0e0e0e]/70 ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
         <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Finition</span>
         <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="text-[13.5px] text-neutral-300">Bordure</span>
-          <div className="inline-flex rounded-lg bg-white/[0.05] ring-1 ring-white/10 p-0.5" role="radiogroup" aria-label="Bordure">
+          <span className={lbl}>Bordure</span>
+          <div className="inline-flex rounded-lg bg-white/[0.04] ring-1 ring-white/10 p-0.5" role="radiogroup" aria-label="Bordure">
             {SITE_BORDERS.map((x) => (
               <button key={x.id} role="radio" aria-checked={border === x.id} onClick={() => onChange({ ...value, border: x.id })}
-                className={`h-8 px-3 rounded-md text-[13px] font-medium transition-colors ${border === x.id ? 'bg-white text-neutral-900' : 'text-neutral-300 hover:text-white'}`}>{x.label}</button>
+                className={`h-7 px-2.5 rounded-md text-[12.5px] font-medium transition-colors ${border === x.id ? 'bg-white text-neutral-900' : 'text-neutral-400 hover:text-white'}`}>{x.label}</button>
             ))}
           </div>
         </div>
-        <button role="switch" aria-checked={framed} onClick={() => onChange({ ...value, frame: !framed })} className="mt-3.5 w-full flex items-center justify-between gap-3 text-left group">
-          <span className="text-[13.5px] text-neutral-300 group-hover:text-white transition-colors">Cadre bois noir et verre</span>
-          <UiSwitch on={framed} />
-        </button>
+        <div className="mt-3.5">
+          <span className={lbl}>Cadre</span>
+          <div className="mt-2 grid grid-cols-4 gap-1.5" role="radiogroup" aria-label="Cadre">
+            {SITE_FRAMES.map((f) => {
+              const on = frame.id === f.id;
+              return (
+                <button key={f.id} role="radio" aria-checked={on} onClick={() => onChange({ ...value, frame: f.id })}
+                  className={`flex flex-col items-center gap-1.5 rounded-lg py-2 ring-1 transition-colors ${on ? 'bg-white/[0.07] ring-white/35' : 'ring-white/[0.08] hover:bg-white/[0.04]'}`}>
+                  <span className={`w-6 h-6 rounded-[5px] ${f.id === 'none' ? 'ring-1 ring-dashed ring-white/30 border border-dashed border-white/30' : 'ring-1 ring-black/40'}`} style={{ background: f.swatch }} />
+                  <span className={`text-[11.5px] ${on ? 'text-white' : 'text-neutral-500'}`}>{f.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
-      <div className="mt-4 grid grid-cols-1 gap-2.5">
-        <UiButton size="lg" icon="Download" block onClick={ready ? onDownload : onImport} loading={opening === 'download'}>Télécharger en HD</UiButton>
-        <UiButton variant="primary" size="lg" iconRight="ChevronRight" block onClick={ready ? onOrder : onImport} loading={opening === 'order'}>Commander le poster</UiButton>
-      </div>
-      <p className="mt-3 text-[12.5px] text-neutral-500 leading-snug">
-        {ready ? 'Fichier PDF et PNG 300 dpi prêt pour l’imprimeur, ou poster imprimé et livré chez vous.' : 'Importez d’abord votre tracé (étape 1) : l’exemple sert d’aperçu.'}
-      </p>
+      {/* Passage vers le vrai produit : l'app Printrace (connexion puis studio) */}
+      <button onClick={onOpen} disabled={!!opening}
+        className="group mt-4 w-full rounded-2xl bg-white text-neutral-900 pl-5 pr-4 py-4 flex items-center gap-4 text-left shadow-[0_18px_50px_-18px_rgba(255,255,255,0.35)] hover:bg-neutral-100 transition-colors disabled:opacity-70">
+        <span className="flex-1 min-w-0">
+          <span className="block text-[16px] font-semibold leading-tight">Créer mon poster sur Printrace</span>
+          <span className="block mt-1 text-[12.5px] text-neutral-500 leading-snug">{ready ? 'Vos tracés et réglages vous suivent dans l’app.' : 'Fichier HD ou poster livré, dans l’app.'}</span>
+        </span>
+        <span className="w-10 h-10 shrink-0 rounded-full bg-neutral-900 text-white grid place-items-center transition-transform group-hover:translate-x-0.5">
+          {opening ? <UiSpinner size={16} /> : <I.ChevronRight size={18} />}
+        </span>
+      </button>
     </div>
   );
 }
@@ -837,7 +861,7 @@ const SITE_GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmln
 const SITE_FLOW = [
   { id: 'import', title: 'Importez votre tracé', text: 'Fichier GPX, activité Strava ou tour Komoot : votre tracé s’affiche aussitôt sur le poster.' },
   { id: 'custom', title: 'Personnalisez votre poster', text: 'Choisissez le style, la couleur du tracé, vos photos et les infos affichées.' },
-  { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
+  { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis finalisez votre poster dans l’app Printrace.' },
 ];
 // En-tête d'étape : bulle numérotée (comme le stepper de droite), nom de l'étape, puis description
 // Grand chiffre en Mont italique, discret (dégradé gris anthracite), puis nom de l'étape
@@ -1042,7 +1066,7 @@ function PrintraceSite() {
       {/* Étapes à gauche (elles défilent), poster centré sur la page et progression à droite (ils restent à l'écran) */}
       <section aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-12">
         {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
-        <div className="contents lg:block lg:w-full lg:max-w-[400px] lg:ml-auto">
+        <div className="contents lg:block lg:w-full lg:max-w-[360px] lg:ml-auto">
           <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : undefined}>
             <SiteStepHead i={0} accent={c.accent} snap={desktop} />
             <div className="mt-9"><SiteImport c={c} items={items} setItems={setItems} opening={opening === 'custom'} onNext={() => open('custom')} /></div>
@@ -1058,8 +1082,7 @@ function PrintraceSite() {
           </div>
           <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[40vh] ${dim(2)}`}>
             <SiteStepHead i={2} accent={c.accent} snap={desktop} />
-            <div className="mt-9"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
-              onDownload={() => open('download')} onOrder={() => open('order')} onImport={() => goTo(0)} /></div>
+            <div className="mt-9"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening === 'order'} onOpen={() => (items.length ? open('order') : (location.href = ptLoginUrl()))} /></div>
           </div>
         </div>
 
