@@ -810,8 +810,8 @@ function SiteStepHead({ i, accent }) {
   const st = SITE_FLOW[i];
   return (
     <div data-step-head>
-      <span aria-hidden="true" className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[46px] tabular-nums select-none transition-[background-image] duration-500"
-        style={{ fontFamily: 'var(--ds-font-display)', backgroundImage: 'linear-gradient(180deg, #4a4a4a 0%, #262626 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em' }}>
+      <span aria-hidden="true" data-step-num className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[46px] tabular-nums select-none"
+        style={{ fontFamily: 'var(--ds-font-display)', backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em' }}>
         0{i + 1}
       </span>
       <h2 className="mt-3 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[24px] text-white"><span className="sr-only">Étape {i + 1} : </span>{st.title}</h2>
@@ -913,6 +913,28 @@ function PrintraceSite() {
     const stuckTop = sc.getBoundingClientRect().top + (parseFloat(getComputedStyle(po).top) || 0);
     return Math.round(sc.scrollTop + head.getBoundingClientRect().top - stuckTop);
   };
+  // Chiffres d'étape (grand écran) : apparition progressive au scroll, pleine seulement
+  // quand l'en-tête de l'étape atteint le haut du cadre
+  useSiteEffect(() => {
+    const sc = scroller.current;
+    const nums = () => [...sc.querySelectorAll('[data-step-num]')];
+    if (!desktop || !sc) { if (sc) nums().forEach((n) => { n.style.opacity = ''; }); return; }
+    let raf = 0;
+    const paint = () => {
+      raf = 0;
+      const po = posterRef.current; if (!po) return;
+      const top = sc.getBoundingClientRect().top + (parseFloat(getComputedStyle(po).top) || 0);
+      nums().forEach((n) => {
+        const d = Math.abs(n.getBoundingClientRect().top - top);
+        const t = Math.max(0, Math.min(1, 1 - d / 520)); // 0 loin, 1 aligné sur le cadre
+        n.style.opacity = String(t * t * t);
+      });
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(paint); };
+    sc.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll);
+    paint();
+    return () => { sc.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); cancelAnimationFrame(raf); };
+  }, [desktop]);
   // Résistance au scroll (grand écran) : à chaque étape alignée sur le haut du cadre, la molette
   // marque un temps d'arrêt ; il faut insister un peu pour passer à l'étape suivante.
   useSiteEffect(() => {
