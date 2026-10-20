@@ -910,6 +910,111 @@ function SiteStepRail({ step, onGo }) {
 const SITE_POSTER_W = 'max(340px, min(480px, calc((100vh - 120px) / 1.48), calc(100vw - 880px)))';
 const SITE_POSTER_H = `calc(${SITE_POSTER_W} * 1.414 + 48px)`; // cadre A3 + étiquette
 const SITE_POSTER_TOP = `max(20px, calc((100vh - ${SITE_POSTER_H}) / 2))`;
+// ---------------------------------------------------------------- posts Instagram
+// Banderole de posts : posters Printrace mis en scène chez soi (images générées par
+// scripts/insta/, comptes fictifs). Défilement continu, en pause au survol.
+const SITE_POSTS = [
+  { id: 'siteInsta1', user: 'camille.roadtrip', place: 'Lyon', likes: 1284, text: 'Pacific Coast Highway au-dessus du canapé. 6 étapes, 750 km de souvenirs', tags: '#roadtrip #printrace' },
+  { id: 'siteInsta2', user: 'thomas.court', place: 'Paris', likes: 862, text: 'Premier marathon, 3 h 42. La médaille a trouvé sa place', tags: '#marathondeparis #printrace' },
+  { id: 'siteInsta3', user: 'julie.en.montagne', place: 'Annecy', likes: 2107, text: '16 jours sur le GR20, au-dessus du lit pour ne jamais oublier', tags: '#gr20 #trek' },
+  { id: 'siteInsta4', user: 'max.bikerlife', place: 'Grenoble', likes: 1530, text: 'Route des Grandes Alpes, 16 cols. Le garage a enfin sa déco', tags: '#moto #grandesalpes' },
+  { id: 'siteInsta5', user: 'lea.bretagne', place: 'Brest', likes: 974, text: 'Le tour de Ouessant, avec la Jument en fond. Mon GPX préféré', tags: '#ouessant #gpx' },
+  { id: 'siteInsta6', user: 'antoine.rando', place: 'Bordeaux', likes: 618, text: 'Version éditoriale pour le bureau, avec mes deux photos du GR20', tags: '#gr20 #printrace' },
+  { id: 'siteInsta7', user: 'sarah.voyage', place: 'Nantes', likes: 1419, text: 'Déballage ! Le poster est arrivé, cadre noyer', tags: '#unboxing #roadtrip' },
+  { id: 'siteInsta8', user: 'hugo.runs', place: 'Lille', likes: 733, text: 'Marathon de Paris, au café du quartier', tags: '#running #printrace' },
+  { id: 'siteInsta9', user: 'nico.twinroads', place: 'Chambéry', likes: 1198, text: 'Les Grandes Alpes, cadre chêne, au-dessus du fauteuil', tags: '#motortrip #printrace' },
+].map((x, i) => ({ ...x, src: ptRes(x.id, 'assets/site/insta/post-' + (i + 1) + '.webp') }));
+
+function SiteInstaIcon({ d, size = 22, fill }) {
+  return <svg viewBox="0 0 24 24" width={size} height={size} fill={fill || 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
+}
+const SITE_IG = {
+  heart: <path d="M12 20s-7.5-4.6-9.2-9.3C1.7 7.5 3.8 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.2 0 5.3 3 4.2 6.2C19.5 15.4 12 20 12 20z" />,
+  comment: <path d="M20.5 11.5a8.5 8.5 0 0 1-12.6 7.4L3.5 20l1.2-4.2A8.5 8.5 0 1 1 20.5 11.5z" />,
+  send: <><path d="M21.5 3 10 14.5" /><path d="M21.5 3 14.5 21l-4.5-6.5L3 10z" /></>,
+  save: <path d="M18.5 21 12 16.5 5.5 21V4.5a1.5 1.5 0 0 1 1.5-1.5h10a1.5 1.5 0 0 1 1.5 1.5z" />,
+  logo: <><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.3" cy="6.7" r="0.6" fill="currentColor" /></>,
+};
+
+function SiteInstaPost({ post, i }) {
+  return (
+    <figure className="w-[272px] sm:w-[300px] shrink-0 rounded-2xl bg-[#121213] ring-1 ring-white/[0.07] overflow-hidden text-left">
+      <figcaption className="flex items-center gap-2.5 px-3 h-12">
+        <span className="rounded-full p-[2px]" style={{ background: 'linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7)' }}><span className="block rounded-full ring-2 ring-[#121213]"><SiteAvatar i={i} /></span></span>
+        <span className="min-w-0 leading-tight">
+          <span className="block text-[13px] font-semibold text-white truncate">{post.user}</span>
+          <span className="block text-[11px] text-neutral-500 truncate">{post.place}</span>
+        </span>
+        <span className="ml-auto text-neutral-500 text-[18px] leading-none tracking-widest" aria-hidden="true">···</span>
+      </figcaption>
+      <img src={post.src} alt={'Poster Printrace : ' + post.text} loading="lazy" decoding="async" width="640" height="800" className="block w-full aspect-[4/5] object-cover bg-neutral-900" />
+      <div className="px-3 pt-2.5 pb-3.5">
+        <div className="flex items-center gap-3.5 text-neutral-200">
+          <span className="text-[#ff3b5c]"><SiteInstaIcon d={SITE_IG.heart} fill="currentColor" /></span>
+          <SiteInstaIcon d={SITE_IG.comment} /><SiteInstaIcon d={SITE_IG.send} />
+          <span className="ml-auto"><SiteInstaIcon d={SITE_IG.save} /></span>
+        </div>
+        <p className="mt-2 text-[12.5px] font-semibold text-white">{String(post.likes).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')} J’aime</p>
+        <p className="mt-1 text-[12.5px] leading-snug text-neutral-300 line-clamp-2"><span className="font-semibold text-white">{post.user}</span> {post.text} <span className="text-[#7fa8ff]">{post.tags}</span></p>
+      </div>
+    </figure>
+  );
+}
+
+function SiteInstaWall({ snap }) {
+  // Deux fois la liste à la suite : la boucle reprend sans saut à mi-parcours
+  const row = SITE_POSTS.concat(SITE_POSTS);
+  return (
+    <section aria-label="Les posters Printrace sur Instagram" className="relative py-20 lg:py-28 border-t border-white/[0.06]" style={snap ? { scrollSnapAlign: 'start' } : undefined}>
+      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 text-center">
+        <h2 className="font-display italic font-bold tracking-[-0.02em] text-[clamp(28px,3.2vw,42px)] leading-tight">Vos aventures, au mur</h2>
+        <p className="mt-4 text-[16px] leading-relaxed text-neutral-400 max-w-[520px] mx-auto">Du canapé au garage, ils ont imprimé leur tracé. Partagez le vôtre avec <span className="text-white font-medium">#printrace</span>.</p>
+      </div>
+      <div className="site-marquee relative mt-12 overflow-hidden" style={{ maskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)', WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)' }}>
+        <div className="site-marquee-track flex w-max gap-5">
+          {row.map((post, i) => <div key={i} aria-hidden={i >= SITE_POSTS.length ? 'true' : undefined}><SiteInstaPost post={post} i={i % SITE_POSTS.length} /></div>)}
+        </div>
+      </div>
+      <div className="mt-10 flex justify-center">
+        <a href="https://www.instagram.com/" target="_blank" rel="noopener" className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-white/[0.06] ring-1 ring-white/10 text-[14px] font-medium text-neutral-200 hover:bg-white/[0.1] hover:text-white transition-colors">
+          <SiteInstaIcon d={SITE_IG.logo} size={18} /> Suivre @printrace
+        </a>
+      </div>
+    </section>
+  );
+}
+
+// Pied de page : petit logo, liens utiles
+function SiteFooter({ snap }) {
+  const root = window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../';
+  const cols = [
+    ['Produit', [['Créer mon poster', ptLoginUrl()], ['Se connecter', ptLoginUrl()], ['Routdoor, l’app de tracés', root + 'routdoor/']]],
+    ['Suivre', [['Instagram', 'https://www.instagram.com/']]],
+  ];
+  return (
+    <footer className="relative border-t border-white/[0.06]" style={snap ? { scrollSnapAlign: 'end' } : undefined}>
+      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 py-14 grid gap-10 sm:grid-cols-[2fr_repeat(2,minmax(0,1fr))]">
+        <div>
+          <a href="./" aria-label="Printrace" className="inline-block text-white opacity-90 hover:opacity-100"><UiPrintraceLogo height={20} /></a>
+          <p className="mt-3 text-[13.5px] leading-relaxed text-neutral-500 max-w-[260px]">Vos tracés GPX, Strava et Komoot, imprimés en posters prêts à encadrer.</p>
+        </div>
+        {cols.map(([t, links]) => (
+          <nav key={t} aria-label={t}>
+            <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-neutral-500">{t}</p>
+            <ul className="mt-3.5 space-y-2.5">
+              {links.map(([l, h]) => <li key={l}><a href={h} {...(/^https?:/.test(h) ? { target: '_blank', rel: 'noopener' } : {})} className="text-[14px] text-neutral-400 hover:text-white transition-colors">{l}</a></li>)}
+            </ul>
+          </nav>
+        ))}
+      </div>
+      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 py-6 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-neutral-600">
+        <span>© {new Date().getFullYear()} Printrace</span>
+        <span>Fonds de carte © contributeurs OpenStreetMap</span>
+      </div>
+    </footer>
+  );
+}
+
 function PrintraceSite() {
   const [caseId, setCaseId] = useSiteState(SITE_CASES[0].id);
   const [auto, setAuto] = useSiteState(true); // défilement des cas d'usage tant qu'on n'a pas choisi
@@ -1127,6 +1232,9 @@ function PrintraceSite() {
           <SiteStepRail step={step} onGo={goTo} />
         </div>
       </section>
+
+      <SiteInstaWall snap={desktop} />
+      <SiteFooter snap={desktop} />
      </div>
     </div>
   );

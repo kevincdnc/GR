@@ -51,6 +51,15 @@
 <meta name="ext-resource-dependency" content="assets/site/moto-1.webp" data-resource-id="siteMoto1" />
 <meta name="ext-resource-dependency" content="assets/site/roadtrip-1.webp" data-resource-id="siteRoad1" />
 <meta name="ext-resource-dependency" content="assets/site/gpx-1.webp" data-resource-id="siteGpx1" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-1.webp" data-resource-id="siteInsta1" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-2.webp" data-resource-id="siteInsta2" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-3.webp" data-resource-id="siteInsta3" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-4.webp" data-resource-id="siteInsta4" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-5.webp" data-resource-id="siteInsta5" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-6.webp" data-resource-id="siteInsta6" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-7.webp" data-resource-id="siteInsta7" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-8.webp" data-resource-id="siteInsta8" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-9.webp" data-resource-id="siteInsta9" />
 
 <script>
   // Relais Strava (workers/strava) : vide = parcours guidé (export du GPX puis dépôt)
@@ -71,6 +80,11 @@
   .site-bar-fill { width: 100%; border-radius: 99px; transform: scaleX(0); transform-origin: left; will-change: transform; animation: siteFill linear 1 forwards; }
   @keyframes siteFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
   @media (prefers-reduced-motion: reduce) { .site-bar-fill { animation: none; transform: none; opacity: .6; } }
+  /* Banderole Instagram : défilement continu (transform seulement), pause au survol */
+  .site-marquee-track { animation: siteMarquee 70s linear infinite; will-change: transform; }
+  .site-marquee:hover .site-marquee-track { animation-play-state: paused; }
+  @keyframes siteMarquee { to { transform: translateX(calc(-50% - 10px)); } }
+  @media (prefers-reduced-motion: reduce) { .site-marquee { overflow-x: auto; } .site-marquee-track { animation: none; } }
 </style>
 <link rel="stylesheet" href="tailwind.css" />
 </head>
