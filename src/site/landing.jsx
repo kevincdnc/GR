@@ -414,11 +414,13 @@ function SiteCustomize({ c, value, onChange }) {
     <div data-drag-handle className="group/drag rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4 lg:cursor-grab">
       <div className="flex items-center justify-between h-6">
         <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Personnalisez</span>
-        {/* Poignée : n'apparaît qu'au survol, sur grand écran (le bloc se déplace) */}
-        <span aria-hidden="true" className="hidden lg:grid grid-cols-3 gap-[3px] ml-2 mr-auto opacity-0 group-hover/drag:opacity-60 transition-opacity">
-          {[0, 1, 2, 3, 4, 5].map((k) => <span key={k} className="w-[3px] h-[3px] rounded-full bg-neutral-400" />)}
+        <span className="flex items-center gap-3">
+          {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
+          {/* Poignée verticale en bout de ligne, sur grand écran (le bloc se déplace) */}
+          <span aria-hidden="true" className="hidden lg:grid grid-cols-2 gap-[3px] opacity-40 group-hover/drag:opacity-80 transition-opacity">
+            {[0, 1, 2, 3, 4, 5].map((k) => <span key={k} className="w-[3px] h-[3px] rounded-full bg-neutral-400" />)}
+          </span>
         </span>
-        {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
       </div>
       <label className="block mt-3">
         <span className="sr-only">Nom du trip</span>
