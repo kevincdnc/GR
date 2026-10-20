@@ -1198,8 +1198,7 @@ function PrintraceSite() {
           </div>
           <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
             <SiteStepHead i={1} accent={c.accent} snap={desktop} />
-            {/* Réglages en retrait tant qu'on ne les survole pas (ou qu'on n'y saisit rien) */}
-            <div className="mt-9 lg:opacity-60 lg:hover:opacity-100 lg:focus-within:opacity-100 transition-opacity duration-300"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
+            <div className="mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
             {/* Le site n'est qu'un aperçu : la personnalisation complète se fait dans l'app */}
             <a href={ptLoginUrl()} className="group mt-4 flex items-start gap-3 rounded-xl px-1 py-1 text-[13px] leading-relaxed text-neutral-500 hover:text-neutral-300 transition-colors">
               <I.Info size={15} className="mt-[3px] shrink-0 text-neutral-600 group-hover:text-neutral-400" />
