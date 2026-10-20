@@ -538,6 +538,7 @@ function SiteImport({ c }) {
     const ok = res.filter((r) => r && r.st && r.st.coords && r.st.coords.length > 1);
     setBusy(false);
     if (!ok.length) { setError('Impossible de lire ce fichier.'); return; }
+    setLastSource(source === 'strava' ? 'strava' : 'file');
     if (ok.length < files.length) setError(`${files.length - ok.length} fichier(s) illisible(s) ignoré(s).`);
     setItems((prev) => {
       const same = (a, b) => a.name === b.name && Math.abs((a.st.distanceKm || 0) - (b.st.distanceKm || 0)) < 0.01;
@@ -568,8 +569,16 @@ function SiteImport({ c }) {
   };
   // Provenance du prochain fichier choisi : le GPX téléchargé depuis Strava rejoint la liste Strava
   const pickSource = useSiteRef(undefined);
+  // « Créer ma carte » suit le dernier import : sous la liste des fichiers ou sous celle de Strava
+  const [lastSource, setLastSource] = useSiteState('file');
   const pick = (source) => { pickSource.current = source; if (fileRef.current) fileRef.current.click(); };
   const fileItems = items.filter((x) => x.source !== 'strava'), stravaItems = items.filter((x) => x.source === 'strava');
+  const ctaUnder = (lastSource === 'strava' ? stravaItems : fileItems).length ? lastSource : stravaItems.length ? 'strava' : 'file';
+  const cta = (where) => items.length > 0 && ctaUnder === where && (
+    <UiButton variant="primary" size="lg" block iconRight="ChevronRight" loading={opening} onClick={createMap} className="mt-3 ds-fade-up">
+      Créer ma carte{items.length > 1 ? ` · ${items.length} tracés, ${ptKm(total)}` : ''}
+    </UiButton>
+  );
   // Liste de tracés ajoutés, affichée sous le champ d'où ils viennent
   const list = (xs) => xs.length > 0 && (
     <ul className="mt-2 rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] divide-y divide-white/[0.06] overflow-hidden ds-fade-up">
@@ -608,6 +617,7 @@ function SiteImport({ c }) {
             {!busy && <span className="shrink-0 h-10 px-3.5 rounded-lg grid place-items-center text-[13px] font-medium text-neutral-200 bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors">Parcourir</span>}
           </button>
           {list(fileItems)}
+          {cta('file')}
         </div>
         <div>
           <div className={`h-16 flex items-center gap-3 rounded-2xl bg-white/[0.05] ring-1 pl-5 pr-2 transition-colors focus-within:bg-white/[0.08] ${error && link ? 'ring-red-400/60' : 'ring-white/10 focus-within:ring-white/30'}`}>
@@ -634,18 +644,11 @@ function SiteImport({ c }) {
             </div>
           )}
           {list(stravaItems)}
+          {cta('strava')}
         </div>
       </div>
       {error && <p className="mt-2.5 text-[13px] text-red-300">{error}</p>}
 
-      {/* Création de la carte avec tous les tracés ajoutés */}
-      {items.length > 0 && (
-        <div className="mt-4 ds-fade-up">
-          <UiButton variant="primary" size="lg" block iconRight="ChevronRight" loading={opening} onClick={createMap}>
-            Créer ma carte{items.length > 1 ? ` · ${items.length} tracés, ${ptKm(total)}` : ''}
-          </UiButton>
-        </div>
-      )}
 
     </div>
   );
