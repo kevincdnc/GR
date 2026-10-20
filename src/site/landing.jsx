@@ -800,16 +800,16 @@ const SITE_GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmln
 // l'étape au centre de l'écran est mise en avant, les autres s'estompent.
 const SITE_FLOW = [
   { id: 'import', title: 'Importez votre tracé', text: 'Fichier GPX, activité Strava ou tour Komoot : votre tracé s’affiche aussitôt sur le poster.' },
-  { id: 'custom', title: 'Personnalisez votre carte', text: 'Choisissez le style, la couleur du tracé, vos photos et les infos affichées.' },
+  { id: 'custom', title: 'Personnalisez votre poster', text: 'Choisissez le style, la couleur du tracé, vos photos et les infos affichées.' },
   { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
 // En-tête d'étape : bulle numérotée (comme le stepper de droite), nom de l'étape, puis description
 // Grand chiffre en Mont italique, discret (dégradé gris anthracite), puis nom de l'étape
 // en Mont italique, puis description
-function SiteStepHead({ i, accent }) {
+function SiteStepHead({ i, accent, snap }) {
   const st = SITE_FLOW[i];
   return (
-    <div data-step-head>
+    <div data-step-head style={snap ? { scrollSnapAlign: 'start', scrollSnapStop: 'always', scrollMarginTop: SITE_POSTER_TOP } : undefined}>
       <span aria-hidden="true" data-step-num className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[46px] tabular-nums select-none"
         style={{ fontFamily: 'var(--ds-font-display)', backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em' }}>
         0{i + 1}
@@ -932,68 +932,14 @@ function PrintraceSite() {
       }
       nums().forEach((n) => {
         const d = Math.abs(n.getBoundingClientRect().top - top);
-        const t = Math.max(0, Math.min(1, 1 - d / 520)); // 0 loin, 1 aligné sur le cadre
-        n.style.opacity = String(t * t * t);
+        const t = Math.max(0, Math.min(1, 1 - (d - 160) / 460)); // 1 dès 160 px du cadre
+        n.style.opacity = String(t * t);
       });
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(paint); };
     sc.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll);
     paint();
     return () => { sc.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); cancelAnimationFrame(raf); };
-  }, [desktop]);
-  // Arrêts de scroll (grand écran) : quand le chiffre d'une étape arrive sur le haut du cadre,
-  // le scroll s'arrête net et reste bloqué tant que le geste continue (molette qui tourne,
-  // élan du trackpad). Il faut marquer une pause puis refaire un geste pour passer à la suite.
-  // Clavier (flèches, page, espace) : d'étape en étape.
-  useSiteEffect(() => {
-    const sc = scroller.current;
-    if (!desktop || !sc) return;
-    const MIN_LOCK = 700;  // durée minimale de l'arrêt (ms)
-    const PAUSE = 220;     // pause sans geste nécessaire pour déverrouiller (ms)
-    const HOLD = 120;      // puis « force » du nouveau geste pour repartir (px)
-    let holdAt = null, lockedAt = 0, lastT = 0, released = false, held = 0;
-    const snaps = () => {
-      const max = sc.scrollHeight - sc.clientHeight;
-      return [0, 1, 2].map(snapFor).filter((v) => v != null && v > 0 && v <= max);
-    };
-    const stopAt = (v) => { sc.scrollTop = v; holdAt = v; lockedAt = performance.now(); released = false; held = 0; };
-    const onWheel = (e) => {
-      if (e.ctrlKey || (e.target.closest && e.target.closest('[role="listbox"]'))) return;
-      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? sc.clientHeight : 1);
-      if (!dy) return;
-      const now = performance.now(), gap = now - lastT, y = sc.scrollTop;
-      lastT = now;
-      if (holdAt != null && Math.abs(y - holdAt) < 3) {
-        if (!released) {
-          // déverrouillage seulement après l'arrêt minimal ET une pause dans le geste
-          if (now - lockedAt >= MIN_LOCK && gap >= PAUSE) released = true;
-          else { e.preventDefault(); return; }
-        }
-        held += dy;
-        if (Math.abs(held) < HOLD) { e.preventDefault(); return; }
-        holdAt = null; return; // repart
-      }
-      holdAt = null;
-      const next = y + dy, ss = snaps();
-      const hit = dy > 0 ? ss.filter((v) => v > y + 1 && v <= next).sort((a, b) => a - b)[0]
-                         : ss.filter((v) => v < y - 1 && v >= next).sort((a, b) => b - a)[0];
-      if (hit != null) { e.preventDefault(); stopAt(hit); }
-    };
-    const onKey = (e) => {
-      if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
-      const down = ['ArrowDown', 'PageDown'].includes(e.key) || (e.key === ' ' && !e.shiftKey);
-      const up = ['ArrowUp', 'PageUp'].includes(e.key) || (e.key === ' ' && e.shiftKey);
-      if (!down && !up) return;
-      const y = sc.scrollTop, ss = snaps();
-      const t = down ? ss.find((v) => v > y + 2) : [...ss].reverse().find((v) => v < y - 2);
-      if (t == null || Math.abs(t - y) > sc.clientHeight * 1.2) return;
-      e.preventDefault(); holdAt = t; lockedAt = performance.now(); released = false; held = 0;
-      sc.scrollTo({ top: t, behavior: 'smooth' });
-    };
-    // capture : passe avant tout autre gestionnaire ; non passif pour pouvoir bloquer
-    window.addEventListener('wheel', onWheel, { passive: false, capture: true });
-    window.addEventListener('keydown', onKey);
-    return () => { window.removeEventListener('wheel', onWheel, { capture: true }); window.removeEventListener('keydown', onKey); };
   }, [desktop]);
   const goTo = (i) => {
     const el = stepRefs[i].current, sc = scroller.current; if (!el || !sc) return;
@@ -1013,14 +959,16 @@ function PrintraceSite() {
   // Mise en avant : étape active nette, les autres estompées (cliquables pour y aller)
   const dim = (i) => (desktop && step !== i ? 'lg:opacity-30 lg:hover:opacity-55 lg:cursor-pointer lg:scale-[0.98]' : 'opacity-100');
   // Chaque étape occupe un écran ; son contenu est centré à hauteur du poster
-  const stepBox = 'relative flex flex-col justify-center lg:min-h-[72vh] lg:py-12 origin-left transition-[opacity,transform] duration-500 ease-out';
+  const stepBox = 'relative flex flex-col justify-center lg:min-h-screen lg:py-12 origin-left transition-[opacity,transform] duration-500 ease-out';
   const stepProps = (i) => ({
     ref: stepRefs[i], 'data-step': i,
     onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); } : undefined,
   });
 
+  // Grand écran : défilement par sections (scroll-snap natif) — le haut de page, puis chaque
+  // étape, dont le chiffre se cale sur le haut du cadre ; une section à la fois
   return (
-    <div ref={scroller} className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white">
+    <div ref={scroller} className="h-full overflow-y-auto sb-scroll font-site bg-[#0a0a0a] text-white" style={desktop ? { scrollSnapType: 'y mandatory' } : undefined}>
      <div className="relative isolate min-h-full overflow-x-clip">
       {/* Fond : grille fine qui s'estompe vers le bas et les bords + grain léger contre le banding */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{
@@ -1031,7 +979,7 @@ function PrintraceSite() {
         WebkitMaskImage: 'linear-gradient(to bottom, #000 0, rgba(0,0,0,0.75) 160px, rgba(0,0,0,0.3) 340px, transparent 480px), radial-gradient(75% 100% at 50% 0%, #000 40%, transparent 100%)',
         maskComposite: 'intersect', WebkitMaskComposite: 'source-in' }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" style={{ backgroundImage: SITE_GRAIN }} />
-      <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
+      <nav className="relative z-20 max-w-[1240px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between" style={desktop ? { scrollSnapAlign: 'start' } : undefined}>
         <a href="./" aria-label="Printrace" className="text-white"><UiPrintraceLogo height={29} /></a>
         <SiteProof />
       </nav>
@@ -1051,15 +999,15 @@ function PrintraceSite() {
         {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
         <div className="contents lg:block lg:w-full lg:max-w-[400px] lg:ml-auto">
           <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : undefined}>
-            <SiteStepHead i={0} accent={c.accent} />
+            <SiteStepHead i={0} accent={c.accent} snap={desktop} />
             <div className="mt-9"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
           </div>
           <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
-            <SiteStepHead i={1} accent={c.accent} />
+            <SiteStepHead i={1} accent={c.accent} snap={desktop} />
             <div className="mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
           </div>
           <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[40vh] ${dim(2)}`}>
-            <SiteStepHead i={2} accent={c.accent} />
+            <SiteStepHead i={2} accent={c.accent} snap={desktop} />
             <div className="mt-9"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
               onDownload={() => open('download')} onOrder={() => open('order')} onImport={() => goTo(0)} /></div>
           </div>
