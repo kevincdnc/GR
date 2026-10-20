@@ -44,7 +44,7 @@ const SITE_CASES = [
       // GR20 (Corse, Calenzana → Conca) : 16 étapes de refuge en refuge, tracées par
       // les refuges et les cols du parcours ; chiffres officiels affichés
       tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR20 ⚪️🔴', subtitle: 'Calenzana → Conca · Corse',
-      metrics: ['distance', 'ascent', 'duration', 'stages', 'start'], values: { distance: '180 km', ascent: '12 000 m', duration: '16 jours' }, photos: 2,
+      metrics: ['distance', 'ascent', 'duration', 'stages', 'start'], values: { distance: '180 km', ascent: '12 000 m', duration: '82 h' }, photos: 2,
       route: { name: 'GR20', seed: 11, rough: 0.16, depth: 5 },
       stages: [
         ['Calenzana', 'Ortu di u Piobbu', [[42.5086, 8.8549, 275], [42.5010, 8.8650, 640], [42.4915, 8.8830, 1250], [42.4800, 8.8930, 1480], [42.4730, 8.9020, 1570]]],
@@ -84,7 +84,7 @@ const SITE_CASES = [
     pitch: 'Toutes les étapes de votre road trip, réunies sur un seul poster.',
     poster: {
       tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Pacific Coast Hwy', subtitle: 'San Francisco → Los Angeles',
-      metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '7 jours' }, photos: 2,
+      metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '11 h 30' }, photos: 2,
       route: { name: 'Pacific Coast Highway', seed: 3, rough: 0.14, depth: 5, way: [[37.7749, -122.4194, 20], [37.50, -122.47, 30], [37.25, -122.40, 40], [36.97, -122.03, 10], [36.60, -121.89, 20], [36.27, -121.81, 200], [35.95, -121.48, 300], [35.66, -121.25, 80], [35.37, -120.85, 20], [35.28, -120.66, 70], [34.95, -120.43, 100], [34.42, -119.70, 15], [34.27, -119.23, 10], [34.03, -118.78, 20], [34.05, -118.24, 90]] },
     },
     unsplash: ['big sur highway coast', 'desert road trip'],
@@ -95,7 +95,7 @@ const SITE_CASES = [
     pitch: 'Chaque col et chaque virage de votre virée, au mur.',
     poster: {
       tpl: 'nuit', color: '#ffffff', mapStyle: 'routes', mapOpacity: 100, title: 'Route des Grandes Alpes', subtitle: 'Thonon → Menton · 16 cols',
-      metrics: ['distance', 'altMax', 'duration'], values: { distance: '720 km', altMax: '2 802 m', duration: '5 jours' },
+      metrics: ['distance', 'altMax', 'duration'], values: { distance: '720 km', altMax: '2 802 m', duration: '14 h' },
       route: { name: 'Route des Grandes Alpes', seed: 9, rough: 0.2, way: [[46.37, 6.48, 380], [46.20, 6.55, 900], [45.99, 6.47, 1613], [45.87, 6.47, 1486], [45.69, 6.69, 1967], [45.55, 6.88, 800], [45.42, 7.03, 2764], [45.24, 6.68, 1100], [45.06, 6.41, 2642], [44.89, 6.64, 1300], [44.82, 6.73, 2360], [44.62, 6.75, 1100], [44.39, 6.65, 1132], [44.32, 6.81, 2802], [44.10, 7.10, 900], [43.90, 7.35, 500], [43.77, 7.50, 10]] },
     },
     unsplash: ['motorcycle mountain pass', 'alps hairpin road'],
@@ -128,6 +128,27 @@ function siteRoutesOf(c) {
   const r = c.poster.route;
   return [{ ...base, id: 'demo_' + c.id, name: r.name, coords: siteTrace(r.way, r), distance: 0, ascent: 0, descent: 0, durationMin: 0, altMax: null }];
 }
+// Styles proposés à l'étape 2 : celui du cas d'usage, puis Plan, Nuit, Éditorial (3 au total)
+function siteStyles(c) {
+  return [...new Set([c.poster.tpl, 'blueprint', 'nuit', 'relief'])].slice(0, 3)
+    .map((id) => POSTER_TEMPLATES.find((t) => t.id === id)).filter(Boolean);
+}
+// Réglages du poster pour le style choisi : ceux du cas d'usage, ou les réglages recommandés du modèle
+function sitePosterOf(c, tplId) {
+  const p = c.poster;
+  if (!tplId || tplId === p.tpl) return p;
+  const t = POSTER_TEMPLATES.find((x) => x.id === tplId), r = (t && t.rec) || {};
+  return { ...p, tpl: tplId, color: (r.colors || ['#ffffff'])[0], mapStyle: r.mapStyle || p.mapStyle, mapOpacity: r.mapOpacity != null ? r.mapOpacity : p.mapOpacity,
+    bg: r.bg || null, border: 'none', marginColor: null, typeScale: null, photoShade: null, bgPhoto: false, photos: p.photos || (p.bgPhoto ? 1 : 0) };
+}
+// Infos affichées : interrupteurs « infos », « nombre d'étapes », « durée »
+function siteMetrics(p, o = {}) {
+  if (o.info === false) return [];
+  let keys = p.metrics.slice();
+  const toggle = (k, on, at) => { const has = keys.includes(k); if (on === false && has) keys = keys.filter((x) => x !== k); if (on === true && !has) keys.splice(Math.min(at, keys.length), 0, k); };
+  toggle('stages', o.stages, 3); toggle('duration', o.duration, 2);
+  return keys;
+}
 // Tracés importés par le visiteur -> tracés du poster (affichés à la place de l'exemple)
 const siteItemLabel = (x) => (x.st.to ? x.st.from + ' → ' + x.st.to : x.st.from) || x.name.replace(/\.[^.]+$/, '');
 function siteUserRoutes(items, c) {
@@ -149,11 +170,11 @@ function siteUserSubtitle(items) {
 }
 // o : personnalisation (nom du trip, couleur du tracé, photos) ; o.items : tracés du visiteur
 function sitePosterData(c, routes, photos = [], o = {}) {
-  const p = c.poster, act = poActivity(c.activity);
+  const p = sitePosterOf(c, o.tpl), act = poActivity(c.activity);
   const user = !!(o.items && o.items.length);
   if ((o.photos === false || user) && !p.bgPhoto) photos = [];
   const agg = poAggregate(routes, act);
-  const stats = poStats(agg, p.metrics, { activity: act.label, start: routes[0].coords[0] })
+  const stats = poStats(agg, siteMetrics(p, o), { activity: act.label, start: routes[0].coords[0] })
     .map((st) => (!user && p.values[st.key] ? { ...st, value: p.values[st.key], unit: '' } : st));
   return {
     routes, agg, color: o.color || p.color, coords: true, activityLabel: act.label, title: (o.title || '').trim() || siteDefaultTitle(c, o.items), subtitle: user ? siteUserSubtitle(o.items) || act.label : p.subtitle, stats,
@@ -370,7 +391,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children 
   const user = items.length > 0;
   const routes = useSiteMemo(() => (user ? siteUserRoutes(items, c) : siteRoutesOf(c)), [c.id, items]);
   const fmt = POSTER_FORMATS[1]; // A3
-  const border = finish.border || c.poster.border || 'none';
+  const border = finish.border || sitePosterOf(c, custom.tpl).border || 'none';
   const framed = finish.frame !== false;
   useSiteEffect(() => {
     let live = true;
@@ -381,7 +402,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children 
       if (same) await new Promise((r) => setTimeout(r, 140)); // saisie du nom : un rendu quand on s'arrête de taper
       await storyFontsReady({ vintage: false }); // modèles du site : pas d'italique « ancienne carte »
       const cv = ref.current; if (!cv || !live) return;
-      const tpl = POSTER_TEMPLATES.find((t) => t.id === c.poster.tpl) || POSTER_TEMPLATES[0];
+      const tpl = POSTER_TEMPLATES.find((t) => t.id === sitePosterOf(c, custom.tpl).tpl) || POSTER_TEMPLATES[0];
       const w = 900, h = Math.round(w * fmt.mm[1] / fmt.mm[0]);
       const ph = await sitePosterPhotos(c, photos);
       if (!live) return;
@@ -394,7 +415,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, children 
       setReady(true);
     })();
     return () => { live = false; };
-  }, [c.id, routes, border, photos && photos.map((p) => (p ? p.src : '')).join('|'), custom.photos, custom.title, custom.color]);
+  }, [c.id, routes, border, photos && photos.map((p) => (p ? p.src : '')).join('|'), custom.photos, custom.title, custom.color, custom.tpl, custom.info, custom.stages, custom.duration]);
   const title = (custom.title || '').trim() || siteDefaultTitle(c, items);
   return (
     <div className="relative mx-auto w-full">
@@ -431,11 +452,20 @@ const SITE_TRACE_COLORS = [
 const SITE_TITLE_MAX = 24;
 function SiteCustomize({ c, value, onChange, items = [] }) {
   const set = (k, v) => onChange({ ...value, [k]: v });
-  const defColor = c.poster.color === 'auto' ? '#ffffff' : c.poster.color;
+  const p = sitePosterOf(c, value.tpl);
+  const defColor = p.color === 'auto' ? '#ffffff' : p.color;
   const color = value.color || defColor;
-  const canPhotos = (c.poster.photos || 0) > 0 && !c.poster.bgPhoto && !items.length;
+  const canPhotos = (p.photos || 0) > 0 && !p.bgPhoto && !items.length;
   const photosOn = value.photos !== false;
-  const touched = !!(value.title || value.color || value.photos === false);
+  const metrics = siteMetrics(p, { ...value, info: true });
+  const touched = Object.values(value).some((v) => v != null && v !== '');
+  const row = 'mt-3.5 w-full flex items-center justify-between gap-3 text-left group disabled:opacity-40 disabled:cursor-not-allowed';
+  const lbl = 'text-[13.5px] text-neutral-300 group-enabled:group-hover:text-white transition-colors';
+  const sw = (k, on, label, disabled, hint) => (
+    <button role="switch" aria-checked={!disabled && on} disabled={disabled} title={hint} onClick={() => set(k, !on)} className={row}>
+      <span className={lbl}>{label}</span><UiSwitch on={!disabled && on} />
+    </button>
+  );
   return (
     <div className="rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
       <div className="flex items-center justify-between h-6">
@@ -450,6 +480,16 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
           <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11.5px] tabular-nums text-neutral-600">{(value.title || '').length}/{SITE_TITLE_MAX}</span>
         </span>
       </label>
+      {/* Style du poster */}
+      <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-lg bg-white/[0.04] ring-1 ring-white/10 p-1" role="radiogroup" aria-label="Style du poster">
+        {siteStyles(c).map((t) => {
+          const on = p.tpl === t.id;
+          return (
+            <button key={t.id} role="radio" aria-checked={on} onClick={() => onChange({ ...value, tpl: t.id === c.poster.tpl ? null : t.id, color: null })}
+              className={`h-9 rounded-md text-[13px] font-medium transition-colors ${on ? 'bg-white text-neutral-900' : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'}`}>{t.name}</button>
+          );
+        })}
+      </div>
       <div className="mt-3.5 flex items-center justify-between gap-3">
         <span className="text-[13.5px] text-neutral-300 whitespace-nowrap">Couleur du tracé</span>
         <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Couleur du tracé">
@@ -461,20 +501,19 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
           ))}
         </div>
       </div>
-      <button role="switch" aria-checked={canPhotos && photosOn} disabled={!canPhotos} onClick={() => set('photos', !photosOn)}
-        title={canPhotos ? undefined : items.length ? 'Vos photos s’ajoutent dans le studio' : 'Ce modèle n’affiche pas de photos'}
-        className="mt-3.5 w-full flex items-center justify-between gap-3 text-left disabled:opacity-40 disabled:cursor-not-allowed group">
-        <span className="text-[13.5px] text-neutral-300 group-enabled:group-hover:text-white transition-colors">Photos du voyage</span>
-        <UiSwitch on={canPhotos && photosOn} />
-      </button>
+      {sw('photos', photosOn, 'Ajoutez des photos', !canPhotos, canPhotos ? undefined : items.length ? 'Vos photos s’ajoutent dans le studio' : 'Ce style n’affiche pas de photos')}
+      <div className="mt-3.5 h-px bg-white/[0.06]" />
+      {sw('info', value.info !== false, 'Afficher les infos')}
+      {sw('stages', metrics.includes('stages'), 'Nombre d’étapes', value.info === false)}
+      {sw('duration', metrics.includes('duration'), 'Durée', value.info === false)}
     </div>
   );
 }
 
 // ---------------------------------------------------------------- finition (étape 3)
 const SITE_BORDERS = [{ id: 'none', label: 'Aucune' }, { id: 'fine', label: 'Liseré' }, { id: 'marge', label: 'Marge' }];
-function SiteFinish({ c, value, onChange, ready, onDownload, onOrder, onImport, opening }) {
-  const border = value.border || c.poster.border || 'none';
+function SiteFinish({ c, tplId, value, onChange, ready, onDownload, onOrder, onImport, opening }) {
+  const border = value.border || sitePosterOf(c, tplId).border || 'none';
   const framed = value.frame !== false;
   return (
     <div>
@@ -494,7 +533,7 @@ function SiteFinish({ c, value, onChange, ready, onDownload, onOrder, onImport, 
           <UiSwitch on={framed} />
         </button>
       </div>
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-1 gap-2.5">
         <UiButton size="lg" icon="Download" block onClick={ready ? onDownload : onImport} loading={opening === 'download'}>Télécharger en HD</UiButton>
         <UiButton variant="primary" size="lg" iconRight="ChevronRight" block onClick={ready ? onOrder : onImport} loading={opening === 'order'}>Commander le poster</UiButton>
       </div>
@@ -693,10 +732,10 @@ function SiteImport({ c, items, setItems, onNext }) {
               {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-[14px] sm:text-[15.5px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : bySource('file').length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
+              <span className="block text-[14px] sm:text-[15px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : bySource('file').length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
               <span className="block text-[12px] sm:text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em] whitespace-nowrap">GPX · FIT · TCX · KML</span>
             </span>
-            {!busy && <span className="shrink-0 w-[88px] sm:w-[104px] h-10 rounded-lg grid place-items-center text-[13px] sm:text-[14px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors">Parcourir</span>}
+            {!busy && <span className="shrink-0 w-[88px] h-10 rounded-lg grid place-items-center text-[13px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors">Parcourir</span>}
           </button>
           {errorFor('file')}
           {list('file')}
@@ -712,9 +751,9 @@ function SiteImport({ c, items, setItems, onNext }) {
                 <input value={links[src.id]} onChange={(e) => { const v = e.target.value; setLinks((l) => ({ ...l, [src.id]: v })); setError({ src: '', msg: '' }); setGuided((x) => ({ ...x, [src.id]: null })); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') submitLink(src); }}
                   placeholder={src.placeholder} aria-label={'Lien ' + src.name} inputMode="url"
-                  style={{ outline: 'none', caretColor: src.color }} className="flex-1 min-w-0 h-full bg-transparent text-[13.5px] sm:text-[15px] text-white placeholder:text-neutral-500" />
+                  style={{ outline: 'none', caretColor: src.color }} className="flex-1 min-w-0 h-full bg-transparent text-[14px] text-white placeholder:text-neutral-500" />
                 <button onClick={(e) => { e.preventDefault(); submitLink(src); }} disabled={linkBusy === src.id}
-                  className="w-[88px] sm:w-[104px] h-10 shrink-0 rounded-lg grid place-items-center text-[13px] sm:text-[14px] font-semibold text-white transition-[filter] hover:brightness-110 disabled:opacity-70" style={{ background: src.color }}>
+                  className="w-[88px] h-10 shrink-0 rounded-lg grid place-items-center text-[13px] font-semibold text-white transition-[filter] hover:brightness-110 disabled:opacity-70" style={{ background: src.color }}>
                   {linkBusy === src.id ? <UiSpinner size={16} /> : 'Importer'}
                 </button>
               </label>
@@ -752,25 +791,51 @@ const SITE_GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmln
 // Le hero se lit en 3 étapes au fil du scroll : le poster reste à l'écran (à droite),
 // l'étape au centre de l'écran est mise en avant, les autres s'estompent.
 const SITE_FLOW = [
-  { id: 'import', label: 'Importez vos tracés', title: 'Importez vos tracés', text: 'Fichier GPX, activité Strava ou tour Komoot : votre tracé s’affiche aussitôt sur le poster.' },
-  { id: 'custom', label: 'Personnalisez votre carte', title: 'Personnalisez votre carte', text: 'Nommez votre aventure, choisissez la couleur du tracé, gardez ou non vos photos.' },
-  { id: 'print', label: 'Imprimez-le', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
+  { id: 'import', title: 'Importez vos tracés', text: 'Fichier GPX, activité Strava ou tour Komoot : votre tracé s’affiche aussitôt sur le poster.' },
+  { id: 'custom', title: 'Personnalisez votre carte', text: 'Choisissez le style, la couleur du tracé, vos photos et les infos affichées.' },
+  { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
-// En-tête d'étape : pastille carrée numérotée, libellé, puis description
-function SiteStepHead({ i, active }) {
+// En-tête d'étape : « 01 —— Étape 1 sur 3 », titre, description
+function SiteStepHead({ i }) {
   const st = SITE_FLOW[i];
   return (
     <div>
-      <h2 className="flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.14em]">
-        <span className={`h-6 min-w-6 px-1.5 rounded-md grid place-items-center tabular-nums text-[11.5px] tracking-normal ring-1 transition-colors ${active ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.05] text-neutral-400 ring-white/10'}`}>{i + 1}</span>
-        <span className={active ? 'text-neutral-200' : 'text-neutral-500'}>{st.label}</span>
-      </h2>
-      <p className="mt-3 text-[15.5px] leading-relaxed text-neutral-400 max-w-[420px]">{st.text}</p>
+      <div className="flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
+        <span className="tabular-nums text-white">0{i + 1}</span><span className="h-px w-6 bg-white/25" />Étape {i + 1} sur 3
+      </div>
+      <h2 className="mt-3 text-[26px] leading-tight font-semibold text-white tracking-[-0.02em]" style={{ fontFamily: 'var(--ds-font-site)' }}>{st.title}</h2>
+      <p className="mt-2 text-[15px] leading-relaxed text-neutral-400">{st.text}</p>
     </div>
+  );
+}
+// Progression verticale (à droite du poster), cliquable pour aller à une étape
+function SiteStepRail({ step, onGo }) {
+  return (
+    <ol className="relative flex flex-col gap-7">
+      <span aria-hidden="true" className="absolute left-[15px] top-4 bottom-4 w-px bg-white/10" />
+      <span aria-hidden="true" className="absolute left-[15px] top-4 w-px bg-white/60 transition-[height] duration-500" style={{ height: `calc((100% - 32px) * ${step / 2})` }} />
+      {SITE_FLOW.map((st, i) => {
+        const on = i === step, done = i < step;
+        return (
+          <li key={st.id}>
+            <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group relative flex items-center gap-3.5 text-left">
+              <span className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12.5px] font-semibold tabular-nums ring-1 transition-colors ${on ? 'bg-white text-neutral-900 ring-white' : done ? 'bg-[#1a1a1a] text-white ring-white/50' : 'bg-[#121212] text-neutral-500 ring-white/15 group-hover:text-white'}`}>
+                {done ? <I.Check size={14} /> : i + 1}
+              </span>
+              <span className={`text-[14px] whitespace-nowrap transition-colors ${on ? 'text-white font-medium' : 'text-neutral-500 group-hover:text-neutral-300'}`}>{st.title}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
 // ---------------------------------------------------------------- page
+// Poster (grand écran) : largeur selon la hauteur d'écran, centré verticalement quand il est collé
+const SITE_POSTER_W = 'min(480px, calc((100vh - 120px) / 1.48))';
+const SITE_POSTER_H = `calc(${SITE_POSTER_W} * 1.414 + 48px)`; // cadre A3 + étiquette
+const SITE_POSTER_TOP = `max(20px, calc((100vh - ${SITE_POSTER_H}) / 2))`;
 function PrintraceSite() {
   const [caseId, setCaseId] = useSiteState('trek');
   const [auto, setAuto] = useSiteState(true); // défilement des cas d'usage tant qu'on n'a pas choisi
@@ -822,8 +887,8 @@ function PrintraceSite() {
   };
   // Mise en avant : étape active nette, les autres estompées (cliquables pour y aller)
   const dim = (i) => (desktop && step !== i ? 'lg:opacity-30 lg:hover:opacity-55 lg:cursor-pointer lg:scale-[0.98]' : 'opacity-100');
-  // Chaque étape occupe un écran et sert d'aimant : le scroll se cale sur son centre
-  const stepBox = 'relative flex flex-col justify-center lg:min-h-screen lg:py-16 origin-left transition-[opacity,transform] duration-500 ease-out';
+  // Chaque étape occupe un écran ; son contenu est centré à hauteur du poster
+  const stepBox = 'relative flex flex-col justify-center lg:min-h-screen lg:py-12 origin-left transition-[opacity,transform] duration-500 ease-out';
   const stepProps = (i) => ({
     ref: stepRefs[i], 'data-step': i,
     onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); } : undefined,
@@ -847,7 +912,7 @@ function PrintraceSite() {
       </nav>
 
       {/* Titre et description, centrés en haut */}
-      <header className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 lg:pt-12 pb-6 lg:pb-2 text-center">
+      <header className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 lg:pt-12 pb-8 lg:pb-4 text-center">
         {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
         <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.08] text-[clamp(34px,4.4vw,62px)]">
           <span className="block text-white/90">Imprimez votre</span>
@@ -856,42 +921,42 @@ function PrintraceSite() {
         <p key={c.id} className="ds-fade-up mt-5 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[560px] mx-auto">{c.pitch}</p>
       </header>
 
-      {/* Étapes à gauche (elles défilent, avec une frise), poster à droite (il reste à l'écran) */}
-      <section aria-label="Créer votre poster" className="relative max-w-[1120px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,472px)_minmax(0,1fr)] lg:justify-center gap-x-14 xl:gap-x-20 gap-y-12">
+      {/* Étapes à gauche (elles défilent), poster au centre et progression à droite (ils restent à l'écran) */}
+      <section aria-label="Créer votre poster" className="relative max-w-[1320px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1.3fr)_auto_minmax(0,1fr)] gap-x-10 xl:gap-x-14 gap-y-12">
         {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
-        <div className="contents lg:block">
-          {/* 1 · Import : aligné sur le haut du poster */}
-          <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!justify-start lg:!pt-8 ${dim(0)}`}>
-            <SiteStepHead i={0} active={!desktop || step === 0} />
+        <div className="contents lg:block lg:w-full lg:max-w-[400px] lg:ml-auto">
+          <div {...stepProps(0)} className={`order-1 ${stepBox} lg:!justify-start lg:!pt-0 ${dim(0)}`}>
+            <SiteStepHead i={0} />
             <div className="mt-6"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
           </div>
-          {/* 2 · Personnalisation */}
           <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
-            <SiteStepHead i={1} active={!desktop || step === 1} />
+            <SiteStepHead i={1} />
             <div className="mt-6"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
           </div>
-          {/* 3 · Impression */}
           <div {...stepProps(2)} className={`order-4 ${stepBox} ${dim(2)}`}>
-            <SiteStepHead i={2} active={!desktop || step === 2} />
-            <div className="mt-6"><SiteFinish c={c} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
+            <SiteStepHead i={2} />
+            <div className="mt-6"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
               onDownload={() => open('download')} onOrder={() => open('order')} onImport={() => goTo(0)} /></div>
           </div>
         </div>
 
-        {/* Poster : reste au centre de l'écran pendant que les étapes défilent */}
-        <div className="order-2 lg:order-none lg:col-start-2 lg:row-start-1">
-          <div className="lg:sticky lg:top-0 lg:h-screen flex items-start justify-center lg:pt-8">
-            <div className="relative w-full max-w-[400px] lg:max-w-none lg:w-[min(440px,calc((100vh_-_140px)/1.5))] mx-auto">
-              {/* Photo du trip fondue dans le fond, décalée à droite du cadre */}
-              {c.heroBg != null && photos[c.heroBg] && (
-                <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
-                  maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
-                  <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
-                </div>
-              )}
-              <SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} />
-            </div>
+        {/* Poster : collé au centre de l'écran pendant que les étapes défilent */}
+        <div className="order-2 lg:order-none lg:col-start-2 lg:row-start-1 lg:self-start lg:sticky" style={desktop ? { top: SITE_POSTER_TOP } : undefined}>
+          <div className="relative w-full max-w-[400px] lg:max-w-none mx-auto" style={desktop ? { width: SITE_POSTER_W } : undefined}>
+            {/* Photo du trip fondue dans le fond, décalée à droite du cadre */}
+            {c.heroBg != null && photos[c.heroBg] && (
+              <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
+                maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
+                <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" className="w-full h-full object-cover opacity-[0.3] saturate-[0.8]" />
+              </div>
+            )}
+            <SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} />
           </div>
+        </div>
+
+        {/* Progression : à droite, à mi-hauteur du poster */}
+        <div className="hidden lg:flex lg:col-start-3 lg:row-start-1 lg:self-start lg:sticky items-center relative z-10" style={{ top: SITE_POSTER_TOP, height: SITE_POSTER_H }}>
+          <SiteStepRail step={step} onGo={goTo} />
         </div>
       </section>
      </div>
