@@ -799,7 +799,7 @@ const SITE_GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmln
 // Le hero se lit en 3 étapes au fil du scroll : le poster reste à l'écran (à droite),
 // l'étape au centre de l'écran est mise en avant, les autres s'estompent.
 const SITE_FLOW = [
-  { id: 'import', title: 'Importez vos tracés', text: 'Fichier GPX, activité Strava ou tour Komoot : votre tracé s’affiche aussitôt sur le poster.' },
+  { id: 'import', title: 'Importez votre tracé', text: 'Fichier GPX, activité Strava ou tour Komoot : votre tracé s’affiche aussitôt sur le poster.' },
   { id: 'custom', title: 'Personnalisez votre carte', text: 'Choisissez le style, la couleur du tracé, vos photos et les infos affichées.' },
   { id: 'print', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
