@@ -752,15 +752,23 @@ const SITE_GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmln
 // Le hero se lit en 3 étapes au fil du scroll : le poster reste à l'écran (à droite),
 // l'étape au centre de l'écran est mise en avant, les autres s'estompent.
 const SITE_FLOW = [
-  { id: 'import', label: 'Importez vos tracés' },
-  { id: 'custom', label: 'Personnalisez', title: 'Personnalisez votre carte', text: 'Nommez votre aventure, choisissez la couleur du tracé, gardez ou non vos photos.' },
-  { id: 'print', label: 'Imprimez', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
+  { id: 'import', label: 'Importez vos tracés', title: 'Importez vos tracés', text: 'Fichier GPX, activité Strava ou tour Komoot : votre tracé s’affiche aussitôt sur le poster.' },
+  { id: 'custom', label: 'Personnalisez votre carte', title: 'Personnalisez votre carte', text: 'Nommez votre aventure, choisissez la couleur du tracé, gardez ou non vos photos.' },
+  { id: 'print', label: 'Imprimez-le', title: 'Imprimez-le', text: 'Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous.' },
 ];
-function SiteStepTag({ i, active }) {
+// En-tête d'étape : pastille sur la frise (grand écran), libellé de l'étape et description
+function SiteStepHead({ i, active, done }) {
+  const st = SITE_FLOW[i];
   return (
-    <div className="flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.14em]">
-      <span className={`h-6 min-w-6 px-1.5 rounded-md grid place-items-center tabular-nums text-[11.5px] ring-1 transition-colors ${active ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.05] text-neutral-400 ring-white/10'}`}>{i + 1}</span>
-      <span className={active ? 'text-neutral-300' : 'text-neutral-500'}>{SITE_FLOW[i].label}</span>
+    <div className="relative">
+      <span aria-hidden="true" data-step-dot className={`absolute -left-[52px] top-0 w-8 h-8 rounded-full hidden lg:grid place-items-center text-[13px] font-bold tabular-nums transition-all duration-500 ${active ? 'bg-white text-neutral-900 shadow-[0_0_0_6px_rgba(255,255,255,0.08),0_0_24px_rgba(255,255,255,0.25)]' : done ? 'bg-[#1c1c1c] text-white ring-1 ring-white/40' : 'bg-[#121212] text-neutral-500 ring-1 ring-white/15'}`}>
+        {done && !active ? <I.Check size={14} /> : i + 1}
+      </span>
+      <h2 className="flex items-center gap-2.5 h-8 text-[13px] font-semibold uppercase tracking-[0.14em] text-white">
+        <span className="lg:hidden w-6 h-6 rounded-full grid place-items-center bg-white text-neutral-900 text-[11.5px] font-bold tracking-normal">{i + 1}</span>
+        {st.label}
+      </h2>
+      <p className="mt-2 text-[15.5px] leading-relaxed text-neutral-400 max-w-[420px]">{st.text}</p>
     </div>
   );
 }
@@ -808,6 +816,51 @@ function PrintraceSite() {
     return () => { mq.removeEventListener('change', on); io.disconnect(); };
   }, []);
   useSiteEffect(() => { if (step > 0) stop(); }, [step]);
+  // Aimants (grand écran) : à la fin d'un geste de scroll, la page se cale sur une étape.
+  // Un geste net dans un sens mène à l'étape suivante (ou précédente), un geste léger
+  // revient sur l'étape en cours ; une étape plus haute que l'écran se lit librement.
+  useSiteEffect(() => {
+    const sc = scroller.current;
+    if (!desktop || !sc || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let t = 0, from = sc.scrollTop, auto = null; // auto : cible du calage en cours
+    const targets = () => [0, ...stepRefs.map((r) => {
+      const el = r.current; if (!el) return null;
+      const top = el.getBoundingClientRect().top + sc.scrollTop;
+      // Étape plus haute que l'écran : calée sur son haut
+      return Math.round(el.offsetHeight > sc.clientHeight ? top - 24 : top + el.offsetHeight / 2 - sc.clientHeight / 2);
+    })];
+    const settle = () => {
+      const y = sc.scrollTop;
+      if (auto != null && Math.abs(y - auto) < 4) { auto = null; from = y; return; } // calage terminé
+      auto = null;
+      const d = y - from, max = sc.scrollHeight - sc.clientHeight;
+      const pts = targets().filter((v) => v != null).map((v) => Math.min(v, max));
+      if (y > pts[pts.length - 1] + sc.clientHeight * 0.6) { from = y; return; } // après les étapes : libre
+      let target;
+      if (Math.abs(d) < 40) target = pts.reduce((a, v) => (Math.abs(v - y) < Math.abs(a - y) ? v : a), pts[0]);
+      else if (d > 0) target = pts.find((v) => v > from + 20) ?? pts[pts.length - 1];
+      else target = [...pts].reverse().find((v) => v < from - 20) ?? 0;
+      if (Math.abs(target - y) > 2) { auto = target; sc.scrollTo({ top: target, behavior: 'smooth' }); } else from = y;
+    };
+    const onScroll = () => { clearTimeout(t); t = setTimeout(settle, 220); };
+    sc.addEventListener('scroll', onScroll, { passive: true });
+    return () => { sc.removeEventListener('scroll', onScroll); clearTimeout(t); };
+  }, [desktop]);
+  // Frise : centres des pastilles d'étape, mesurés (la ligne relie la 1re à la 3e)
+  const flowRef = useSiteRef(null);
+  const [rail, setRail] = useSiteState(null);
+  useSiteEffect(() => {
+    const el = flowRef.current;
+    if (!desktop || !el) { setRail(null); return; }
+    const measure = () => {
+      const top = el.getBoundingClientRect().top;
+      const ys = [...el.querySelectorAll('[data-step-dot]')].map((d) => { const r = d.getBoundingClientRect(); return Math.round(r.top + r.height / 2 - top); });
+      if (ys.length === 3) setRail(ys);
+    };
+    measure();
+    const ro = new ResizeObserver(measure); ro.observe(el);
+    return () => ro.disconnect();
+  }, [desktop]);
   const goTo = (i) => { const el = stepRefs[i].current; if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
   const open = async (kind) => {
     setOpening(kind);
@@ -816,7 +869,9 @@ function PrintraceSite() {
     setOpening('');
   };
   // Mise en avant : étape active nette, les autres estompées (cliquables pour y aller)
-  const dim = (i) => (desktop && step !== i ? 'lg:opacity-35 lg:hover:opacity-60 lg:cursor-pointer' : 'opacity-100');
+  const dim = (i) => (desktop && step !== i ? 'lg:opacity-30 lg:hover:opacity-55 lg:cursor-pointer lg:scale-[0.98]' : 'opacity-100');
+  // Chaque étape occupe un écran et sert d'aimant : le scroll se cale sur son centre
+  const stepBox = 'relative flex flex-col justify-center lg:min-h-screen lg:py-16 origin-left transition-[opacity,transform] duration-500 ease-out';
   const stepProps = (i) => ({
     ref: stepRefs[i], 'data-step': i,
     onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); } : undefined,
@@ -839,32 +894,36 @@ function PrintraceSite() {
         <SiteProof />
       </nav>
 
-      {/* Étapes à gauche (elles défilent), poster à droite (il reste à l'écran) ; l'ensemble est centré */}
-      <section aria-label="Créer votre poster" className="relative max-w-[1080px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:justify-center gap-x-16 xl:gap-x-24 gap-y-12">
+      {/* Titre et description, centrés en haut */}
+      <header className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-12 lg:pt-16 pb-6 lg:pb-0 text-center">
+        {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
+        <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.08] text-[clamp(34px,4.4vw,62px)]">
+          <span className="block text-white/90">Imprimez votre</span>
+          <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
+        </h1>
+        <p key={c.id} className="ds-fade-up mt-5 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[560px] mx-auto">{c.pitch}</p>
+      </header>
+
+      {/* Étapes à gauche (elles défilent, avec une frise), poster à droite (il reste à l'écran) */}
+      <section aria-label="Créer votre poster" className="relative max-w-[1120px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,472px)_minmax(0,1fr)] lg:justify-center gap-x-14 xl:gap-x-20 gap-y-12">
         {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
-        <div className="contents lg:block">
+        <div ref={flowRef} className="contents lg:block lg:relative lg:pl-[52px]">
+          {/* Frise : rail discret, remplissage jusqu'à l'étape active */}
+          {rail && <span aria-hidden="true" className="hidden lg:block absolute left-[15.5px] w-px bg-white/10" style={{ top: rail[0], height: rail[2] - rail[0] }} />}
+          {rail && <span aria-hidden="true" className="hidden lg:block absolute left-[15.5px] w-px bg-gradient-to-b from-white/30 to-white/80 transition-[height] duration-700 ease-out" style={{ top: rail[0], height: rail[step] - rail[0] }} />}
           {/* 1 · Import */}
-          <div {...stepProps(0)} className={`order-1 lg:min-h-[calc(100vh-80px)] flex flex-col justify-center pt-6 lg:pt-0 lg:pb-16 transition-opacity duration-500 ${dim(0)}`}>
-            <SiteStepTag i={0} active={!desktop || step === 0} />
-            <h1 className="mt-5 font-display font-extrabold tracking-[-0.035em] leading-[1.06] text-[clamp(34px,4vw,54px)]">
-              <span className="block text-white/90">Imprimez votre</span>
-              <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
-            </h1>
-            <p key={c.id} className="ds-fade-up mt-4 min-h-[3.4em] text-[16.5px] leading-relaxed text-neutral-400">{c.pitch}</p>
+          <div {...stepProps(0)} className={`order-1 ${stepBox} ${dim(0)}`}>
+            <SiteStepHead i={0} active={!desktop || step === 0} done={step > 0} />
             <div className="mt-6"><SiteImport c={c} items={items} setItems={setItems} onNext={() => goTo(1)} /></div>
           </div>
           {/* 2 · Personnalisation */}
-          <div {...stepProps(1)} className={`order-3 lg:min-h-[90vh] flex flex-col justify-center transition-opacity duration-500 ${dim(1)}`}>
-            <SiteStepTag i={1} active={!desktop || step === 1} />
-            <h2 className="mt-4 text-[28px] leading-tight font-semibold tracking-[-0.02em]">{SITE_FLOW[1].title}</h2>
-            <p className="mt-2 text-[15.5px] leading-relaxed text-neutral-400">{SITE_FLOW[1].text}</p>
+          <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
+            <SiteStepHead i={1} active={!desktop || step === 1} done={step > 1} />
             <div className="mt-6"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
           </div>
           {/* 3 · Impression */}
-          <div {...stepProps(2)} className={`order-4 lg:min-h-screen flex flex-col justify-center transition-opacity duration-500 ${dim(2)}`}>
-            <SiteStepTag i={2} active={!desktop || step === 2} />
-            <h2 className="mt-4 text-[28px] leading-tight font-semibold tracking-[-0.02em]">{SITE_FLOW[2].title}</h2>
-            <p className="mt-2 text-[15.5px] leading-relaxed text-neutral-400">{SITE_FLOW[2].text}</p>
+          <div {...stepProps(2)} className={`order-4 ${stepBox} ${dim(2)}`}>
+            <SiteStepHead i={2} active={!desktop || step === 2} />
             <div className="mt-6"><SiteFinish c={c} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening}
               onDownload={() => open('download')} onOrder={() => open('order')} onImport={() => goTo(0)} /></div>
           </div>
