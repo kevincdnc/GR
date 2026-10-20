@@ -479,10 +479,9 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
   const color = value.color || defColor;
   const canPhotos = (p.photos || 0) > 0 && !p.bgPhoto && !items.length;
   const photosOn = value.photos !== false;
-  const metrics = siteMetrics(p, { ...value, info: true });
   const touched = Object.values(value).some((v) => v != null && v !== '');
-  const row = 'mt-3.5 w-full flex items-center justify-between gap-3 text-left group disabled:opacity-40 disabled:cursor-not-allowed';
-  const lbl = 'text-[13.5px] text-neutral-300 group-enabled:group-hover:text-white transition-colors';
+  const row = 'mt-2.5 w-full h-6 flex items-center justify-between gap-3 text-left group disabled:opacity-40 disabled:cursor-not-allowed';
+  const lbl = 'text-[13px] text-neutral-400 group-enabled:group-hover:text-neutral-200 transition-colors';
   const sw = (k, on, label, disabled, hint) => (
     <button role="switch" aria-checked={!disabled && on} disabled={disabled} title={hint} onClick={() => set(k, !on)} className={row}>
       <span className={lbl}>{label}</span><UiSwitch on={!disabled && on} />
@@ -494,26 +493,26 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
         <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Réglages</span>
         {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
       </div>
-      <label className="block mt-3">
+      <label className="block mt-2.5">
         <span className="sr-only">Nom du trip</span>
         <span className="relative block">
           <input value={value.title || ''} maxLength={SITE_TITLE_MAX} placeholder={siteDefaultTitle(c, items)} onChange={(e) => set('title', e.target.value)}
-            className="w-full h-11 rounded-lg bg-white/[0.05] ring-1 ring-white/10 focus:ring-white/30 outline-none pl-3.5 pr-12 text-[14.5px] text-white placeholder:text-neutral-500 transition-shadow" />
+            className="w-full h-10 rounded-lg bg-white/[0.05] ring-1 ring-white/10 focus:ring-white/30 outline-none pl-3.5 pr-12 text-[14px] text-white placeholder:text-neutral-500 transition-shadow" />
           <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11.5px] tabular-nums text-neutral-600">{(value.title || '').length}/{SITE_TITLE_MAX}</span>
         </span>
       </label>
       {/* Style du poster */}
-      <div className="mt-3 grid grid-cols-3 gap-1.5 rounded-lg bg-white/[0.04] ring-1 ring-white/10 p-1" role="radiogroup" aria-label="Style du poster">
+      <div className="mt-2 grid grid-cols-3 gap-1.5 rounded-lg bg-white/[0.04] ring-1 ring-white/10 p-1" role="radiogroup" aria-label="Style du poster">
         {siteStyles(c).map((t) => {
           const on = p.tpl === t.id;
           return (
             <button key={t.id} role="radio" aria-checked={on} onClick={() => onChange({ ...value, tpl: t.id === c.poster.tpl ? null : t.id, color: null, bg: null })}
-              className={`h-9 rounded-md text-[13px] font-medium transition-colors ${on ? 'bg-white text-neutral-900' : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'}`}>{t.name}</button>
+              className={`h-8 rounded-md text-[12.5px] font-medium transition-colors ${on ? 'bg-white text-neutral-900' : 'text-neutral-300 hover:bg-white/[0.06] hover:text-white'}`}>{t.name}</button>
           );
         })}
       </div>
-      <div className="mt-3.5 flex items-center justify-between gap-3">
-        <span className="text-[13.5px] text-neutral-300 whitespace-nowrap">Couleur du tracé</span>
+      <div className="mt-3 h-6 flex items-center justify-between gap-3">
+        <span className="text-[13px] text-neutral-400 whitespace-nowrap">Couleur du tracé</span>
         <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Couleur du tracé">
           {SITE_TRACE_COLORS.map((x) => (
             <button key={x.hex} role="radio" aria-checked={color === x.hex} title={x.name} aria-label={x.name}
@@ -524,8 +523,8 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
         </div>
       </div>
       {p.tpl === 'blueprint' && (
-        <div className="mt-3.5 flex items-center justify-between gap-3">
-          <span className="text-[13.5px] text-neutral-300 whitespace-nowrap">Fond</span>
+        <div className="mt-3 h-6 flex items-center justify-between gap-3">
+          <span className="text-[13px] text-neutral-400 whitespace-nowrap">Fond</span>
           <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Fond du poster">
             {SITE_PLAN_BGS.map((x) => {
               const on = (value.bg || p.bg || '#0f1d33') === x.hex;
@@ -540,11 +539,8 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
         </div>
       )}
       {sw('photos', photosOn, 'Ajoutez des photos', !canPhotos, canPhotos ? undefined : items.length ? 'Vos photos s’ajoutent dans le studio' : 'Ce style n’affiche pas de photos')}
-      {sw('labels', value.labels !== false, 'Noms des villes')}
-      <div className="mt-3.5 h-px bg-white/[0.06]" />
+      {sw('labels', value.labels !== false, 'Afficher les villes')}
       {sw('info', value.info !== false, 'Afficher les infos')}
-      {sw('stages', metrics.includes('stages'), 'Nombre d’étapes', value.info === false)}
-      {sw('duration', metrics.includes('duration'), 'Durée', value.info === false)}
     </div>
   );
 }
@@ -671,7 +667,7 @@ const SITE_LINK_SOURCES = [
   { id: 'strava', name: 'Strava', color: '#fc4c02', logo: ['stravaLogo', 'assets/strava.svg'], placeholder: 'Collez une activité Strava',
     parse: ptParseStrava, exportUrl: ptStravaExportUrl, label: (r) => 'Activité Strava n° ' + r.id,
     invalid: "Ce lien n'est pas une activité Strava.", short: "Lien raccourci : ouvrez-le puis copiez l'adresse complète (strava.com/activities/…)." },
-  { id: 'komoot', name: 'Komoot', color: '#5f9f19', logo: ['komootLogo', 'assets/komoot.svg'], placeholder: 'Collez un tour Komoot',
+  { id: 'komoot', name: 'Komoot', color: '#5f9f19', logo: ['komootDark', 'assets/komoot-dark.svg'], placeholder: 'Collez un tour Komoot',
     parse: siteParseKomoot, exportUrl: (r) => `https://www.komoot.com/tour/${r.id}/download`, label: (r) => 'Tour Komoot n° ' + r.id,
     invalid: "Ce lien n'est pas un tour Komoot (komoot.com/tour/…)." },
 ];
@@ -780,7 +776,7 @@ function SiteImport({ c, items, setItems, onNext, opening }) {
               {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-[14px] sm:text-[15px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : bySource('file').length ? 'Ajoutez d’autres tracés' : 'Importez vos tracés'}</span>
+              <span className="block text-[14px] sm:text-[15px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : bySource('file').length ? 'Ajoutez d’autres tracés' : 'Importez votre tracé'}</span>
               <span className="block text-[12px] sm:text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em] whitespace-nowrap">GPX · FIT · TCX · KML</span>
             </span>
             {!busy && <span className="shrink-0 w-[88px] h-10 rounded-lg grid lg:hidden xl:grid place-items-center text-[13px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors">Parcourir</span>}
@@ -795,7 +791,7 @@ function SiteImport({ c, items, setItems, onNext, opening }) {
           return (
             <div key={src.id} style={{ '--src': src.color }}>
               <label className={`h-[76px] sm:h-[84px] flex items-center gap-3 pl-4 sm:pl-5 pr-3.5 sm:pr-4 rounded-[20px] cursor-text bg-white/[0.03] ring-1 transition-colors hover:bg-white/[0.05] focus-within:bg-white/[0.05] ${bad ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-2 focus-within:ring-[color:var(--src)] focus-within:hover:ring-[color:var(--src)]'}`}>
-                <img src={ptRes(src.logo[0], src.logo[1])} alt="" width="26" height="26" className="w-6 h-6 sm:w-[26px] sm:h-[26px] rounded-[6px] shrink-0" />
+                <img src={ptRes(src.logo[0], src.logo[1])} alt="" width="26" height="26" className="w-7 h-7 sm:w-[30px] sm:h-[30px] rounded-[7px] shrink-0" />
                 <input value={links[src.id]} onChange={(e) => { const v = e.target.value; setLinks((l) => ({ ...l, [src.id]: v })); setError({ src: '', msg: '' }); setGuided((x) => ({ ...x, [src.id]: null })); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') submitLink(src); }}
                   placeholder={narrow ? 'Lien ' + src.name : src.placeholder} aria-label={'Lien ' + src.name} inputMode="url"

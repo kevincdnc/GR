@@ -45,6 +45,7 @@
 <meta name="ext-resource-dependency" content="assets/strava.svg" data-resource-id="stravaLogo" />
 <meta name="ext-resource-dependency" content="assets/garmin.svg" data-resource-id="garminLogo" />
 <meta name="ext-resource-dependency" content="assets/komoot.svg" data-resource-id="komootLogo" />
+<meta name="ext-resource-dependency" content="assets/komoot-dark.svg" data-resource-id="komootDark" />
 <meta name="ext-resource-dependency" content="assets/site/trek-1.webp" data-resource-id="siteTrek1" />
 <meta name="ext-resource-dependency" content="assets/site/trek-2.webp" data-resource-id="siteTrek2" />
 <meta name="ext-resource-dependency" content="assets/site/moto-1.webp" data-resource-id="siteMoto1" />
@@ -64,6 +65,8 @@
 <style>
   body { background: #0a0a0a; color: #fff; overflow: hidden; }
   /* Trait discret sous le mot du titre ; en lecture auto, il se remplit jusqu'au mot suivant */
+  /* Site : chiffres dans la police du texte (le design system les met en Barlow condensé) */
+  .font-site .tabular-nums, .font-site .font-mono { font-family: inherit; letter-spacing: inherit; word-spacing: normal; }
   .site-bar { height: max(3px, 0.04em); border-radius: 99px; }
   .site-bar-fill { width: 0; border-radius: 99px; animation: siteFill linear 1 forwards; }
   @keyframes siteFill { from { width: 0; } to { width: 100%; } }
