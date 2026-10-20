@@ -413,7 +413,7 @@ function SiteCustomize({ c, value, onChange }) {
   return (
     <div className="rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
       <div className="flex items-center justify-between h-6">
-        <span className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500"><I.Sparkle size={13} />Personnalisez</span>
+        <span className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500"><I.Sliders size={14} />Personnalisez</span>
         {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
       </div>
       <label className="block mt-3">

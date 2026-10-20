@@ -127,6 +127,7 @@ const I = {
   Embed: (p) => <SvgBase {...p}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></SvgBase>,
   Download: (p) => <SvgBase {...p}><path d="M12 3v13M7 11l5 5 5-5M5 21h14" /></SvgBase>,
   Check: (p) => <SvgBase {...p}><path d="m5 12 5 5L20 6" /></SvgBase>,
+  Sliders: (p) => <SvgBase {...p}><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></SvgBase>,
   Sparkle: (p) => <SvgBase {...p}><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" /></SvgBase>,
   Mountains: (p) => <SvgBase {...p}><path d="m2 20 5-9 3 5 2-3 4 7H2Z" /><path d="m12 20 4-7 2 3 4 4H12Z" /></SvgBase>,
   Ruler: (p) => <SvgBase {...p}><path d="M3 17 17 3l4 4L7 21l-4-4Z" /><path d="m7.5 7.5 2 2M10.5 10.5l2 2M13.5 13.5l2 2" /></SvgBase>,
