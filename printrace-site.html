@@ -29,9 +29,9 @@
  {"@type":"Organization","@id":"https://kevincdnc.github.io/GR/printrace/#org","name":"Printrace","url":"https://kevincdnc.github.io/GR/printrace/","logo":"https://kevincdnc.github.io/GR/assets/printrace-favicon.svg"},
  {"@type":"WebApplication","name":"Printrace","url":"https://kevincdnc.github.io/GR/printrace/studio/","applicationCategory":"DesignApplication","operatingSystem":"Web","inLanguage":"fr-FR","description":"Créez un poster à encadrer à partir de votre tracé GPX, FIT, TCX, KML ou d'une activité Strava.","publisher":{"@id":"https://kevincdnc.github.io/GR/printrace/#org"}},
  {"@type":"HowTo","name":"Imprimer votre tracé en poster","step":[
-  {"@type":"HowToStep","position":1,"name":"Importez votre tracé","text":"Fichier GPX, FIT, TCX ou KML, ou lien d’une activité Strava : votre tracé s’affiche aussitôt sur le poster."},
-  {"@type":"HowToStep","position":2,"name":"Personnalisez votre carte","text":"Nommez votre aventure, choisissez la couleur du tracé, gardez ou non vos photos."},
-  {"@type":"HowToStep","position":3,"name":"Imprimez-le","text":"Téléchargez le fichier prêt pour l’imprimeur, ou recevez votre poster chez vous, avec ou sans cadre."}]}
+  {"@type":"HowToStep","position":1,"name":"Importez votre tracé","text":"Fichier GPX ou FIT, lien Strava, export Garmin ou Komoot : votre aventure arrive en un glisser-déposer."},
+  {"@type":"HowToStep","position":2,"name":"Personnalisez votre carte","text":"Modèle, couleurs, style de carte, infos affichées, photos : chaque détail se règle en direct."},
+  {"@type":"HowToStep","position":3,"name":"Imprimez-le","text":"Téléchargez le fichier HD prêt pour l’imprimeur, ou recevez votre poster encadré chez vous."}]}
 ]}
 </script>
 <!-- Fonds de carte vectoriels du poster d'exemple -->
@@ -67,14 +67,7 @@
   .site-bar { height: max(3px, 0.04em); border-radius: 99px; }
   .site-bar-fill { width: 0; border-radius: 99px; animation: siteFill linear 1 forwards; }
   @keyframes siteFill { from { width: 0; } to { width: 100%; } }
-  /* Parcours en 3 étapes : entrée en cascade, trait qui se déploie, pulsation de l'étape active */
-  .site-step-in { animation: siteStepIn .6s cubic-bezier(.22,.8,.3,1) both; }
-  @keyframes siteStepIn { from { opacity: 0; transform: translateY(var(--site-dy, 20px)); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
-  .site-line-in { width: 24px; animation: siteLineIn .6s cubic-bezier(.22,.8,.3,1) .1s both; }
-  @keyframes siteLineIn { from { width: 0; } to { width: 24px; } }
-  .site-rail-pulse { animation: siteRailPulse 1s ease-out 1 both; }
-  @keyframes siteRailPulse { from { box-shadow: 0 0 0 0 rgba(255,255,255,.45); } to { box-shadow: 0 0 0 14px rgba(255,255,255,0); } }
-  @media (prefers-reduced-motion: reduce) { .site-bar-fill { animation: none; width: 100%; opacity: .6; } .site-step-in, .site-line-in, .site-rail-pulse { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .site-bar-fill { animation: none; width: 100%; opacity: .6; } }
 </style>
 <link rel="stylesheet" href="tailwind.css" />
 </head>
