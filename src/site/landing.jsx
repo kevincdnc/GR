@@ -413,7 +413,7 @@ function SiteCustomize({ c, value, onChange }) {
   return (
     <div className="rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
       <div className="flex items-center justify-between h-6">
-        <span className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500"><I.Sliders size={14} />Personnalisez</span>
+        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Personnalisez</span>
         {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
       </div>
       <label className="block mt-3">
@@ -727,12 +727,8 @@ function SiteIllusCustomize({ c }) {
   return (
     <SiteIllusFrame>
       <rect x="50" y="56" width="300" height="188" rx="16" fill="#0e0e0e" fillOpacity="0.85" stroke="rgba(255,255,255,0.08)" />
-      {/* En-tête : icône réglages, titre, réinitialiser */}
-      <g stroke="rgba(255,255,255,0.45)" strokeWidth="1.3" strokeLinecap="round">
-        <path d="M66 80.5 h7 M77 80.5 h3 M66 88.5 h3 M73 88.5 h7" />
-        <circle cx="75" cy="80.5" r="1.8" fill="none" /><circle cx="71" cy="88.5" r="1.8" fill="none" />
-      </g>
-      <text x="88" y="88" fontSize="9.5" fontWeight="600" letterSpacing="1.4" fill="rgba(255,255,255,0.45)" style={f}>PERSONNALISEZ</text>
+      {/* En-tête : titre, réinitialiser */}
+      <text x="64" y="88" fontSize="9.5" fontWeight="600" letterSpacing="1.4" fill="rgba(255,255,255,0.45)" style={f}>PERSONNALISEZ</text>
       <text x="334" y="88" textAnchor="end" fontSize="9.5" fill="rgba(255,255,255,0.55)" style={f}>Réinitialiser</text>
       {/* Nom du trip */}
       <rect x="64" y="102" width="272" height="40" rx="8" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.10)" />
@@ -881,8 +877,8 @@ function PrintraceSite() {
             <SitePoster c={c} photos={photoSet[caseId] || null} custom={customs[caseId] || {}} />
           </div>
 
-          {/* Réglages de l'exemple, de l'autre côté du poster : secondaires face à l'import */}
-          <div className="relative z-10 w-full max-w-[420px] lg:max-w-[320px] mx-auto lg:ml-0 lg:mr-auto lg:self-start lg:pt-[150px]">
+          {/* Réglages de l'exemple, de l'autre côté du poster et plus bas : l'import reste le premier regard */}
+          <div className="relative z-10 w-full max-w-[420px] lg:max-w-[320px] mx-auto lg:ml-0 lg:mr-auto lg:self-start lg:pt-[380px]">
             <SiteCustomize c={c} value={customs[caseId] || {}} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} />
           </div>
           </div>
