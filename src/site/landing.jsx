@@ -75,34 +75,16 @@ const SITE_CASES = [
     photos: [{ src: ptRes('siteMarathon1', 'assets/site/marathon-1.webp'), caption: 'Coureurs' }, { src: null, caption: 'Km 30, le mur' }],
   },
   {
-    id: 'trek', heroBg: 1, accent: '#60a5fa', word: 'trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, GR34…', icon: 'Footprints', activity: 'hiking',
+    id: 'trek', heroBg: 1, accent: '#60a5fa', word: 'trek', label: 'Trek & randonnée', example: 'GR34, GR20, Tour du Mont-Blanc…', icon: 'Footprints', activity: 'hiking',
     pitch: 'Votre trek de plusieurs jours, en poster prêt à encadrer.',
     poster: {
-      // GR20 (Corse, Calenzana → Conca) : 16 étapes de refuge en refuge, tracées par
-      // les refuges et les cols du parcours ; chiffres officiels affichés
-      tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR20 ⚪️🔴', subtitle: 'Calenzana → Conca · Corse',
-      metrics: ['distance', 'ascent', 'duration', 'stages', 'start'], values: { distance: '180 km', ascent: '12 000 m', duration: '82 h' }, photos: 2,
-      route: { name: 'GR20', seed: 11, rough: 0.16, depth: 5 },
-      stages: [
-        ['Calenzana', 'Ortu di u Piobbu', [[42.5086, 8.8549, 275], [42.5010, 8.8650, 640], [42.4915, 8.8830, 1250], [42.4800, 8.8930, 1480], [42.4730, 8.9020, 1570]]],
-        ['Ortu di u Piobbu', 'Carrozzu', [[42.4730, 8.9020, 1570], [42.4660, 8.9100, 1800], [42.4600, 8.9150, 1950], [42.4540, 8.9290, 1600], [42.4485, 8.9375, 1270]]],
-        ['Carrozzu', 'Haut Asco', [[42.4485, 8.9375, 1270], [42.4430, 8.9450, 1200], [42.4350, 8.9440, 1860], [42.4300, 8.9360, 1700], [42.4265, 8.9280, 1422]]],
-        ['Haut Asco', 'Tighjettu', [[42.4265, 8.9280, 1422], [42.4170, 8.9240, 1900], [42.4060, 8.9230, 2183], [42.4010, 8.9300, 2000], [42.3955, 8.9370, 1683]]],
-        ['Tighjettu', 'Ciuttulu di i Mori', [[42.3955, 8.9370, 1683], [42.3905, 8.9420, 1440], [42.3800, 8.9230, 1962], [42.3685, 8.9180, 1991]]],
-        ['Ciuttulu di i Mori', 'Castel di Vergio', [[42.3685, 8.9180, 1991], [42.3570, 8.9080, 1600], [42.3450, 8.9000, 1300], [42.3200, 8.8880, 1250], [42.2965, 8.8780, 1404]]],
-        ['Castel di Vergio', 'Manganu', [[42.2965, 8.8780, 1404], [42.2800, 8.9020, 1480], [42.2635, 8.9210, 1743], [42.2555, 8.9340, 1621], [42.2465, 8.9475, 1601]]],
-        ['Manganu', 'Petra Piana', [[42.2465, 8.9475, 1601], [42.2420, 8.9650, 1950], [42.2370, 8.9800, 2225], [42.2330, 9.0000, 2100], [42.2310, 9.0170, 1842]]],
-        ['Petra Piana', 'Onda', [[42.2310, 9.0170, 1842], [42.2200, 9.0350, 1600], [42.2130, 9.0500, 1500], [42.2060, 9.0650, 1430]]],
-        ['Onda', 'Vizzavona', [[42.2060, 9.0650, 1430], [42.1830, 9.0800, 2020], [42.1600, 9.1000, 1500], [42.1400, 9.1180, 1100], [42.1290, 9.1300, 920]]],
-        ['Vizzavona', 'Capannelle', [[42.1290, 9.1300, 920], [42.1100, 9.1450, 1300], [42.0880, 9.1630, 1640], [42.0750, 9.1700, 1500], [42.0610, 9.1740, 1586]]],
-        ['Capannelle', 'Prati', [[42.0610, 9.1740, 1586], [42.0450, 9.1780, 1400], [42.0300, 9.1820, 1289], [42.0150, 9.1950, 1550], [41.9970, 9.2050, 1820]]],
-        ['Prati', 'Usciolu', [[41.9970, 9.2050, 1820], [41.9800, 9.1980, 1700], [41.9600, 9.1880, 1525], [41.9400, 9.1780, 1650], [41.9180, 9.1670, 1750]]],
-        ['Usciolu', 'Asinau', [[41.9180, 9.1670, 1750], [41.9000, 9.1700, 1600], [41.8800, 9.1770, 1550], [41.8620, 9.1850, 1750], [41.8470, 9.1990, 1536]]],
-        ['Asinau', 'I Paliri', [[41.8470, 9.1990, 1536], [41.8250, 9.2100, 1300], [41.7955, 9.2250, 1218], [41.7820, 9.2420, 1150], [41.7710, 9.2600, 1055]]],
-        ['I Paliri', 'Conca', [[41.7710, 9.2600, 1055], [41.7600, 9.2850, 900], [41.7480, 9.3150, 600], [41.7350, 9.3430, 252]]],
-      ],
+      // GR34 dans le Finistère (Locquirec → Le Pouldu) : vrai tracé (src/site/gr34-trace.jsx).
+      // Distance et dénivelé calculés sur le GPX ; durée de marche estimée (méthode DIN 33466)
+      tpl: 'blueprint', color: 'auto', bg: '#0f1d33', mapStyle: 'epure', mapOpacity: 40, title: 'GR34 ⚪️🔴', subtitle: 'Locquirec → Le Pouldu · Finistère',
+      metrics: ['distance', 'ascent', 'duration', 'start'], values: { distance: '925 km', ascent: '11 400 m', duration: '260 h' }, photos: 2,
+      route: { name: 'GR34', depth: 0, way: SITE_GR34 },
     },
-    unsplash: ['corsica mountains hiking', 'gr20 corsica'],
+    unsplash: ['brittany coast hiking', 'finistere coastal path'],
     photos: [{ src: ptRes('siteTrek1', 'assets/site/trek-1.webp'), caption: 'Balisage' }, { src: ptRes('siteTrek2', 'assets/site/trek-2.webp'), caption: 'En chemin' }],
   },
   {
