@@ -106,13 +106,13 @@ function ApStepHead({ n }) {
   const st = AP_STEPS[n - 1];
   return (
     <div>
-      <span aria-hidden="true" className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[32px] select-none"
+      <span aria-hidden="true" className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[40px] select-none"
         style={{ backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em' }}>
         0{n}
       </span>
-      <h2 className="mt-2 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[19px] text-white">{st.title}</h2>
+      <h2 className="mt-2.5 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[21px] text-white">{st.title}</h2>
       {/* Une seule ligne de description par étape */}
-      <p className="mt-1.5 text-[13.5px] leading-[1.5] text-neutral-400 truncate">{st.text}</p>
+      <p className="mt-2.5 text-[14px] leading-[1.5] text-neutral-400 truncate">{st.text}</p>
     </div>
   );
 }
