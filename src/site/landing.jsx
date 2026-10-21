@@ -38,18 +38,29 @@ function siteTrace(way, { seed = 7, rough = 0.22, depth = 6 } = {}) {
 // ~800 × 1000 px) ; tant qu'elles manquent, une illustration prend leur place.
 const SITE_CASES = [
   {
-    id: 'roadtrip', heroBg: 0, accent: '#facc15', word: 'road trip', label: 'Road trip', example: 'Pacific Coast Highway, Islande, Route 66…', icon: 'Route', activity: 'roadtrip',
+    id: 'roadtrip', heroBg: 0, accent: '#facc15', word: 'road trip', label: 'Road trip', example: 'Route 66, Pacific Coast Highway, Islande…', icon: 'Route', activity: 'roadtrip',
     pitch: 'Toutes les étapes de votre road trip, réunies sur un seul poster.',
     poster: {
-      tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Pacific Coast Hwy', subtitle: 'San Francisco → Los Angeles',
-      metrics: ['distance', 'stages', 'duration'], values: { distance: '750 km', stages: '6', duration: '11 h 30' }, photos: 2,
-      route: { name: 'Pacific Coast Highway', seed: 3, rough: 0.14, depth: 5, way: [[37.7749, -122.4194, 20], [37.50, -122.47, 30], [37.25, -122.40, 40], [36.97, -122.03, 10], [36.60, -121.89, 20], [36.27, -121.81, 200], [35.95, -121.48, 300], [35.66, -121.25, 80], [35.37, -120.85, 20], [35.28, -120.66, 70], [34.95, -120.43, 100], [34.42, -119.70, 15], [34.27, -119.23, 10], [34.03, -118.78, 20], [34.05, -118.24, 90]] },
+      // Route 66, de Chicago à Santa Monica, avec le détour par le Grand Canyon
+      // (Flagstaff → Grand Canyon Village → Williams) ; chiffres arrondis du parcours
+      tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Route 66', subtitle: 'Chicago → Santa Monica · Grand Canyon',
+      metrics: ['distance', 'stages', 'duration'], values: { distance: '4 100 km', stages: '14', duration: '60 h' }, photos: 3,
+      route: { name: 'Route 66', seed: 3, rough: 0.1, depth: 5, way: [
+        [41.8781, -87.6298, 180], [39.7817, -89.6501, 180], [38.6270, -90.1994, 140], [37.2090, -93.2923, 400], [37.0842, -94.5133, 300],
+        [36.1540, -95.9928, 220], [35.4676, -97.5164, 370], [35.2220, -101.8313, 1100], [35.1717, -103.7250, 1250], [34.9387, -104.6825, 1400],
+        [35.0844, -106.6504, 1520], [35.5281, -108.7426, 1980], [34.9022, -110.1582, 1550], [35.1983, -111.6513, 2100], [36.0544, -112.1401, 2100],
+        [35.2495, -112.1910, 2060], [35.3256, -112.8774, 1600], [35.1894, -114.0530, 1020], [34.8480, -114.6141, 150], [34.8958, -117.0173, 690],
+        [34.1083, -117.2898, 330], [34.0101, -118.4965, 30]] },
     },
-    unsplash: ['big sur highway coast', 'desert road trip'],
-    photos: [{ src: ptRes('siteRoad1', 'assets/site/roadtrip-1.webp'), caption: 'Big Sur' }, { src: null, caption: 'Highway 1' }],
+    unsplash: ['route 66 desert road', 'grand canyon horseshoe bend', 'canyon road trip'],
+    photos: [
+      { src: ptRes('siteRoad1', 'assets/site/roadtrip-1.webp'), caption: 'Arches' },
+      { src: ptRes('siteRoad2', 'assets/site/roadtrip-2.webp'), caption: 'Horseshoe Bend' },
+      { src: ptRes('siteRoad3', 'assets/site/roadtrip-3.webp'), caption: 'Utah' },
+    ],
   },
   {
-    id: 'marathon', accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
+    id: 'marathon', heroBg: 0, accent: '#fb7a3c', word: 'marathon', label: 'Marathon & course', example: 'Paris, Berlin, New York, votre premier semi…', icon: 'Run', activity: 'running',
     pitch: 'Votre course mythique et votre temps, en poster prêt à encadrer.',
     poster: {
       tpl: 'nuit', border: 'marge', marginColor: '#222222', typeScale: 0.68, labels: false, color: '#fc5200', mapStyle: 'routes', mapOpacity: 100, title: 'Marathon de Paris', subtitle: '42,195 km · 6 avril 2026',
@@ -57,7 +68,8 @@ const SITE_CASES = [
       route: { name: 'Marathon de Paris', seed: 5, rough: 0.12, depth: 5, way: [[48.8738, 2.2950], [48.8656, 2.3212], [48.8606, 2.3376], [48.8566, 2.3522], [48.8530, 2.3690], [48.8443, 2.3920], [48.8390, 2.4100], [48.8335, 2.4330], [48.8290, 2.4440], [48.8225, 2.4320], [48.8300, 2.4050], [48.8410, 2.3790], [48.8505, 2.3570], [48.8580, 2.3360], [48.8610, 2.3150], [48.8580, 2.2945], [48.8510, 2.2780], [48.8460, 2.2560], [48.8575, 2.2470], [48.8680, 2.2550], [48.8715, 2.2760]] },
     },
     unsplash: ['marathon runners city', 'marathon finish line'],
-    photos: [{ src: null, caption: 'Ligne d’arrivée' }, { src: null, caption: 'Km 30, le mur' }],
+    // Photo de fond seulement (le poster du marathon n'affiche pas de photos)
+    photos: [{ src: ptRes('siteMarathon1', 'assets/site/marathon-1.webp'), caption: 'Coureurs' }, { src: null, caption: 'Km 30, le mur' }],
   },
   {
     id: 'trek', heroBg: 1, accent: '#60a5fa', word: 'trek', label: 'Trek & randonnée', example: 'GR20, Tour du Mont-Blanc, GR34…', icon: 'Footprints', activity: 'hiking',
@@ -99,7 +111,7 @@ const SITE_CASES = [
       route: { name: 'Route des Grandes Alpes', seed: 9, rough: 0.2, way: [[46.37, 6.48, 380], [46.20, 6.55, 900], [45.99, 6.47, 1613], [45.87, 6.47, 1486], [45.69, 6.69, 1967], [45.55, 6.88, 800], [45.42, 7.03, 2764], [45.24, 6.68, 1100], [45.06, 6.41, 2642], [44.89, 6.64, 1300], [44.82, 6.73, 2360], [44.62, 6.75, 1100], [44.39, 6.65, 1132], [44.32, 6.81, 2802], [44.10, 7.10, 900], [43.90, 7.35, 500], [43.77, 7.50, 10]] },
     },
     unsplash: ['motorcycle mountain pass', 'alps hairpin road'],
-    photos: [{ src: ptRes('siteMoto1', 'assets/site/moto-1.webp'), caption: 'Col alpin' }, { src: null, caption: 'Lacets du Galibier' }],
+    photos: [{ src: ptRes('siteMoto1', 'assets/site/moto-1.webp'), caption: 'Point de vue' }, { src: null, caption: 'Lacets du Galibier' }],
   },
   {
     id: 'gpx', heroBg: 0, accent: '#2dd4bf', word: 'GPX', label: 'N’importe quel tracé', example: 'Un tour d’île, une sortie vélo, une balade…', icon: 'Route', activity: 'hiking',
@@ -1043,7 +1055,7 @@ function PrintraceSite() {
   useSiteEffect(() => {
     if (photoSet[caseId]) return;
     let live = true;
-    Promise.all([0, 1].map((i) => siteResolvePhoto(c, i))).then((ps) => { if (live) setPhotoSet((m) => ({ ...m, [caseId]: ps })); });
+    Promise.all(c.photos.map((_, i) => siteResolvePhoto(c, i))).then((ps) => { if (live) setPhotoSet((m) => ({ ...m, [caseId]: ps })); });
     return () => { live = false; };
   }, [caseId]);
   const photos = photoSet[caseId] || [];
@@ -1052,7 +1064,7 @@ function PrintraceSite() {
     const t = setTimeout(async () => {
       for (const x of SITE_CASES) {
         if (!live) return;
-        const ps = await Promise.all([0, 1].map((i) => siteResolvePhoto(x, i)));
+        const ps = await Promise.all(x.photos.map((_, i) => siteResolvePhoto(x, i)));
         await Promise.all(ps.filter(Boolean).map((ph) => siteLoadImg(ph.src).then((im) => im && im.decode && im.decode().catch(() => {}))));
         if (live) setPhotoSet((m) => (m[x.id] ? m : { ...m, [x.id]: ps }));
       }
