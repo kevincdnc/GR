@@ -46,7 +46,7 @@ const SITE_CASES = [
     poster: {
       // Route 66, de Chicago à Santa Monica, avec le détour par le Grand Canyon
       // (Flagstaff → Grand Canyon Village → Williams) ; chiffres arrondis du parcours
-      tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Route 66', subtitle: 'Chicago → Santa Monica · Grand Canyon',
+      tpl: 'blueprint', color: '#facc15', bg: '#141414', mapStyle: 'epure', mapOpacity: 55, title: 'Route 66 🇺🇸', subtitle: 'Chicago → Santa Monica · Grand Canyon',
       metrics: ['distance', 'stages', 'duration'], values: { distance: '4 100 km', stages: '14', duration: '60 h' }, photos: 3,
       route: { name: 'Route 66', seed: 3, rough: 0.1, depth: 5, way: [
         [41.8781, -87.6298, 180], [39.7817, -89.6501, 180], [38.6270, -90.1994, 140], [37.2090, -93.2923, 400], [37.0842, -94.5133, 300],
