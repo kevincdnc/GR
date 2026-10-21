@@ -790,22 +790,6 @@ function PrintraceStudio() {
             </div>
           </div>
         </div>
-        {/* Progression (comme le site) : à droite du poster, cliquable */}
-        <nav aria-label="Étapes" className="hidden min-[1400px]:block absolute right-8 top-1/2 -translate-y-1/2">
-          <ol className="flex flex-col gap-4">
-            {AP_STEPS.map((s, i) => {
-              const n = i + 1, on = n === step, ok = n === 1 || has;
-              return (
-                <li key={n}>
-                  <button onClick={() => ok && go(n)} disabled={!ok} aria-current={on ? 'step' : undefined} className="group flex items-center gap-3 text-left disabled:cursor-not-allowed">
-                    <span className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12.5px] font-semibold tabular-nums transition-colors duration-300 ${on ? 'bg-white/[0.12] text-neutral-100 ring-1 ring-white/25' : ok ? 'bg-white/[0.04] text-neutral-500 ring-1 ring-white/15 group-hover:text-neutral-200 group-hover:ring-white/30' : 'bg-white/[0.02] text-neutral-700 ring-1 ring-white/[0.07]'}`}>{n}</span>
-                    <span className={`text-[14px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-neutral-200 font-medium' : ok ? 'text-neutral-500 group-hover:text-neutral-300' : 'text-neutral-700'}`}>{s.title}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
         {/* Fiche du poster : modèle, format, cadre */}
         <div className="shrink-0 h-[72px] flex items-start justify-center pt-2">
           <span className="inline-flex items-stretch text-[11.5px] leading-none opacity-80">
@@ -830,7 +814,7 @@ function PrintraceStudio() {
           <ApAccount user={user} designs={designs} currentId={designId} onOpen={openDesign} onNew={newDesign} onSignOut={signOut} />
         </div>
         {/* Stepper : revenir à l'import (ou à toute étape déjà ouverte) */}
-        <nav aria-label="Étapes" className="shrink-0 mx-8 mb-1 flex items-center gap-1">
+        <nav aria-label="Étapes" className="shrink-0 mx-8 mt-4 mb-1 flex items-center gap-1">
           {AP_STEPS.map((s, i) => {
             const n = i + 1, on = n === step, ok = n === 1 || has;
             return (
