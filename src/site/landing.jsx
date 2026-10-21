@@ -303,7 +303,7 @@ function SiteAccountButton() {
     );
   }
   return (
-    <a href={ptLoginUrl()} className="inline-flex items-center h-10 rounded-full bg-white px-4 text-[13.5px] font-semibold text-neutral-900 hover:bg-neutral-200 transition-colors"><Tx k="nav.connexion" d="Se connecter" /></a>
+    <a href={ptLoginUrl()} className="inline-flex items-center h-10 rounded-full bg-white px-4 whitespace-nowrap text-[13.5px] font-semibold text-neutral-900 hover:bg-neutral-200 transition-colors"><Tx k="nav.connexion" d="Se connecter" /></a>
   );
 }
 
@@ -1224,7 +1224,14 @@ function PrintraceSite() {
     let raf = 0;
     const upd = () => {
       raf = 0;
-      const t = Math.max(0, Math.min(1, sc.scrollTop / Math.max(1, sec.offsetTop)));
+      // Le poster monte d'abord avec la page jusqu'à être collé, entier, au centre de l'écran
+      // (arrêt du scroll) ; l'animation ne démarre qu'ensuite, jusqu'à l'arrêt de l'étape 1
+      const po = posterRef.current, s0El = stepRefs[0].current;
+      if (!po || !s0El) return;
+      const y = sc.scrollTop, scTop = sc.getBoundingClientRect().top;
+      const hold = sec.offsetTop - (parseFloat(getComputedStyle(po).top) || 0);
+      const end = y + s0El.getBoundingClientRect().top - scTop;
+      const t = Math.max(0, Math.min(1, (y - hold) / Math.max(1, end - hold)));
       const m = 1 - t * t * (3 - 2 * t); // départ et arrivée en douceur
       mIntro.current = m;
       sec.style.setProperty('--m', m.toFixed(3));
@@ -1278,7 +1285,10 @@ function PrintraceSite() {
         style={desktop ? undefined : { '--m': 1, gridTemplateColumns: `calc(${SITE_M_COL} - 20px) ${SITE_M_POSTER_W}`, columnGap: SITE_M_GAP, paddingLeft: 20, paddingRight: 0,
           transform: peek ? `translateX(calc(-1 * (${SITE_M_POSTER_W} + ${SITE_M_COL} + ${SITE_M_GAP} - 100vw + 16px)))` : 'none', transition: 'transform .45s cubic-bezier(.2,.8,.2,1)' }}>
         <div className="min-w-0 lg:w-full lg:max-w-[360px] lg:ml-auto"
-          style={desktop ? undefined : { opacity: 'max(0, calc(1 - var(--m) * 1.6))', transform: 'translateX(calc(var(--m) * -24px))' }}>
+          style={desktop ? undefined : { paddingTop: '50svh', opacity: 'max(0, calc(1 - var(--m) * 1.6))', transform: 'translateX(calc(var(--m) * -24px))' }}>
+          {/* Arrêt du scroll : poster entier, collé au centre, avant qu'il ne parte à droite
+              (repère placé là où le poster atteint sa position collée) */}
+          {!desktop && <div aria-hidden="true" className="absolute left-0 w-px h-px pointer-events-none" style={{ top: `calc(-1 * ${SITE_M_POSTER_TOP})`, scrollSnapAlign: 'start' }} />}
           <div {...stepProps(0)} className={`${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : mStep}>
             <SiteStepHead i={0} accent={c.accent} snap={desktop} />
             <div className="mt-5 lg:mt-9"><SiteImport c={c} items={items} setItems={setItems} opening={opening === 'custom'} onNext={() => open('custom')} /></div>
