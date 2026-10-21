@@ -336,6 +336,15 @@ function ApToolbar({ tpl, cfg, setCfg, trackColor, photos, bgPhoto, maxPhotos, o
         </span>
         <UiIconButton icon="Plus" label="Zoomer sur le tracé" size="sm" className="!rounded-full" disabled={cfg.zoom <= 0} onClick={() => setCfg({ zoom: Math.max(0, cfg.zoom - 1) })} />
       </div>
+      {tpl.id !== 'aube' && (
+        <button onClick={() => setCfg({ labels: cfg.labels === false })} aria-pressed={cfg.labels !== false}
+          title={cfg.labels === false ? 'Afficher les villes sur la carte' : 'Masquer les villes'} className={btn(false) + ' !pl-2.5'}>
+          <span className={`relative w-7 h-4 rounded-full transition-colors ${cfg.labels !== false ? 'bg-[#3b82f6]' : 'bg-white/15'}`}>
+            <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${cfg.labels !== false ? 'left-3.5' : 'left-0.5'}`} />
+          </span>
+          Villes
+        </button>
+      )}
       {sep}
       <div className="relative">
         {/* Sans photo : ouvre directement le sélecteur ; sinon menu pour en ajouter ou en retirer */}
@@ -486,7 +495,7 @@ function PrintraceStudio() {
       title: (cfg.title != null && cfg.title.trim()) || defaultTitle, subtitle: cfg.subtitle != null ? cfg.subtitle : defaultSub,
       stats, photoSlot: false, photos: t.photoBg ? [] : photos, bgPhoto: (bgPhoto && bgPhoto.img) || defaultBg,
       showMap: has ? !!rec.map : true, mapStyle: rec.mapStyle || 'epure', mapOpacity: (rec.mapOpacity || 100) / 100,
-      mapLabels: true, bg: (t.bgs && cfg.bg) || rec.bg || null, preview: true,
+      mapLabels: cfg.labels !== false, bg: (t.bgs && cfg.bg) || rec.bg || null, preview: true,
       titleFont: AP_FONTS[cfg.font] || null, mode,
     };
   };
@@ -568,11 +577,11 @@ function PrintraceStudio() {
   };
   const fontsOf = AP_FONT_CHOICES[tpl.id] || AP_FONT_CHOICES.blueprint;
   const saveModel = () => {
-    const m = { id: Date.now(), name: `${tpl.name} · ${(fontsOf.find(([k]) => k === cfg.font) || fontsOf[0])[1]}`, tplId: cfg.tplId, color: cfg.color, bg: cfg.bg || null, mode: cfg.mode || null, font: cfg.font, zoom: cfg.zoom, border: cfg.border, mock: cfg.mock, fmtId: cfg.fmtId };
+    const m = { id: Date.now(), name: `${tpl.name} · ${(fontsOf.find(([k]) => k === cfg.font) || fontsOf[0])[1]}`, tplId: cfg.tplId, color: cfg.color, bg: cfg.bg || null, mode: cfg.mode || null, labels: cfg.labels !== false, font: cfg.font, zoom: cfg.zoom, border: cfg.border, mock: cfg.mock, fmtId: cfg.fmtId };
     setModels((ms) => [m, ...ms].slice(0, 8));
     showToast('Modèle enregistré : retrouvez-le à l’étape 2');
   };
-  const applyModel = (m) => setCfg({ tplId: m.tplId, color: m.color, bg: m.bg || null, mode: m.mode || null, font: m.font, zoom: Math.min(m.zoom || 0, AP_ZOOMS.length - 1), border: m.border, mock: m.mock, fmtId: m.fmtId });
+  const applyModel = (m) => setCfg({ tplId: m.tplId, color: m.color, bg: m.bg || null, mode: m.mode || null, labels: m.labels !== false, font: m.font, zoom: Math.min(m.zoom || 0, AP_ZOOMS.length - 1), border: m.border, mock: m.mock, fmtId: m.fmtId });
   const setOrder = (f) => setCfg(() => ({ order: f(order), enabled: [...enabled] }));
   const toggleMetric = (k) => setCfg(() => { const n = new Set(enabled); if (n.has(k)) n.delete(k); else n.add(k); return { order, enabled: [...n] }; });
   const setMetricValue = (k, v) => setCfg((c) => { const vals = { ...c.values }; if (v && v.trim()) vals[k] = v.trim(); else delete vals[k]; return { values: vals }; });

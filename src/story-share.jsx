@@ -269,21 +269,38 @@ function stFont(weight, size, family = ST_TXT) { return `${weight} ${Math.round(
 const ST_EMOJI_RE = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u;
 const stSegmenter = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('fr', { granularity: 'grapheme' }) : null;
 const stGraphemes = (t) => (stSegmenter ? [...stSegmenter.segment(String(t))].map((x) => x.segment) : [...String(t)]);
-function stEmojiCode(g) {
-  const cps = [...g].map((c) => c.codePointAt(0));
-  const zwj = cps.includes(0x200d); // séquences : la variante FE0F reste dans le nom du fichier
-  return cps.filter((c) => zwj || c !== 0xfe0f).map((c) => c.toString(16)).join('-');
+// Clé d'un émoji : ses points de code sans sélecteur de variante (FE0F)
+const stHex = (g, keepFe0f) => [...g].map((c) => c.codePointAt(0)).filter((c) => keepFe0f || c !== 0xfe0f).map((c) => c.toString(16)).join('-');
+const stEmojiCode = (g) => stHex(g, false);
+// Émojis Apple (iOS) uniquement. Sur Mac / iPhone / iPad : dessinés par la police du système
+// (Apple Color Emoji, 160 px, net à l'impression). Ailleurs : images Apple 64 px servies par
+// le site (assets/emoji/, copiées au build depuis emoji-datasource-apple), sinon par le CDN.
+const ST_EMOJI_CDN = 'https://cdn.jsdelivr.net/npm/emoji-datasource-apple@16.0.0/img/apple/64/';
+const stEmojiUrls = (g) => {
+  const key = stHex(g, false), full = stHex(g, true);
+  return [...new Set(['assets/emoji/' + key + '.png', ST_EMOJI_CDN + full + '.png', ST_EMOJI_CDN + key + '.png', ST_EMOJI_CDN + key + '-fe0f.png'])];
+};
+const stIsApple = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || '');
+function stAppleNative(g) {
+  try {
+    const S = 160, c = document.createElement('canvas'); c.width = S; c.height = S;
+    const x = c.getContext('2d');
+    x.font = `${S * 0.82}px "Apple Color Emoji"`; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(g, S / 2, S * 0.54);
+    const px = x.getImageData(0, 0, S, S).data; let ink = 0, colored = 0;
+    for (let i = 0; i < px.length; i += 16) if (px[i + 3] > 40) { ink++; if (Math.abs(px[i] - px[i + 1]) > 12 || Math.abs(px[i + 1] - px[i + 2]) > 12) colored++; }
+    // Police absente ou glyphe inconnu : rien, ou un carré / contour monochrome
+    return ink > 30 && colored > ink * 0.05 ? c : null;
+  } catch (e) { return null; }
 }
-const stEmojiImgs = new Map(); // code -> image chargée (ou null)
-// Servis par le site (assets/emoji/, copiés au build depuis @twemoji/svg), sinon par le CDN
-const stEmojiUrls = (code) => ['assets/emoji/' + code + '.svg', `https://cdn.jsdelivr.net/npm/@twemoji/svg@15.0.0/${code}.svg`];
+const stEmojiImgs = new Map(); // clé -> image (ou canvas) prête, ou null
 async function stLoadEmojis(texts) {
-  const codes = new Set();
-  texts.forEach((t) => { if (t && ST_EMOJI_RE.test(t)) stGraphemes(t).forEach((g) => { if (ST_EMOJI_RE.test(g)) codes.add(stEmojiCode(g)); }); });
-  await Promise.all([...codes].filter((c) => !stEmojiImgs.has(c)).map(async (c) => {
-    let img = null;
-    for (const u of stEmojiUrls(c)) { img = await stLoadImage(u); if (img) break; }
-    stEmojiImgs.set(c, img);
+  const todo = new Map();
+  texts.forEach((t) => { if (t && ST_EMOJI_RE.test(t)) stGraphemes(t).forEach((g) => { if (ST_EMOJI_RE.test(g) && !stEmojiImgs.has(stEmojiCode(g))) todo.set(stEmojiCode(g), g); }); });
+  await Promise.all([...todo].map(async ([key, g]) => {
+    let img = stIsApple() ? stAppleNative(g) : null;
+    if (!img) for (const u of stEmojiUrls(g)) { img = await stLoadImage(u); if (img) break; }
+    stEmojiImgs.set(key, img);
   }));
 }
 const stEmojiImg = (g) => (ST_EMOJI_RE.test(g) ? stEmojiImgs.get(stEmojiCode(g)) || null : null);
