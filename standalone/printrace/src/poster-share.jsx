@@ -308,8 +308,8 @@ function poBlueprintPal(bg, fg = '#ffffff') {
   // Papier clair : carte franchement teintée à la couleur de l'encre (mer soutenue, terre lavée)
   const V = light ? poVivid(W) : W; // teinte franche de l'encre
   if (light) return {
-    land: poMix(bg, V, 0.1), water: poMix(bg, V, 0.5), coast: poMix(V, W, 0.5), coastWidth: 1.4,
-    road: poMix(bg, V, 0.3), roadMajor: poMix(bg, V, 0.5), path: poMix(bg, V, 0.34), waterway: poMix(bg, V, 0.6),
+    land: poMix(bg, V, 0.08), water: poMix(bg, V, 0.42), coast: poMix(V, W, 0.45), coastWidth: 1.2,
+    road: poMix(bg, V, 0.24), roadMajor: poMix(bg, V, 0.4), path: poMix(bg, V, 0.28), waterway: poMix(bg, V, 0.5),
     wood: poMix(bg, V, 0.22), park: poMix(bg, V, 0.22),
     label: { color: W, halo: poMix(bg, W, 0.1), haloWidth: 3.5, upper: true, spacing: 0.14, weight: 700, dot: W },
   };
@@ -539,7 +539,7 @@ const POSTER_TEMPLATES = [
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
     rec: { colors: ['#ffffff', '#facc15'], route: '#ffffff', mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#0f1d33' },
-    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', route: '#0f1d33', colors: ['#0f1d33', '#e4572e'], bgLabel: 'Couleur de l’encre', mapOpacity: 90 } },
+    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', route: '#0f1d33', colors: ['#0f1d33', '#e4572e'], bgLabel: 'Couleur de l’encre', mapOpacity: 65 } },
     bgs: PO_DARK_BGS, photoSlot: true, infos: ['activity', 'start'],
     async draw(ctx, d, w, h) {
       // Mode clair : papier blanc, traits à la couleur choisie (tirage « diazo »)
