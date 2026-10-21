@@ -16,8 +16,8 @@ const HUB_SERVICES = [
     logo: <UiRoutdoorLogo height={22} />, accent: '#3b82f6',
   },
   {
-    id: 'studio', key: '2', path: 'printrace/studio/', name: 'Printrace', kind: 'Produit · studio',
-    desc: 'La nouvelle app : importer un tracé, choisir un modèle, ses infos, puis télécharger en HD ou commander.',
+    id: 'app', key: '2', path: 'printrace/studio/', name: 'Printrace app', kind: 'Nouvelle app',
+    desc: 'Importer un tracé, choisir un modèle, régler couleur, typo et zoom, puis télécharger en HD ou commander.',
     logo: <span className="text-white"><UiPrintraceLogo height={22} /></span>, accent: '#fc5200',
   },
   {
@@ -27,8 +27,8 @@ const HUB_SERVICES = [
   },
 ];
 const HUB_RESOURCES = [
+  { path: 'printrace/v1/', icon: 'Poster', name: 'Test Printrace v-1', desc: 'Ancienne version du studio Printrace' },
   { path: 'design-system/', icon: 'Layers', name: 'Design system', desc: 'Fondations et composants communs' },
-  { path: 'printrace/v1/', icon: 'Poster', name: 'Test Printrace v-1', desc: 'Ancienne version du studio' },
   { href: 'https://github.com/kevincdnc/GR', icon: 'Code', name: 'Code source', desc: 'kevincdnc/GR sur GitHub' },
 ];
 
@@ -51,20 +51,32 @@ function HubPreview({ id }) {
       <rect x="262" y="187" width="40" height="5" rx="2.5" fill="#ffffff44" /><rect x="320" y="185" width="52" height="9" rx="3" fill="#ffffffaa" />
     </svg>
   );
-  if (id === 'studio') return (
+  if (id === 'app') return (
     <svg viewBox="0 0 400 220" className="w-full h-full" aria-hidden="true">
-      <rect width="400" height="220" fill="#151517" />
-      <rect x="0" y="0" width="74" height="220" fill="#0d0d0f" />
-      {[0, 1, 2].map((i) => <rect key={i} x="12" y={20 + i * 26} width="50" height="16" rx="4" fill={i === 0 ? '#ffffff' : '#ffffff18'} />)}
-      <rect x="320" y="0" width="80" height="220" fill="#111113" />
-      {[0, 1, 2, 3, 4].map((i) => <g key={i}><rect x="330" y={22 + i * 22} width="34" height="5" rx="2.5" fill="#ffffff44" /><rect x="374" y={20 + i * 22} width="16" height="9" rx="4.5" fill={i < 3 ? '#3b82f6' : '#404040'} /></g>)}
-      <rect x="152" y="18" width="128" height="182" fill="#151515" />
-      <rect x="157" y="23" width="118" height="172" fill="#0f1d33" />
-      <rect x="162" y="28" width="108" height="162" fill="none" stroke="#ffffffaa" strokeWidth="1" />
-      <path d="M178 66 C190 80 186 96 202 104 S220 128 236 132 S250 150 258 152" stroke="#fff" strokeWidth="2.2" fill="none" />
-      <circle cx="178" cy="66" r="3" fill="#0f1d33" stroke="#fff" strokeWidth="1.4" /><circle cx="258" cy="152" r="3" fill="#0f1d33" stroke="#fff" strokeWidth="1.4" />
-      <rect x="216" y="160" width="50" height="26" fill="#0f1d33" stroke="#ffffffaa" strokeWidth="0.8" />
-      <rect x="221" y="165" width="28" height="4" rx="1" fill="#fff" />
+      <rect width="400" height="220" fill="#1c1c1f" />
+      {/* Barre d'import */}
+      <rect x="0" y="0" width="86" height="220" fill="#0c0c0d" />
+      <rect x="12" y="14" width="40" height="6" rx="3" fill="#ffffffcc" />
+      <rect x="12" y="34" width="62" height="34" rx="6" fill="none" stroke="#ffffff33" strokeDasharray="3 3" />
+      <rect x="38" y="44" width="10" height="10" rx="3" fill="#3b82f655" />
+      <rect x="12" y="76" width="62" height="12" rx="4" fill="#ffffff10" /><rect x="15" y="79" width="6" height="6" rx="1.5" fill="#fc4c02" />
+      <rect x="12" y="93" width="62" height="12" rx="4" fill="#ffffff10" /><rect x="15" y="96" width="6" height="6" rx="1.5" fill="#5f9f19" />
+      <rect x="12" y="114" width="62" height="12" rx="4" fill="#ffffff08" /><rect x="12" y="131" width="62" height="12" rx="4" fill="#ffffff08" />
+      {/* Barre d'outils au-dessus du poster */}
+      <rect x="146" y="10" width="112" height="16" rx="5" fill="#141416" stroke="#ffffff1f" />
+      {[0, 1, 2, 3].map((i) => <rect key={i} x={153 + i * 26} y="15" width="18" height="6" rx="3" fill={i === 0 ? '#facc15' : '#ffffff44'} />)}
+      {/* Poster */}
+      <rect x="160" y="34" width="84" height="118" fill="#0f1d33" />
+      <rect x="164" y="38" width="76" height="110" fill="none" stroke="#ffffffaa" strokeWidth="0.8" />
+      <path d="M176 70 C186 64 192 78 204 74 S220 60 228 72 S214 92 206 98 S184 96 180 86 Z" stroke="#fff" strokeWidth="1.8" fill="none" />
+      <rect x="198" y="122" width="38" height="22" fill="#0f1d33" stroke="#ffffffaa" strokeWidth="0.6" /><rect x="202" y="126" width="22" height="3" rx="1" fill="#fff" />
+      {/* Modèles */}
+      <rect x="306" y="0" width="94" height="220" fill="#0c0c0d" />
+      {[0, 1, 2].map((r) => [0, 1].map((c) => (
+        <rect key={r + '' + c} x={316 + c * 38} y={18 + r * 52} width="32" height="44" rx="3"
+          fill={['#0f1d33', '#161616', '#f3f0ea', '#fbfaf7', '#3d5566', '#f6f3ee'][r * 2 + c]} stroke={r === 0 && c === 0 ? '#ffffff' : '#ffffff1a'} />
+      )))}
+      <rect x="316" y="180" width="70" height="14" rx="5" fill="#ffffff" />
     </svg>
   );
   return (
