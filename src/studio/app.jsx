@@ -46,10 +46,10 @@ const AP_FRANCE = [[51.1, -4.9], [42.3, 8.3]];
 const apDefaultPhoto = () => ptRes('appPhotoDefault', 'assets/site/trek-2.webp');
 // Étapes (même écriture que le site : grand chiffre, titre, description)
 const AP_STEPS = [
-  { name: 'Import', title: 'Importez votre tracé', text: 'Fichier GPX, activité Strava ou tour Komoot : votre tracé s’affiche aussitôt sur le poster.' },
-  { name: 'Modèle', title: 'Choisissez votre modèle', text: 'Puis réglez la couleur, la typo et le zoom dans la barre au-dessus du poster.' },
-  { name: 'Infos', title: 'Vos infos sur le poster', text: 'Le nom de l’aventure, une description et les chiffres que vous voulez voir.' },
-  { name: 'Finition', title: 'Imprimez-le', text: 'Choisissez la taille, la bordure et le cadre, puis téléchargez ou commandez.' },
+  { name: 'Import', title: 'Importez votre tracé', text: 'Fichier GPX, activité Strava ou tour Komoot.' },
+  { name: 'Modèle', title: 'Choisissez votre modèle', text: 'Couleur, typo et zoom : dans la barre du poster.' },
+  { name: 'Infos', title: 'Vos infos sur le poster', text: 'Le nom, une description et vos chiffres.' },
+  { name: 'Finition', title: 'Imprimez-le', text: 'Taille, bordure et cadre, puis commandez.' },
 ];
 // Cadres (aperçu au mur) : mêmes matières que le site
 const AP_FRAMES = [
@@ -106,12 +106,13 @@ function ApStepHead({ n }) {
   const st = AP_STEPS[n - 1];
   return (
     <div>
-      <span aria-hidden="true" className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[46px] select-none"
+      <span aria-hidden="true" className="block font-display italic font-extrabold leading-[0.9] tracking-[-0.04em] text-[32px] select-none"
         style={{ backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em' }}>
         0{n}
       </span>
-      <h2 className="mt-3 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[24px] text-white">{st.title}</h2>
-      <p className="mt-3.5 text-[15px] leading-[1.7] text-neutral-400">{st.text}</p>
+      <h2 className="mt-2 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[19px] text-white">{st.title}</h2>
+      {/* Une seule ligne de description par étape */}
+      <p className="mt-1.5 text-[13.5px] leading-[1.5] text-neutral-400 truncate">{st.text}</p>
     </div>
   );
 }
