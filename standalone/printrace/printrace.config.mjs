@@ -4,9 +4,9 @@
 // sur Cloudflare Pages : Settings → Environment variables). Rien de secret ici : ces valeurs
 // finissent dans le code client (data/config.js) ou dans le HTML.
 //
-// - siteUrl : URL publique de production, avec la barre finale (ex. https://<domaine>/).
+// - siteUrl : URL publique de production, avec la barre finale : https://printrace.app/ par défaut.
 //   Sert aux URL canoniques, Open Graph, données structurées, sitemap.xml et robots.txt.
-//   Vide : ces URL absolues sont omises (aucun domaine n'est supposé).
+//   PRINTRACE_SITE_URL la remplace (ex. une préproduction) ; PRINTRACE_SITE_URL=none l'omet.
 // - routdoorUrl : adresse de Routdoor (app de tracés, hébergée à part) pour les liens
 //   « créer / modifier un itinéraire ». Routdoor envoie ses tracés vers <siteUrl>studio/#t=…
 // - stravaApi : adresse du relais Strava (workers/strava). Vide : parcours guidé (export GPX).
@@ -19,7 +19,7 @@ const env = process.env
 const slash = (u) => (u && !u.endsWith('/') ? u + '/' : u || '')
 
 export default {
-  siteUrl: slash((env.PRINTRACE_SITE_URL || '').trim()),
+  siteUrl: env.PRINTRACE_SITE_URL === 'none' ? '' : slash((env.PRINTRACE_SITE_URL || 'https://printrace.app/').trim()),
   routdoorUrl: slash((env.PRINTRACE_ROUTDOOR_URL || 'https://kevincdnc.github.io/GR/routdoor/').trim()),
   stravaApi: (env.PRINTRACE_STRAVA_API || '').trim(),
   googleClientId: (env.PRINTRACE_GOOGLE_CLIENT_ID || '').trim(),

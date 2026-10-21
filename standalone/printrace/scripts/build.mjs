@@ -64,6 +64,31 @@ function compileJsx(relPath) {
 const MIME = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp' }
 const dataUri = (path) => `data:${MIME[extname(path)] || 'application/octet-stream'};base64,${readFileSync(path).toString('base64')}`
 
+const PAGE_404 = `<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Page introuvable · Printrace</title>
+<script>
+  // Adresse en majuscules (/Studio, /Login/…) : même page en minuscules
+  (function () {
+    var p = location.pathname, l = p.toLowerCase();
+    if (l !== p && /^\\/(studio|login)(\\/|$)/.test(l)) location.replace(l.replace(/^\\/(studio|login)\\/?/, '/$1/') + location.search + location.hash);
+  })();
+</script>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0a0a0a; color: #fff; font: 15px/1.5 system-ui, sans-serif; text-align: center; }
+  a { color: #fff; } p { color: #a3a3a3; }
+</style>
+</head>
+<body>
+<main><h1>Page introuvable</h1><p>Cette adresse n’existe pas.</p><p><a href="/">Accueil</a> · <a href="/studio/">Studio</a></p></main>
+</body>
+</html>
+`
+
 /* ---------- Pré-rendu (SSR) ---------- */
 
 // Exécute le bundle de la page dans un bac à sable Node avec un faux navigateur
@@ -222,6 +247,9 @@ export function build({ single = false } = {}) {
     // Moteurs de recherche : sitemap (site seulement) si l'URL publique est configurée
     if (config.siteUrl) writeFileSync(join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${config.siteUrl}</loc></url>\n</urlset>\n`)
     else console.warn('[config] PRINTRACE_SITE_URL non défini : pas d’URL canonique, d’Open Graph absolu ni de sitemap.')
+    // Page 404 (servie par Cloudflare Pages pour toute adresse inconnue) : /Studio, /LOGIN…
+    // renvoient vers la page en minuscules ; sinon lien vers l'accueil
+    writeFileSync(join(out, '404.html'), PAGE_404)
     writeFileSync(join(out, 'robots.txt'), `User-agent: *\nAllow: /\n${config.siteUrl ? `Sitemap: ${config.siteUrl}sitemap.xml\n` : ''}`)
     console.log(`dist/ prêt en ${Date.now() - t0} ms (${pages.length} pages, ${scripts.length} scripts)`)
     return

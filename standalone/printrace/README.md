@@ -1,6 +1,6 @@
 # Printrace
 
-Vos tracés GPX, FIT, TCX, KML, Strava ou Komoot transformés en posters prêts à imprimer.
+Vos tracés GPX, FIT, TCX, KML, Strava ou Komoot transformés en posters prêts à imprimer — **https://printrace.app**
 
 Ce dépôt contient uniquement le produit Printrace, extrait du dépôt [`kevincdnc/GR`](https://github.com/kevincdnc/GR) (qui garde Routdoor et le hub) :
 
@@ -50,20 +50,20 @@ Tout passe par des variables d'environnement lues au build (`printrace.config.mj
 
 | Variable | Rôle | Par défaut |
 |----------|------|------------|
-| `PRINTRACE_SITE_URL` | URL publique de production (`https://<domaine>/`) : canonical, Open Graph, JSON-LD, `sitemap.xml`, `robots.txt` | vide : ces URL absolues et le sitemap sont omis |
+| `PRINTRACE_SITE_URL` | URL publique : canonical, Open Graph, JSON-LD, `sitemap.xml`, `robots.txt` (`none` : omises) | `https://printrace.app/` |
 | `PRINTRACE_ROUTDOOR_URL` | adresse de Routdoor (liens « créer / modifier un itinéraire ») | `https://kevincdnc.github.io/GR/routdoor/` |
 | `PRINTRACE_STRAVA_API` | adresse du relais Strava (`workers/strava`) | vide : parcours guidé (export GPX puis dépôt) |
 | `PRINTRACE_GOOGLE_CLIENT_ID` | identifiant client OAuth « Web » de Google | vide : session de démonstration |
 | `PRINTRACE_UNSPLASH_KEY` | « Access Key » Unsplash (photos du site), visible côté client | vide : photos du dépôt |
 | `PRINTRACE_CONTENT_REPO`, `PRINTRACE_CONTENT_BRANCH` | dépôt et branche où le mode édition publie `content/site.json` | `kevincdnc/printrace`, `main` |
 
-Exemple : `PRINTRACE_SITE_URL=https://<domaine>/ npm run build`.
+Exemple (préproduction) : `PRINTRACE_SITE_URL=https://<projet>.pages.dev/ npm run build`.
 
 Ne mettez jamais de secret dans ces variables ni dans le dépôt : le secret Strava reste dans le worker (`wrangler secret put`), le jeton GitHub du mode édition est saisi par l'administrateur dans son navigateur.
 
 ### Recevoir un tracé de Routdoor
 
-Routdoor (dépôt GR) envoie ses tracés dans le lien : `<site Printrace>/studio/#t=<données>&a=<activité>&src=routdoor`. Le studio les ajoute à la bibliothèque et passe au choix du modèle. Pour que Routdoor vise ce site, son lien « Envoyer sur Printrace » doit pointer vers `<PRINTRACE_SITE_URL>studio/` (dans GR : `src/printrace-bridge.jsx`, constante `printraceBase`).
+Routdoor (dépôt GR) envoie ses tracés dans le lien : `https://printrace.app/studio/#t=<données>&a=<activité>&src=routdoor`. Le studio les ajoute à la bibliothèque et passe au choix du modèle. Pour que Routdoor vise ce site, son lien « Envoyer sur Printrace » doit pointer vers `https://printrace.app/studio/` (dans GR : `src/printrace-bridge.jsx`, constante `printraceBase`).
 
 ### Relais Strava (optionnel)
 
@@ -76,8 +76,10 @@ Voir `workers/strava/README.md`. Renseigner `ALLOWED_ORIGINS` (wrangler.toml) av
    - Framework preset : *None*
    - Build command : `npm run build`
    - Build output directory : `dist`
-   - Variables : `NODE_VERSION=22` (le fichier `.node-version` suffit normalement) et `PRINTRACE_SITE_URL` une fois le domaine choisi.
-3. Les URL `/studio` et `/login` sont redirigées par Cloudflare vers `/studio/` et `/login/` (fichiers `index.html` des dossiers) ; l'accès direct et le rechargement fonctionnent sans règle de réécriture.
+   - Variables : `NODE_VERSION=22` (le fichier `.node-version` suffit normalement). `PRINTRACE_SITE_URL` vaut `https://printrace.app/` par défaut ; pour les déploiements de prévisualisation, on peut la régler sur l'adresse `*.pages.dev` (environnement *Preview*).
+3. Domaine : *Custom domains → Set up a custom domain* → `printrace.app` (et `www.printrace.app`, à rediriger vers `printrace.app` par une règle de redirection Cloudflare). Si le domaine est géré chez Cloudflare, les enregistrements DNS sont créés automatiquement ; sinon, suivre les valeurs CNAME indiquées.
+4. Adresses : `/` site, `/studio/` studio, `/login/` connexion. `/studio` et `/login` mènent aux dossiers (`index.html`) ; l'accès direct et le rechargement fonctionnent sans règle de réécriture. Toute autre adresse affiche `404.html`, qui renvoie les variantes en majuscules (`/Studio`, `/Login/…`) vers la page en minuscules.
+5. Une fois en ligne : ajouter `https://printrace.app` aux origines autorisées de l'identifiant Google (si utilisé) et du relais Strava, et faire pointer le bouton « Envoyer sur Printrace » de Routdoor (dépôt GR, `src/printrace-bridge.jsx`) vers `https://printrace.app/studio/`.
 
 ## Limites actuelles
 

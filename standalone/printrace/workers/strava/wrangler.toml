@@ -6,7 +6,7 @@ compatibility_date = "2026-09-01"
 [vars]
 STRAVA_CLIENT_ID = ""                               # identifiant de l'application Strava
 ALLOWED_ORIGINS = ""                                # origines du site Printrace autorisées, séparées par des virgules
-                                                     # (ex. l'URL de production et http://localhost:5173 en développement)
+                                                     # (ex. https://printrace.app,http://localhost:5173)
 
 [[kv_namespaces]]
 binding = "SESSIONS"

@@ -40,7 +40,8 @@ createServer((req, res) => {
     if (!p.endsWith('/') && !p.endsWith('\\')) { res.writeHead(301, { Location: req.url.replace(/^([^?]*)/, '$1/') }); return res.end() }
     file = join(file, 'index.html')
   }
-  if (!existsSync(file)) { res.writeHead(404); return res.end('404') }
+  // Comme Cloudflare Pages : adresse inconnue -> 404.html (qui renvoie /Studio vers /studio/)
+  if (!existsSync(file)) { const nf = join(DIST, '404.html'); res.writeHead(404, { 'Content-Type': TYPES['.html'] }); return res.end(existsSync(nf) ? readFileSync(nf) : '404') }
   res.writeHead(200, { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' })
   res.end(readFileSync(file))
 }).listen(PORT, () => console.log(`Printrace → http://localhost:${PORT}/ (studio : /studio/, connexion : /login/)`))
