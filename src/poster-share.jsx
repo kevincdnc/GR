@@ -299,40 +299,96 @@ const PO_DARK_BGS = [
   { hex: '#141414', name: 'Noir' }, { hex: '#103c6b', name: 'Bleu plan' }, { hex: '#0f1d33', name: 'Bleu marine' }, { hex: '#1e2a33', name: 'Ardoise' },
   { hex: '#15362b', name: 'Vert forêt' }, { hex: '#3a1420', name: 'Bordeaux' }, { hex: '#2b2140', name: 'Aubergine' },
 ];
-// Boussole minimale : anneau fin, aiguille losange, points cardinaux
+// Boussole d'instrument : lunette graduée (5°, 10°, 30°), rose à 16 branches,
+// aiguille nord pleine surmontée d'un repère, points cardinaux dans la lunette
 function poCompass(ctx, x, y, R, u, color, bg) {
   const BG = bg || '#000000';
+  const P = (a, r) => [x + Math.sin(a) * r, y - Math.cos(a) * r];
   ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
-  // Double anneau gradué (style instrument ancien)
-  const ri = R - 5 * u;
-  ctx.lineWidth = 1.3 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 0.7 * u; ctx.beginPath(); ctx.arc(x, y, ri, 0, Math.PI * 2); ctx.stroke();
-  for (let i = 0; i < 36; i++) {
-    const t = i * Math.PI / 18, c = i % 9 === 0, r0 = c ? ri - 3 * u : ri;
-    ctx.lineWidth = (c ? 1.1 : 0.6) * u; ctx.globalAlpha = c ? 1 : 0.7;
-    ctx.beginPath(); ctx.moveTo(x + Math.sin(t) * r0, y - Math.cos(t) * r0); ctx.lineTo(x + Math.sin(t) * R, y - Math.cos(t) * R); ctx.stroke();
+  const rb = R - 9 * u; // bord intérieur de la lunette
+  ctx.lineWidth = 1.6 * u; ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 0.6 * u; ctx.beginPath(); ctx.arc(x, y, R - 2.5 * u, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 0.9 * u; ctx.beginPath(); ctx.arc(x, y, rb, 0, Math.PI * 2); ctx.stroke();
+  // Graduations tous les 5°, plus longues tous les 10° et 30° (cardinaux exclus : lettres)
+  for (let i = 0; i < 72; i++) {
+    if (i % 18 === 0) continue;
+    const a = i * Math.PI / 36, big = i % 6 === 0, mid = i % 2 === 0;
+    ctx.lineWidth = (big ? 1 : 0.55) * u; ctx.globalAlpha = big ? 1 : mid ? 0.75 : 0.45;
+    ctx.beginPath(); ctx.moveTo(...P(a, rb)); ctx.lineTo(...P(a, rb + (big ? 5.5 : mid ? 3.8 : 2.4) * u)); ctx.stroke();
   }
   ctx.globalAlpha = 1;
-  // Rose des vents : branches à demi ombrées (une moitié pleine, l'autre au trait)
-  const point = (ang, len, wd, alpha) => {
-    const tx = x + Math.sin(ang) * len, ty = y - Math.cos(ang) * len;
-    const lx = x + Math.sin(ang - Math.PI / 2) * wd, ly = y - Math.cos(ang - Math.PI / 2) * wd;
-    const rx = x + Math.sin(ang + Math.PI / 2) * wd, ry = y - Math.cos(ang + Math.PI / 2) * wd;
-    ctx.globalAlpha = alpha; ctx.lineWidth = 0.8 * u;
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.lineTo(lx, ly); ctx.closePath(); ctx.fillStyle = color; ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tx, ty); ctx.lineTo(rx, ry); ctx.closePath(); ctx.fillStyle = BG; ctx.fill(); ctx.stroke();
-  };
-  for (let k = 0; k < 4; k++) point(Math.PI / 4 + k * Math.PI / 2, ri * 0.55, R * 0.1, 0.7);
-  for (let k = 0; k < 4; k++) point(k * Math.PI / 2, ri - 1.5 * u, R * 0.15, 1);
-  ctx.globalAlpha = 1;
-  ctx.beginPath(); ctx.arc(x, y, 2.2 * u, 0, Math.PI * 2); ctx.fillStyle = BG; ctx.fill(); ctx.lineWidth = 0.9 * u; ctx.stroke();
-  // Points cardinaux, en caractères anciens
-  ctx.fillStyle = color;
+  // Cardinaux dans la lunette (fond masqué derrière la lettre)
+  ctx.font = stFont(700, 7.5 * u, ST_TXT); ctx.textAlign = 'center';
   [['N', 0], ['E', 1], ['S', 2], ['O', 3]].forEach(([t, k]) => {
-    const r = k * Math.PI / 2, sz = t === 'N' ? 17 * u : 13 * u, dd = R + 13 * u;
-    ctx.globalAlpha = t === 'N' ? 1 : 0.8;
-    ctx.font = stFont(400, sz, PO_FELL); ctx.textAlign = 'center';
-    ctx.fillText(t, x + Math.sin(r) * dd, y - Math.cos(r) * dd + sz * 0.34);
+    const [tx, ty] = P(k * Math.PI / 2, rb + 4.6 * u);
+    ctx.save(); ctx.translate(tx, ty); ctx.rotate(k * Math.PI / 2);
+    ctx.fillStyle = BG; ctx.fillRect(-5 * u, -5 * u, 10 * u, 10 * u);
+    ctx.fillStyle = color; ctx.fillText(t, 0, 2.7 * u); ctx.restore();
+  });
+  // Cercle intérieur en pointillés
+  ctx.save(); ctx.globalAlpha = 0.5; ctx.lineWidth = 0.6 * u; ctx.setLineDash && ctx.setLineDash([1.2 * u, 2.4 * u]);
+  ctx.beginPath(); ctx.arc(x, y, rb * 0.42, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+  // Rose : branches à demi ombrées (une moitié pleine, l'autre au fond)
+  const point = (ang, len, wd, alpha, full) => {
+    const tip = P(ang, len), l = P(ang - Math.PI / 2, wd), r = P(ang + Math.PI / 2, wd);
+    ctx.globalAlpha = alpha; ctx.lineWidth = 0.7 * u;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(...tip); ctx.lineTo(...l); ctx.closePath(); ctx.fillStyle = color; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(...tip); ctx.lineTo(...r); ctx.closePath(); ctx.fillStyle = full ? color : BG; ctx.fill(); ctx.stroke();
+  };
+  for (let k = 0; k < 8; k++) { const a = Math.PI / 8 + k * Math.PI / 4; ctx.globalAlpha = 0.55; ctx.lineWidth = 0.5 * u; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(...P(a, rb * 0.5)); ctx.stroke(); }
+  for (let k = 0; k < 4; k++) point(Math.PI / 4 + k * Math.PI / 2, rb * 0.62, rb * 0.09, 0.8);
+  for (let k = 0; k < 4; k++) point(k * Math.PI / 2, rb - 1 * u, rb * 0.13, 1, k === 0);
+  ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.arc(x, y, 2.4 * u, 0, Math.PI * 2); ctx.fillStyle = BG; ctx.fill(); ctx.lineWidth = 0.9 * u; ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, 0.9 * u, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+  // Repère nord au-dessus de la lunette
+  const [nx, ny] = P(0, R + 4 * u);
+  ctx.beginPath(); ctx.moveTo(nx, ny - 6 * u); ctx.lineTo(nx - 4 * u, ny + 1 * u); ctx.lineTo(nx + 4 * u, ny + 1 * u); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+// Cadre de plan technique : double filet, réglette graduée dans la bande, repères
+// de zones (lettres / chiffres) dans la marge, équerres et mires aux coins
+function poSheetFrame(ctx, w, h, M, B, u, color, gs) {
+  ctx.save();
+  const x0 = M, y0 = M, x1 = w - M, y1 = h - M;
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = 3 * u; ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.lineWidth = 1.2 * u; ctx.strokeRect(x0 + B, y0 + B, x1 - x0 - 2 * B, y1 - y0 - 2 * B);
+  // Réglette : un trait par case de la grille, plus long toutes les 4 cases
+  ctx.save();
+  for (let i = 0, x = 0; x <= w; i++, x += gs) {
+    if (x <= x0 + B || x >= x1 - B) continue;
+    const L = (i % 4 ? 4 : 8) * u; ctx.globalAlpha = i % 4 ? 0.45 : 0.85; ctx.lineWidth = (i % 4 ? 0.7 : 1) * u;
+    ctx.beginPath(); ctx.moveTo(x, y0 + B); ctx.lineTo(x, y0 + B - L); ctx.moveTo(x, y1 - B); ctx.lineTo(x, y1 - B + L); ctx.stroke();
+  }
+  for (let i = 0, y = 0; y <= h; i++, y += gs) {
+    if (y <= y0 + B || y >= y1 - B) continue;
+    const L = (i % 4 ? 4 : 8) * u; ctx.globalAlpha = i % 4 ? 0.45 : 0.85; ctx.lineWidth = (i % 4 ? 0.7 : 1) * u;
+    ctx.beginPath(); ctx.moveTo(x0 + B, y); ctx.lineTo(x0 + B - L, y); ctx.moveTo(x1 - B, y); ctx.lineTo(x1 - B + L, y); ctx.stroke();
+  }
+  ctx.restore();
+  // Repères de zones dans la marge : A B C… en haut/bas, 1 2 3… sur les côtés
+  const zone = gs * 8, fs = 10 * u;
+  ctx.globalAlpha = 0.55; ctx.font = stFont(600, fs, ST_TXT); ctx.textAlign = 'center';
+  const nx = Math.round((x1 - x0) / zone), ny = Math.round((y1 - y0) / zone);
+  for (let i = 0; i < nx; i++) {
+    const cx = x0 + (i + 0.5) * (x1 - x0) / nx, t = String.fromCharCode(65 + i);
+    ctx.fillText(t, cx, y0 - M * 0.36); ctx.fillText(t, cx, y1 + M * 0.36 + fs * 0.7);
+    if (i) { ctx.fillRect(x0 + i * (x1 - x0) / nx - 0.5 * u, y0 - 6 * u, 1 * u, 6 * u); ctx.fillRect(x0 + i * (x1 - x0) / nx - 0.5 * u, y1, 1 * u, 6 * u); }
+  }
+  for (let i = 0; i < ny; i++) {
+    const cy = y0 + (i + 0.5) * (y1 - y0) / ny + fs * 0.36, t = String(i + 1);
+    ctx.fillText(t, x0 - M * 0.4, cy); ctx.fillText(t, x1 + M * 0.4, cy);
+    if (i) { ctx.fillRect(x0 - 6 * u, y0 + i * (y1 - y0) / ny - 0.5 * u, 6 * u, 1 * u); ctx.fillRect(x1, y0 + i * (y1 - y0) / ny - 0.5 * u, 6 * u, 1 * u); }
+  }
+  ctx.globalAlpha = 1;
+  // Coins : petit carré plein dans la bande + mire de repérage dans la marge
+  [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]].forEach(([cx, cy, sx, sy]) => {
+    ctx.fillRect(Math.min(cx, cx + sx * B), Math.min(cy, cy + sy * B), B, B);
+    const mx = cx - sx * M * 0.5, my = cy - sy * M * 0.5, r = 6 * u;
+    ctx.globalAlpha = 0.6; ctx.lineWidth = 0.8 * u;
+    ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.moveTo(mx - r * 1.7, my); ctx.lineTo(mx + r * 1.7, my); ctx.moveTo(mx, my - r * 1.7); ctx.lineTo(mx, my + r * 1.7); ctx.stroke();
+    ctx.globalAlpha = 1;
   });
   ctx.restore();
 }
@@ -392,6 +448,9 @@ const PO_PAL = {
     label: { color: 'rgba(255,255,255,0.92)', halo: '#123f70', haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: '#ffffff' } },
   nuit: { land: '#1e1e1f', water: '#111112', coast: '#3b3b3d', road: '#2f2f31', roadMajor: '#434346', path: '#36363a', waterway: '#1c2630', wood: '#202421', park: '#202421',
     label: { color: 'rgba(255,255,255,0.6)', halo: '#18181a', upper: true, spacing: 0.16, weight: 600, dot: 'rgba(255,255,255,0.7)' } },
+  // Carte claire aux tons pastel, sans noms de lieux (Nuit, mode clair)
+  pastel: { land: '#f1ebe1', water: '#cfe1e6', coast: '#b8cdd3', coastWidth: 0.9, road: '#e7dfd2', roadMajor: '#ddd2c1', path: '#e9e2d6', waterway: '#c4d9df', wood: '#dfe7d3', park: '#e3ead8',
+    label: { color: '#8a8378', halo: '#f1ebe1', upper: true, spacing: 0.14, weight: 600, dot: '#8a8378' } },
   satellite: { label: { color: '#ffffff', halo: 'rgba(0,0,0,0.6)', haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: '#ffffff' } },
   relief: { land: '#ebe7df', water: '#cfd9dd', coast: '#a9b8bd', coastWidth: 0.9, road: '#d6cfc2', roadMajor: '#bdb3a2', path: '#cbc3b5', waterway: '#b6c6cc', wood: '#dfe2d2', park: '#dfe2d2',
     label: { color: '#6a645a', halo: '#ebe7df', family: PO_SERIF, weight: 400, italic: true, scale: 1.1, dot: '#6a645a' } },
@@ -405,6 +464,9 @@ const PO_PAL = {
 // Modèles ouverts pour l'instant ; les autres sont affichés verrouillés
 const PO_OPEN_TEMPLATES = ['blueprint', 'nuit', 'photo'];
 const poOpen = (id) => PO_OPEN_TEMPLATES.includes(id);
+// Mode clair / sombre d'un modèle qui en propose (tpl.modes) : réglages recommandés du mode
+const poMode = (tpl, mode) => (tpl.modes ? (tpl.modes[mode] ? mode : Object.keys(tpl.modes)[0]) : null);
+const poRec = (tpl, mode) => ({ ...(tpl.rec || {}), ...((tpl.modes && tpl.modes[poMode(tpl, mode)]) || {}) });
 
 const POSTER_TEMPLATES = [
   {
@@ -422,7 +484,7 @@ const POSTER_TEMPLATES = [
       const proj = stFit(d.routes, { x: M + 110 * u, y: M + 130 * u, w: w - 2 * M - 220 * u, h: cy - M - 230 * u });
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       // Carte vectorielle dans le cadre, sous la grille
-      const R = 30 * u, rx = w - M - 12 * u - 60 * u - R, ry = M + 12 * u + 52 * u + R; // boussole, marges haut/droite
+      const R = 38 * u, rx = w - M - 12 * u - 56 * u - R, ry = M + 12 * u + 78 * u + R; // boussole, marges haut/droite
       await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, poBlueprintPal(bg),
         { u, labelRect: { x: M + 30 * u, y: M + 150 * u, w: w - 2 * M - 60 * u, h: cy - M - 170 * u },
           avoid: [{ x0: rx - R - 40 * u, x1: rx + R + 40 * u, y0: ry - R - 40 * u, y1: ry + R + 40 * u }] });
@@ -445,8 +507,7 @@ const POSTER_TEMPLATES = [
       const ix = M + 12 * u, iy = M + 12 * u, iw = w - 2 * M - 24 * u, ih = h - 2 * M - 24 * u;
       [[0, 0, w, iy], [0, iy + ih, w, h - iy - ih], [0, iy, ix, ih], [ix + iw, iy, w - ix - iw, ih]].forEach(([x, y, ww, hh2]) => grid({ x, y, w: ww, h: hh2 }, 0.05, 0.11));
       grid({ x: ix, y: iy, w: iw, h: ih }, 0.022, 0.05);
-      ctx.strokeStyle = line; ctx.lineWidth = 3 * u; ctx.strokeRect(M, M, w - 2 * M, h - 2 * M);
-      ctx.lineWidth = 1.2 * u; ctx.strokeRect(M + 12 * u, M + 12 * u, w - 2 * M - 24 * u, h - 2 * M - 24 * u);
+      poSheetFrame(ctx, w, h, M, 12 * u, u, line, gs);
       // Cartouche
       ctx.fillStyle = bg; ctx.fillRect(cx, cy, cw, ch);
       ctx.strokeStyle = line; ctx.lineWidth = 2 * u; ctx.strokeRect(cx, cy, cw, ch);
@@ -521,35 +582,49 @@ const POSTER_TEMPLATES = [
     },
   },
   {
-    // Carte de nuit : fond sombre, tracé lumineux
+    // Carte de nuit : fond sombre, tracé lumineux. Mode clair : carte pastel sans noms.
     id: 'nuit', name: 'Nuit', kind: 'Carte', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
     rec: { colors: ['#fc5200', '#ffffff'], mapStyle: 'routes', mapOpacity: 100, map: true },
+    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', colors: ['#e8590c', '#2563eb'] } },
     async draw(ctx, d, w, h) {
       const u = w / 1200, ts = d.typeScale || 1; // ts : échelle du titre et des chiffres
-      ctx.fillStyle = '#161616'; ctx.fillRect(0, 0, w, h);
-      const L = stStatsLayout(ctx, d.stats, w - 220 * u, { maxSize: 70 * u * ts, labelSize: 20 * u * Math.max(0.85, ts), cols: poCols(d.stats.length) });
-      const statsTop = h - 130 * u - L.height;
+      const light = d.mode === 'light';
+      const bg = light ? '#f6f1e9' : '#161616', ink = light ? '#24221f' : '#ffffff';
+      const mute = light ? 'rgba(36,34,31,0.55)' : 'rgba(255,255,255,0.55)';
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+      const L = stStatsLayout(ctx, d.stats, w - 220 * u, { maxSize: 70 * u * ts, labelSize: 18 * u * Math.max(0.85, ts), labelGap: 1.25, cols: poCols(d.stats.length) });
+      const statsTop = h - 140 * u - L.height;
       const titleY = statsTop - 90 * u;
       const ph = d.photos.length ? 190 * u : 0;
       const photosTop = titleY - 120 * u - ph;
       const mapBottom = ph ? photosTop - 50 * u : titleY - 160 * u;
       const proj = stFit(d.routes, { x: 140 * u, y: 230 * u, w: w - 280 * u, h: mapBottom - 230 * u }, 15);
-      await poMap(ctx, d, proj, { x: 0, y: 0, w, h }, PO_PAL.nuit,
+      await poMap(ctx, light ? { ...d, mapLabels: false } : d, proj, { x: 0, y: 0, w, h }, light ? PO_PAL.pastel : PO_PAL.nuit,
         { u, labelRect: { x: 70 * u, y: 170 * u, w: w - 140 * u, h: (ph ? photosTop : titleY - 150 * u) - 190 * u } });
-      let g = ctx.createRadialGradient(w / 2, h * 0.42, w * 0.2, w / 2, h * 0.5, w * 0.95);
-      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
       const fadeTop = (ph ? photosTop : titleY) - 260 * u;
-      g = ctx.createLinearGradient(0, fadeTop, 0, h); g.addColorStop(0, 'rgba(10,10,10,0)'); g.addColorStop(0.45, 'rgba(10,10,10,0.85)'); g.addColorStop(1, 'rgba(10,10,10,0.96)');
-      ctx.fillStyle = g; ctx.fillRect(0, fadeTop, w, h);
-      stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffb648'), width: 7 * u, glow: 30 * u });
-      await poDrawLogo(ctx, w / 2, 110 * u, 34 * u, '#ffffff', 'center');
+      if (light) {
+        // Bords fondus vers le papier, bas uni pour le titre et les chiffres
+        let g = ctx.createRadialGradient(w / 2, h * 0.42, w * 0.3, w / 2, h * 0.45, w * 0.95);
+        g.addColorStop(0, 'rgba(246,241,233,0)'); g.addColorStop(1, 'rgba(246,241,233,0.75)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        g = ctx.createLinearGradient(0, fadeTop, 0, h); g.addColorStop(0, 'rgba(246,241,233,0)'); g.addColorStop(0.45, 'rgba(246,241,233,0.92)'); g.addColorStop(1, 'rgba(246,241,233,1)');
+        ctx.fillStyle = g; ctx.fillRect(0, fadeTop, w, h);
+        stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#e8590c'), width: 7 * u, casing: 'rgba(255,255,255,0.9)', casingWidth: 3.5 * u });
+      } else {
+        let g = ctx.createRadialGradient(w / 2, h * 0.42, w * 0.2, w / 2, h * 0.5, w * 0.95);
+        g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.6)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        g = ctx.createLinearGradient(0, fadeTop, 0, h); g.addColorStop(0, 'rgba(10,10,10,0)'); g.addColorStop(0.45, 'rgba(10,10,10,0.85)'); g.addColorStop(1, 'rgba(10,10,10,0.96)');
+        ctx.fillStyle = g; ctx.fillRect(0, fadeTop, w, h);
+        stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffb648'), width: 7 * u, glow: 30 * u });
+      }
+      await poDrawLogo(ctx, w / 2, 110 * u, 24 * u, ink, 'center');
       if (ph) poPhotos(ctx, d.photos, 110 * u, photosTop, w - 220 * u, ph, { gap: 18 * u, radius: 14 * u, maxRatio: 1.5 });
-      if (d.title) poLine(ctx, d.title, w / 2, titleY, w - 220 * u, 84 * u * ts, '#ffffff', { upper: true, spacing: ts < 1 ? 0.16 : 0.1, align: 'center' });
-      if (d.subtitle) stLabel(ctx, d.subtitle, w / 2, titleY + 50 * u * Math.max(0.8, ts), 20 * u * Math.max(0.85, ts), 'rgba(255,255,255,0.6)', 'center');
-      if (d.stats.length) stDrawStats(ctx, d.stats, 110 * u, statsTop, w - 220 * u, { layout: L, labelColor: 'rgba(255,255,255,0.55)', dividers: true, dividerColor: 'rgba(255,255,255,0.18)' });
-      if (d.coords) stLabel(ctx, poCoords(d), w / 2, h - 60 * u, 16 * u, 'rgba(255,255,255,0.45)', 'center');
+      if (d.title) poLine(ctx, d.title, w / 2, titleY, w - 220 * u, 84 * u * ts, ink, { upper: true, spacing: ts < 1 ? 0.16 : 0.1, align: 'center' });
+      if (d.subtitle) stLabel(ctx, d.subtitle, w / 2, titleY + 50 * u * Math.max(0.8, ts), 20 * u * Math.max(0.85, ts), light ? 'rgba(36,34,31,0.6)' : 'rgba(255,255,255,0.6)', 'center');
+      if (d.stats.length) stDrawStats(ctx, d.stats, 110 * u, statsTop, w - 220 * u, { layout: L, labelBelow: true, labelGap: 1.25, color: ink, labelColor: mute, dividers: true, dividerColor: light ? 'rgba(36,34,31,0.14)' : 'rgba(255,255,255,0.18)' });
+      if (d.coords) stLabel(ctx, poCoords(d), w / 2, h - 60 * u, 16 * u, light ? 'rgba(36,34,31,0.45)' : 'rgba(255,255,255,0.45)', 'center');
     },
   },
   {
@@ -690,9 +765,12 @@ const POSTER_TEMPLATES = [
     // Polaroïd : ta photo encadrée de papier, tracé par-dessus ; titre et chiffres dessous
     id: 'polaroid', name: 'Polaroïd', kind: 'Ta photo', photoBg: true, maxPhotos: 0,
     rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 60, map: false },
+    modes: { light: { label: 'Clair' }, dark: { label: 'Sombre' } },
     async draw(ctx, d, w, h) {
-      const u = w / 1200, M = 70 * u, ink = '#1c1a17', mute = '#7d776c';
-      ctx.fillStyle = '#f6f3ee'; ctx.fillRect(0, 0, w, h);
+      // Noir et blanc adouci : papier crème et encre anthracite, ou l'inverse en mode sombre
+      const dark = d.mode === 'dark';
+      const u = w / 1200, M = 70 * u, ink = dark ? '#ebe6dd' : '#2a2825', mute = dark ? '#9b958b' : '#8a847a';
+      ctx.fillStyle = dark ? '#1f1e1c' : '#f4f0e9'; ctx.fillRect(0, 0, w, h);
       const L = stStatsLayout(ctx, d.stats, w - 2 * M - 40 * u, { maxSize: 56 * u, labelSize: 17 * u, cols: poCols(d.stats.length) });
       const statsTop = h - M - 10 * u - L.height;
       const ruleY = statsTop - 40 * u;
@@ -711,15 +789,19 @@ const POSTER_TEMPLATES = [
         { u, clip: (c) => { c.beginPath(); c.rect(px, py, pw, ph); }, labelRect: { x: px + 40 * u, y: py + 140 * u, w: pw - 80 * u, h: ph - 200 * u } });
       stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffffff'), width: 6 * u, glow: 16 * u, markers: true });
       ctx.restore();
-      ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 2 * u; ctx.strokeRect(px, py, pw, ph);
+      ctx.strokeStyle = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'; ctx.lineWidth = 2 * u; ctx.strokeRect(px, py, pw, ph);
       await poDrawLogo(ctx, px + 44 * u, py + 64 * u, 26 * u, '#ffffff');
       if (d.coords) stLabel(ctx, poCoords(d), px + pw - 44 * u, py + 82 * u, 14 * u, 'rgba(255,255,255,0.85)', 'right');
       // Bas : titre (serif), sous-titre italique, filet, chiffres
       const tx = M + 20 * u, tw = w - 2 * M - 40 * u;
       if (d.title) poLines(ctx, d.title, tx, titleTop, tw, 100 * u, ink, { family: PO_SERIF, maxLines: 2, lh: 1.02 });
       if (d.subtitle) poLine(ctx, d.subtitle, tx, titleTop + th + 34 * u, tw, 30 * u, mute, { family: PO_SERIF, weight: 400, italic: true });
-      ctx.fillStyle = ink; ctx.fillRect(tx, ruleY, tw, 2 * u);
-      stLabel(ctx, d.activityLabel || '', tx + tw, ruleY - 14 * u, 15 * u, mute, 'right');
+      // Filet perforé, façon bord de timbre
+      { ctx.save(); ctx.fillStyle = mute; ctx.globalAlpha = 0.55;
+        const step = 11 * u, n = Math.floor(tw / step), off = (tw - n * step) / 2;
+        for (let i = 0; i <= n; i++) { ctx.beginPath(); ctx.arc(tx + off + i * step, ruleY + 1 * u, 2.1 * u, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore(); }
+      stLabel(ctx, d.activityLabel || '', tx + tw, ruleY - 16 * u, 14 * u, mute, 'right');
       if (d.stats.length) stDrawStats(ctx, d.stats, tx, statsTop, tw, { layout: L, align: 'left', color: ink, labelColor: mute });
     },
   },
@@ -729,7 +811,7 @@ const POSTER_TEMPLATES = [
 async function renderPosterCtx(ctx, tpl, d, fmt, border, pr) {
   const W = PO_W, H = poHeight(fmt);
   if (!d.routes.length) return;
-  const dd = { ...d, pr, photos: (d.photos || []).slice(0, tpl.maxPhotos || 4), showMap: d.showMap != null ? d.showMap : !!tpl.mapDefault };
+  const dd = { ...d, pr, mode: d.mode || (tpl.modes ? Object.keys(tpl.modes)[0] : null), photos: (d.photos || []).slice(0, tpl.maxPhotos || 4), showMap: d.showMap != null ? d.showMap : !!tpl.mapDefault };
   ctx.__titleFont = d.titleFont || null;
   // Émojis du titre, du sous-titre et des valeurs : chargés avant de dessiner
   await stLoadEmojis([d.title, d.subtitle, ...(d.stats || []).map((x) => x.value)]);
@@ -750,7 +832,7 @@ async function renderPosterCtx(ctx, tpl, d, fmt, border, pr) {
       await tpl.draw(ctx, dd, W, H);
       if (border === 'fine') {
         const m = W * 0.03;
-        ctx.strokeStyle = tpl.dark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)'; ctx.lineWidth = 2.5;
+        ctx.strokeStyle = (tpl.modes ? dd.mode === 'dark' : tpl.dark) ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)'; ctx.lineWidth = 2.5;
         ctx.strokeRect(m, m, W - 2 * m, H - 2 * m);
       }
     }
@@ -1509,4 +1591,4 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   );
 }
 
-Object.assign(window, { PosterPane, POSTER_TEMPLATES, POSTER_FORMATS, renderPoster, StudioSection, readImageFile });
+Object.assign(window, { poMode, poRec, PosterPane, POSTER_TEMPLATES, POSTER_FORMATS, renderPoster, StudioSection, readImageFile });

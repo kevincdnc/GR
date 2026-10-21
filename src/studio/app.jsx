@@ -247,7 +247,7 @@ function ApPopover({ open, onClose, children }) {
 }
 function ApToolbar({ tpl, cfg, setCfg, photosCount, maxPhotos, onPhoto, onSaveModel }) {
   const [open, setOpen] = useApState('');
-  const rec = tpl.rec || { colors: [] };
+  const rec = { colors: [], ...poRec(tpl, cfg.mode) };
   const colors = [...rec.colors, ...SHARE_COLORS.map((c) => c.value).filter((v) => v !== 'routes' && !rec.colors.includes(v))];
   const cur = cfg.color === 'auto' ? null : cfg.color;
   const fonts = AP_FONT_CHOICES[tpl.id] || AP_FONT_CHOICES.blueprint;
@@ -261,6 +261,17 @@ function ApToolbar({ tpl, cfg, setCfg, photosCount, maxPhotos, onPhoto, onSaveMo
           <span className="w-4 h-4 rounded-full ring-1 ring-white/30" style={{ background: cur || 'conic-gradient(#fc5200,#facc15,#3b82f6,#ffffff,#fc5200)' }} /> Couleur
         </button>
         <ApPopover open={open === 'color'} onClose={() => setOpen('')}>
+          {tpl.modes && (<>
+            <div className={apEyebrow + ' mb-2.5'}>Ambiance</div>
+            <div className="inline-flex rounded-full bg-white/[0.05] ring-1 ring-white/10 p-0.5 mb-4">
+              {Object.entries(tpl.modes).map(([k, m]) => (
+                <button key={k} onClick={() => setCfg({ mode: k, color: 'auto' })}
+                  className={`h-7 px-3.5 rounded-full text-[12px] font-semibold flex items-center gap-1.5 transition-colors ${poMode(tpl, cfg.mode) === k ? 'bg-white text-neutral-900' : 'text-neutral-300 hover:text-white'}`}>
+                  {k === 'light' ? <I.Sun size={12} /> : <I.Moon size={12} />} {m.label}
+                </button>
+              ))}
+            </div>
+          </>)}
           <div className={apEyebrow + ' mb-2.5'}>Couleur du tracé</div>
           <div className="flex items-center gap-1.5 w-max">
             <button onClick={() => setCfg({ color: 'auto' })} className={`h-7 px-2.5 rounded-full text-[11.5px] font-semibold bg-white/[0.06] ${cfg.color === 'auto' ? 'ring-2 ring-white' : 'ring-1 ring-white/15'}`}>Auto</button>
@@ -339,7 +350,7 @@ function PrintraceStudio() {
   const saved = useApMemo(() => apLoad(AP_STATE_KEY, {}), []);
   const [step, setStep] = useApState(() => (tracks.length ? Math.max(2, saved.step || 2) : 1));
   const [cfg, setCfgState] = useApState(() => {
-    const c = { tplId: 'blueprint', color: 'auto', bg: null, font: 'modele', zoom: 0, title: null, subtitle: null, actId: null,
+    const c = { tplId: 'blueprint', color: 'auto', bg: null, mode: null, font: 'modele', zoom: 0, title: null, subtitle: null, actId: null,
       order: null, enabled: null, values: {}, fmtId: 'a3', border: 'none', mock: 'noir', ...(saved.cfg || {}) };
     return { ...c, zoom: Math.min(c.zoom || 0, AP_ZOOMS.length - 1) }; // niveaux de zoom d'une version précédente
   });
@@ -426,7 +437,8 @@ function PrintraceStudio() {
   }, [agg, order, infoX]);
 
   const dataFor = (t) => {
-    const rec = t.rec || {};
+    const mode = t.id === cfg.tplId ? poMode(t, cfg.mode) : poMode(t, null); // vignettes des autres modèles : mode par défaut
+    const rec = poRec(t, mode);
     const routes = has ? [...tracks, ...[apZoomGhost(tracks, AP_ZOOMS[cfg.zoom])].filter(Boolean)] : [apGhost(AP_FRANCE[0], AP_FRANCE[1])];
     const stats = has ? poStats(agg, order.filter((k) => enabled.has(k)), infoX).map((st) => (cfg.values[st.key] ? { ...st, value: cfg.values[st.key], unit: '' } : st)) : [];
     return {
@@ -435,7 +447,7 @@ function PrintraceStudio() {
       stats, photoSlot: false, photos: t.photoBg ? [] : photos, bgPhoto: (bgPhoto && bgPhoto.img) || defaultBg,
       showMap: has ? !!rec.map : true, mapStyle: rec.mapStyle || 'epure', mapOpacity: (rec.mapOpacity || 100) / 100,
       mapLabels: true, bg: (t.bgs && cfg.bg) || rec.bg || null, preview: true,
-      titleFont: AP_FONTS[cfg.font] || null,
+      titleFont: AP_FONTS[cfg.font] || null, mode,
     };
   };
 
@@ -516,11 +528,11 @@ function PrintraceStudio() {
   };
   const fontsOf = AP_FONT_CHOICES[tpl.id] || AP_FONT_CHOICES.blueprint;
   const saveModel = () => {
-    const m = { id: Date.now(), name: `${tpl.name} · ${(fontsOf.find(([k]) => k === cfg.font) || fontsOf[0])[1]}`, tplId: cfg.tplId, color: cfg.color, bg: cfg.bg || null, font: cfg.font, zoom: cfg.zoom, border: cfg.border, mock: cfg.mock, fmtId: cfg.fmtId };
+    const m = { id: Date.now(), name: `${tpl.name} · ${(fontsOf.find(([k]) => k === cfg.font) || fontsOf[0])[1]}`, tplId: cfg.tplId, color: cfg.color, bg: cfg.bg || null, mode: cfg.mode || null, font: cfg.font, zoom: cfg.zoom, border: cfg.border, mock: cfg.mock, fmtId: cfg.fmtId };
     setModels((ms) => [m, ...ms].slice(0, 8));
     showToast('Modèle enregistré : retrouvez-le à l’étape 2');
   };
-  const applyModel = (m) => setCfg({ tplId: m.tplId, color: m.color, bg: m.bg || null, font: m.font, zoom: Math.min(m.zoom || 0, AP_ZOOMS.length - 1), border: m.border, mock: m.mock, fmtId: m.fmtId });
+  const applyModel = (m) => setCfg({ tplId: m.tplId, color: m.color, bg: m.bg || null, mode: m.mode || null, font: m.font, zoom: Math.min(m.zoom || 0, AP_ZOOMS.length - 1), border: m.border, mock: m.mock, fmtId: m.fmtId });
   const setOrder = (f) => setCfg(() => ({ order: f(order), enabled: [...enabled] }));
   const toggleMetric = (k) => setCfg(() => { const n = new Set(enabled); if (n.has(k)) n.delete(k); else n.add(k); return { order, enabled: [...n] }; });
   const setMetricValue = (k, v) => setCfg((c) => { const vals = { ...c.values }; if (v && v.trim()) vals[k] = v.trim(); else delete vals[k]; return { values: vals }; });
@@ -554,7 +566,7 @@ function PrintraceStudio() {
   const nextLabel = ['', 'Choisir mon modèle', 'Mes infos', 'Finition et impression'][step];
 
   return (
-    <div className="h-full relative overflow-hidden font-site bg-[#0a0a0a] text-white" {...dropProps}>
+    <div className="h-full relative overflow-hidden font-site bg-[#1b1b1d] text-white" {...dropProps}>
       {/* Fond : grille fine qui s'estompe, grain léger */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[520px]" style={{
         backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px)',
@@ -655,17 +667,18 @@ function PrintraceStudio() {
             {step === 1 && <ApImport tracks={tracks} onFiles={importFiles} busy={busy} onRemove={removeTrack} onClear={() => { setTracks([]); setStep(1); }} />}
 
             {step === 2 && (<>
-              <div className="grid grid-cols-2 gap-x-3.5 gap-y-5">
+              <div className="grid grid-cols-2 gap-3">
                 {AP_TEMPLATES.map((id) => {
                   const t = apTpl(id), on = id === cfg.tplId;
                   return (
-                    <button key={id} onClick={() => setCfg({ tplId: id, color: 'auto', font: 'modele', bg: null })} className="text-left group">
-                      <div className={`relative rounded-[8px] overflow-hidden bg-neutral-800 transition-all ${on ? 'ring-2 ring-white ring-offset-[3px] ring-offset-[#0f0f10]' : 'ring-1 ring-white/10 group-hover:ring-white/40 group-hover:-translate-y-0.5'}`}
+                    <button key={id} onClick={() => { if (id !== cfg.tplId) setCfg({ tplId: id, color: 'auto', font: 'modele', bg: null, mode: null }); }}
+                      className={`text-left group rounded-2xl px-5 pt-5 pb-3.5 transition-all ${on ? 'bg-white/[0.07] ring-2 ring-white' : 'bg-white/[0.025] ring-1 ring-white/[0.07] hover:bg-white/[0.05] hover:ring-white/20'}`}>
+                      <div className={`relative mx-auto w-[82%] rounded-[4px] overflow-hidden bg-neutral-800 shadow-[0_14px_28px_-12px_rgba(0,0,0,0.9)] transition-transform ${on ? '' : 'group-hover:-translate-y-0.5'}`}
                         style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
                         <canvas ref={(el) => { thumbRefs.current[id] = el; }} width={260} height={368} className="block w-full h-full" />
-                        {t.photoBg && <span title="Avec votre photo" className="absolute top-2 right-2 w-6 h-6 rounded-full grid place-items-center bg-black/60 text-white backdrop-blur"><I.ImagePlus size={12} /></span>}
+                        {t.photoBg && <span title="Avec votre photo" className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full grid place-items-center bg-black/60 text-white backdrop-blur"><I.ImagePlus size={10} /></span>}
                       </div>
-                      <div className="mt-2.5 px-0.5 flex items-baseline justify-between gap-2">
+                      <div className="mt-3.5 flex items-baseline justify-between gap-2">
                         <span className={`text-[13.5px] font-medium ${on ? 'text-white' : 'text-neutral-300'}`}>{t.name}</span>
                         <span className="text-[11px] text-neutral-500">{t.photoBg ? 'Votre photo' : t.kind}</span>
                       </div>

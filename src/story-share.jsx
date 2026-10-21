@@ -383,7 +383,8 @@ function stStatsLayout(ctx, stats, w, o = {}) {
   size = Math.max(36, size);
   let labelSize = Math.max(Math.min(22, o.labelSize || 22), Math.min(o.labelSize || 28, size * 0.34));
   stats.forEach((s) => { const lw = stLabelWidth(ctx, s.label, labelSize); if (lw > inner) labelSize = Math.max(12, labelSize * inner / lw); });
-  const gapLV = labelSize * 0.75;
+  // o.labelGap : espace entre label et compteur (multiple de la taille du label)
+  const gapLV = labelSize * (o.labelGap != null ? o.labelGap : 0.75);
   const cellH = labelSize + gapLV + size * 0.78;
   const rowGap = o.rowGap != null ? o.rowGap : size * 0.55;
   return { cols, rows, cw, size, labelSize, gapLV, cellH, rowGap, height: rows * cellH + (rows - 1) * rowGap };
@@ -400,8 +401,13 @@ function stDrawStats(ctx, stats, x, top, w, o = {}) {
     const shift = align === 'center' ? (L.cols - inRow) * L.cw / 2 : 0;
     const cx = (align === 'center' ? x + c * L.cw + L.cw / 2 : x + c * L.cw) + shift;
     const ty = top + r * (L.cellH + L.rowGap);
-    stLabel(ctx, s.label, cx, ty + L.labelSize * 0.8, L.labelSize, labelColor, align);
-    stValue(ctx, s, cx, ty + L.labelSize + L.gapLV + L.size * 0.74, L.size, color, align);
+    if (o.labelBelow) { // compteur d'abord, label en dessous
+      stValue(ctx, s, cx, ty + L.size * 0.74, L.size, color, align);
+      stLabel(ctx, s.label, cx, ty + L.size * 0.78 + L.gapLV + L.labelSize * 0.8, L.labelSize, labelColor, align);
+    } else {
+      stLabel(ctx, s.label, cx, ty + L.labelSize * 0.8, L.labelSize, labelColor, align);
+      stValue(ctx, s, cx, ty + L.labelSize + L.gapLV + L.size * 0.74, L.size, color, align);
+    }
     if (o.dividers && c > 0) {
       ctx.save(); ctx.fillStyle = o.dividerColor || 'rgba(255,255,255,0.22)';
       ctx.fillRect(x + shift + c * L.cw - 1, ty + 4, 2, L.cellH - 4);
