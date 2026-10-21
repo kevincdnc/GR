@@ -110,7 +110,7 @@ function ApStepHead({ n }) {
         style={{ backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em' }}>
         0{n}
       </span>
-      <h2 className="mt-2.5 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[21px] text-white">{st.title}</h2>
+      <h2 className="mt-2.5 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[23px] text-white">{st.title}</h2>
       {/* Une seule ligne de description par étape */}
       <p className="mt-2.5 text-[14px] leading-[1.5] text-neutral-400 truncate">{st.text}</p>
     </div>
