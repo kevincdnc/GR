@@ -843,10 +843,21 @@ const POSTER_TEMPLATES = [
       // Bas : titre et sous-titre à gauche, chiffres en liste à droite
       const by = my + mh + 92 * u, colW = mw * 0.4, lx = mx, rx = mx + mw - colW;
       // Titre dans la typo de la marque : gras italique
-      const TT = { maxLines: 3, weight: 800, italic: true, family: PO_BRAND, lh: 1.04 };
-      const th = poLinesHeight(ctx, d.title, mw - colW - 60 * u, 50 * u, TT);
-      if (d.title) poLines(ctx, d.title, lx, by - 12 * u, mw - colW - 60 * u, 50 * u, INK, TT);
-      if (d.subtitle) stLabel(ctx, d.subtitle, lx, by - 12 * u + th + 26 * u, 12 * u, ink(0.55));
+      // Une seule ligne : le titre rétrécit pour tenir (50 → 30), puis passe sur deux lignes au minimum
+      const TT = { maxLines: 2, weight: 800, italic: true, family: PO_BRAND, lh: 1.04 };
+      const tw = mw - colW - 60 * u, tMax = 50 * u, tMin = 30 * u, top = by - 12 * u;
+      let th = 0;
+      if (d.title) {
+        ctx.font = poFont(800, tMax, poFam(ctx, TT), true);
+        const full = stMeasure(ctx, d.title);
+        if (full * tMin / tMax <= tw) {
+          const sz = Math.min(tMax, tMax * tw / Math.max(1, full));
+          poLine(ctx, d.title, lx, top + sz * 0.82, tw, sz, INK, TT); th = sz * 1.04;
+        } else {
+          th = poLinesHeight(ctx, d.title, tw, tMin, TT); poLines(ctx, d.title, lx, top, tw, tMin, INK, TT);
+        }
+      }
+      if (d.subtitle) stLabel(ctx, d.subtitle, lx, top + th + 26 * u, 12 * u, ink(0.55));
       const rowH = 44 * u;
       d.stats.forEach((st, i) => {
         const y = by + i * rowH;
