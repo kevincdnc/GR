@@ -131,7 +131,9 @@ const PAGES = [
   { src: 'hub.html', out: 'index.html', preview: 'hub.html', prerender: true },
   { src: 'routdoor.html', out: 'routdoor/index.html', preview: 'gr34.html' },
   { src: 'printrace-site.html', out: 'printrace/index.html', preview: 'printrace-site.html', prerender: true },
-  { src: 'printrace.html', out: 'printrace/studio/index.html', preview: 'printrace.html' },
+  // Studio Printrace (nouvelle app) ; l'ancienne version reste en ligne sous printrace/v1/
+  { src: 'printrace-studio.html', out: 'printrace/studio/index.html', preview: 'printrace-studio.html' },
+  { src: 'printrace.html', out: 'printrace/v1/index.html', preview: 'printrace-v1.html' },
   { src: 'printrace-login.html', out: 'printrace/login/index.html', preview: 'printrace-login.html' },
   { src: 'design-system.html', out: 'design-system/index.html', preview: 'design-system.html' },
 ]
@@ -235,7 +237,7 @@ export function build({ single = false } = {}) {
     const SITE = 'https://kevincdnc.github.io/GR/'
     const urls = ['', 'printrace/', 'routdoor/']
     writeFileSync(join(out, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${SITE}${u}</loc></url>`).join('\n')}\n</urlset>\n`)
-    writeFileSync(join(out, 'robots.txt'), `User-agent: *\nDisallow: /GR/design-system/\nSitemap: ${SITE}sitemap.xml\n`)
+    writeFileSync(join(out, 'robots.txt'), `User-agent: *\nDisallow: /GR/design-system/\nDisallow: /GR/printrace/v1/\nSitemap: ${SITE}sitemap.xml\n`)
     // Carte intégrable (iframe) : page légère, sans React
     writeFileSync(join(out, 'embed.html'), readFileSync(join(ROOT, 'embed.html'), 'utf8'))
     console.log(`dist/ prêt en ${Date.now() - t0} ms (${pages.length} pages, ${scripts.length} scripts)`)

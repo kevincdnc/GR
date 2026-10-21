@@ -69,6 +69,11 @@ function PrintraceLogin() {
             {error && <p className="mt-3 text-[13px] text-red-300">{error}</p>}
           </div>
 
+          {/* Pour l'instant : on peut passer la connexion pour tester le produit */}
+          <button onClick={go} className="mt-4 w-full h-11 rounded-xl text-[13.5px] font-medium text-neutral-300 hover:text-white hover:bg-white/[0.05] ring-1 ring-white/10 transition-colors">
+            Passer et tester le studio →
+          </button>
+
           <p className="mt-5 text-center text-[12.5px] leading-relaxed text-neutral-500">
             En continuant, vous acceptez les conditions d’utilisation de Printrace.
             {!ptAuthGoogleId() && <><br /><span className="text-neutral-600">Aperçu : la connexion ouvre une session de démonstration.</span></>}

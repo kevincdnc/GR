@@ -200,6 +200,9 @@ function stPath(ctx, proj, coords) {
 // Tracé(s) : liseré + trait, éventuellement lueur
 function stDrawRoutes(ctx, routes, proj, o) {
   const { color, width = 9, casing = null, casingWidth = 6, glow = 0, markers = true } = o;
+  // Tracés « fantômes » (r.ghost) : servent seulement au cadrage (carte vide, dézoom), jamais dessinés
+  routes = routes.filter((r) => !r.ghost);
+  if (!routes.length) return;
   ctx.save();
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   if (casing) {

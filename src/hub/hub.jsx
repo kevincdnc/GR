@@ -17,7 +17,7 @@ const HUB_SERVICES = [
   },
   {
     id: 'studio', key: '2', path: 'printrace/studio/', name: 'Printrace', kind: 'Produit · studio',
-    desc: 'Importer un tracé et composer son poster : modèles, carte vectorielle, export HD.',
+    desc: 'La nouvelle app : importer un tracé, choisir un modèle, ses infos, puis télécharger en HD ou commander.',
     logo: <span className="text-white"><UiPrintraceLogo height={22} /></span>, accent: '#fc5200',
   },
   {
@@ -28,6 +28,7 @@ const HUB_SERVICES = [
 ];
 const HUB_RESOURCES = [
   { path: 'design-system/', icon: 'Layers', name: 'Design system', desc: 'Fondations et composants communs' },
+  { path: 'printrace/v1/', icon: 'Poster', name: 'Test Printrace v-1', desc: 'Ancienne version du studio' },
   { href: 'https://github.com/kevincdnc/GR', icon: 'Code', name: 'Code source', desc: 'kevincdnc/GR sur GitHub' },
 ];
 

@@ -121,16 +121,18 @@ function poDms(v, pos, neg) {
   return `${deg}°${min.toFixed(1).replace('.', ',')}′ ${v >= 0 ? pos : neg}`;
 }
 function poCoords(d) {
-  const r = d.routes[0]; if (!r) return '';
+  const r = d.routes.find((x) => !x.ghost); if (!r) return '';
   const c = r.coords[0];
   return `${poDms(c[0], 'N', 'S')}  ·  ${poDms(c[1], 'E', 'O')}`;
 }
 function poFont(weight, size, family, italic) { return `${italic ? 'italic ' : ''}${weight} ${Math.round(size)}px ${family}`; }
+// Police des titres choisie dans le studio (d.titleFont), portée par le contexte du rendu ; sinon celle du modèle
+const poFam = (ctx, o) => ctx.__titleFont || o.family || ST_TXT;
 // Titre sur une ligne, réduit pour tenir dans maxW ; renvoie la taille utilisée
 function poLine(ctx, text, x, y, maxW, size, color, o = {}) {
   const t = o.upper ? String(text || '').toUpperCase() : String(text || '');
   if (!t) return 0;
-  const fam = o.family || ST_TXT, wt = o.weight || 700, sp = o.spacing || 0;
+  const fam = poFam(ctx, o), wt = o.weight || 700, sp = o.spacing || 0;
   const width = (sz) => { ctx.font = poFont(wt, sz, fam, o.italic); return ctx.measureText(t).width + sp * sz * Math.max(0, [...t].length - 1); };
   let sz = size; const w0 = width(sz); if (w0 > maxW) sz = sz * maxW / w0;
   ctx.font = poFont(wt, sz, fam, o.italic); ctx.fillStyle = color;
@@ -142,7 +144,7 @@ function poLine(ctx, text, x, y, maxW, size, color, o = {}) {
 function poLines(ctx, text, x, y, maxW, size, color, o = {}) {
   const t = o.upper ? String(text || '').toUpperCase() : String(text || '');
   if (!t) return 0;
-  ctx.font = poFont(o.weight || 700, size, o.family || ST_TXT, o.italic); ctx.fillStyle = color; ctx.textAlign = o.align || 'left';
+  ctx.font = poFont(o.weight || 700, size, poFam(ctx, o), o.italic); ctx.fillStyle = color; ctx.textAlign = o.align || 'left';
   const lines = stWrap(ctx, t, maxW, o.maxLines || 3);
   const lh = size * (o.lh || 1.04);
   lines.forEach((l, i) => ctx.fillText(l, x, y + size * 0.82 + i * lh));
@@ -151,7 +153,7 @@ function poLines(ctx, text, x, y, maxW, size, color, o = {}) {
 function poLinesHeight(ctx, text, maxW, size, o = {}) {
   const t = o.upper ? String(text || '').toUpperCase() : String(text || '');
   if (!t) return 0;
-  ctx.font = poFont(o.weight || 700, size, o.family || ST_TXT, o.italic);
+  ctx.font = poFont(o.weight || 700, size, poFam(ctx, o), o.italic);
   return stWrap(ctx, t, maxW, o.maxLines || 3).length * size * (o.lh || 1.04);
 }
 // Échelle graphique (km) sous une projection Web Mercator
@@ -336,8 +338,9 @@ function poCompass(ctx, x, y, R, u, color, bg) {
 }
 // Marqueurs départ / arrivée : même pastille (anneau + point) aux deux bouts
 function poStartEnd(ctx, d, proj, u, color, bg) {
-  if (!d.routes.length) return;
-  const a = d.routes[0].coords[0], lr = d.routes[d.routes.length - 1], b = lr.coords[lr.coords.length - 1];
+  const rs = d.routes.filter((r) => !r.ghost); // tracés fantômes : cadrage seulement
+  if (!rs.length) return;
+  const a = rs[0].coords[0], lr = rs[rs.length - 1], b = lr.coords[lr.coords.length - 1];
   ctx.save();
   [a, b].forEach((c) => {
     const [x, y] = proj.px(c[0], c[1]);
@@ -683,6 +686,43 @@ const POSTER_TEMPLATES = [
       if (d.stats.length) stDrawStats(ctx, d.stats, M, statsTop, w - 2 * M, { layout: L, align: 'left', labelColor: 'rgba(255,255,255,0.7)' });
     },
   },
+  {
+    // Polaroïd : ta photo encadrée de papier, tracé par-dessus ; titre et chiffres dessous
+    id: 'polaroid', name: 'Polaroïd', kind: 'Ta photo', photoBg: true, maxPhotos: 0,
+    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 60, map: false },
+    async draw(ctx, d, w, h) {
+      const u = w / 1200, M = 70 * u, ink = '#1c1a17', mute = '#7d776c';
+      ctx.fillStyle = '#f6f3ee'; ctx.fillRect(0, 0, w, h);
+      const L = stStatsLayout(ctx, d.stats, w - 2 * M - 40 * u, { maxSize: 56 * u, labelSize: 17 * u, cols: poCols(d.stats.length) });
+      const statsTop = h - M - 10 * u - L.height;
+      const ruleY = statsTop - 40 * u;
+      const th = poLinesHeight(ctx, d.title, w - 2 * M - 40 * u, 100 * u, { family: PO_SERIF, maxLines: 2, lh: 1.02 });
+      const subH = d.subtitle ? 46 * u : 0;
+      const titleTop = ruleY - 36 * u - subH - th;
+      const px = M, py = M, pw = w - 2 * M, ph = titleTop - 56 * u - M;
+      // Photo, voile léger en haut (logo) et en bas, puis carte et tracé par-dessus
+      ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
+      poPhotoBg(ctx, d, px, py, pw, ph);
+      const g = ctx.createLinearGradient(0, py, 0, py + ph);
+      g.addColorStop(0, 'rgba(0,0,0,0.42)'); g.addColorStop(0.3, 'rgba(0,0,0,0.1)'); g.addColorStop(0.75, 'rgba(0,0,0,0.12)'); g.addColorStop(1, 'rgba(0,0,0,0.35)');
+      ctx.fillStyle = g; ctx.fillRect(px, py, pw, ph);
+      const proj = stFit(d.routes, { x: px + 100 * u, y: py + 160 * u, w: pw - 200 * u, h: ph - 260 * u }, 15);
+      await poMap(ctx, d, proj, { x: px, y: py, w: pw, h: ph }, PO_PAL.photo,
+        { u, clip: (c) => { c.beginPath(); c.rect(px, py, pw, ph); }, labelRect: { x: px + 40 * u, y: py + 140 * u, w: pw - 80 * u, h: ph - 200 * u } });
+      stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffffff'), width: 6 * u, glow: 16 * u, markers: true });
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.lineWidth = 2 * u; ctx.strokeRect(px, py, pw, ph);
+      await poDrawLogo(ctx, px + 44 * u, py + 64 * u, 26 * u, '#ffffff');
+      if (d.coords) stLabel(ctx, poCoords(d), px + pw - 44 * u, py + 82 * u, 14 * u, 'rgba(255,255,255,0.85)', 'right');
+      // Bas : titre (serif), sous-titre italique, filet, chiffres
+      const tx = M + 20 * u, tw = w - 2 * M - 40 * u;
+      if (d.title) poLines(ctx, d.title, tx, titleTop, tw, 100 * u, ink, { family: PO_SERIF, maxLines: 2, lh: 1.02 });
+      if (d.subtitle) poLine(ctx, d.subtitle, tx, titleTop + th + 34 * u, tw, 30 * u, mute, { family: PO_SERIF, weight: 400, italic: true });
+      ctx.fillStyle = ink; ctx.fillRect(tx, ruleY, tw, 2 * u);
+      stLabel(ctx, d.activityLabel || '', tx + tw, ruleY - 14 * u, 15 * u, mute, 'right');
+      if (d.stats.length) stDrawStats(ctx, d.stats, tx, statsTop, tw, { layout: L, align: 'left', color: ink, labelColor: mute });
+    },
+  },
 ];
 
 // Rendu complet : cadre (bordure) + modèle, dans un contexte déjà à l'échelle.
@@ -690,6 +730,7 @@ async function renderPosterCtx(ctx, tpl, d, fmt, border, pr) {
   const W = PO_W, H = poHeight(fmt);
   if (!d.routes.length) return;
   const dd = { ...d, pr, photos: (d.photos || []).slice(0, tpl.maxPhotos || 4), showMap: d.showMap != null ? d.showMap : !!tpl.mapDefault };
+  ctx.__titleFont = d.titleFont || null;
   try {
     if (border === 'marge' || border === 'passe') {
       const m = border === 'passe' ? W * 0.085 : W * 0.035;
