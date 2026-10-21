@@ -128,7 +128,7 @@ const apEyebrow = 'text-[11.5px] font-semibold uppercase tracking-[0.12em] text-
 // Tracés réels, servis par le site (assets/routes/) : survol = aperçu sur le poster, clic = chargé.
 // « soon » : pas encore de tracé fiable (à récupérer sur OpenStreetMap).
 const AP_CATALOG = [
-  { id: 'gr34', short: 'GR34 Finistère', name: 'GR34 · Finistère', sub: 'Locquirec → Le Pouldu', km: 925, dplus: 11400, file: 'assets/routes/gr34-finistere.json', title: 'GR34 ⚪️🔴', subtitle: 'Locquirec → Le Pouldu · Finistère' },
+  { id: 'gr34', short: 'GR34', name: 'GR34 · Finistère', sub: 'Locquirec → Le Pouldu', km: 925, dplus: 11400, file: 'assets/routes/gr34-finistere.json', title: 'GR34 ⚪️🔴', subtitle: 'Locquirec → Le Pouldu · Finistère' },
   { id: 'tmb', short: 'TMB', name: 'Tour du Mont-Blanc', sub: 'Les Houches → Chamonix · 3 pays', km: 156, dplus: 9525, file: 'assets/routes/tmb.json', title: 'Tour du Mont-Blanc', subtitle: 'Les Houches → Chamonix · France, Italie, Suisse' },
   { id: 'gr20', name: 'GR20', sub: 'Corse · Calenzana → Conca', km: 180, soon: true },
   { id: 'utmb', name: 'UTMB', sub: 'Chamonix · 171 km', km: 171, soon: true },
@@ -168,25 +168,22 @@ function ApCatalog({ onPreview, onPick }) {
   };
   const hover = (e) => () => { if (!e.soon) onPreview(e); };
   const leave = () => onPreview(null);
+  const tag = 'h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[12px] font-medium transition ring-1';
   return (
     <div className="relative">
-      <div className="rounded-[20px] bg-white/[0.03] ring-1 ring-white/[0.14] pl-4 pr-3.5 py-3.5">
-        <div className="flex items-center gap-3">
-          <span className="w-7 h-7 rounded-[7px] grid place-items-center bg-white text-neutral-900 shrink-0"><I.Route size={15} /></span>
-          <span className="flex-1 min-w-0 text-[14px] text-neutral-300 truncate">Partir d’un grand itinéraire</span>
-          <button onClick={() => setOpen(!open)} aria-expanded={open}
-            className={`h-10 pl-3.5 pr-2.5 shrink-0 rounded-lg flex items-center gap-1 text-[13px] font-semibold transition-colors ${open ? 'bg-white text-neutral-900' : 'bg-white/[0.08] text-white hover:bg-white/[0.14]'}`}>
-            Voir <I.ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+      {/* Suggestions en tags (nom du trek seulement) + « Voir tous » */}
+      <div className="flex flex-wrap items-center gap-1.5" onMouseLeave={leave}>
+        <span className="text-[12px] text-neutral-500 mr-1">Grands itinéraires</span>
+        {ready.map((e) => (
+          <button key={e.id} onMouseEnter={hover(e)} onFocus={hover(e)} onBlur={leave} onClick={() => pick(e)} title={`${e.name} · ${e.km} km`}
+            className={tag + ' text-neutral-300 bg-white/[0.04] ring-white/[0.08] hover:text-white hover:bg-white/[0.09] hover:ring-white/20'}>
+            {loading === e.id && <UiSpinner size={11} />}{e.short || e.name}
           </button>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5" onMouseLeave={leave}>
-          {ready.map((e) => (
-            <button key={e.id} onMouseEnter={hover(e)} onFocus={hover(e)} onBlur={leave} onClick={() => pick(e)}
-              className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[12px] font-medium text-neutral-300 bg-white/[0.04] ring-1 ring-white/[0.08] hover:text-white hover:bg-white/[0.09] hover:ring-white/20 transition">
-              {loading === e.id && <UiSpinner size={11} />}{e.short || e.name}<span className="text-neutral-500 tabular-nums">{e.km} km</span>
-            </button>
-          ))}
-        </div>
+        ))}
+        <button onClick={() => setOpen(!open)} aria-expanded={open}
+          className={tag + (open ? ' bg-white text-neutral-900 ring-white' : ' text-neutral-400 ring-white/[0.08] hover:text-white hover:ring-white/20')}>
+          Voir tous <I.ChevronDown size={13} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
       </div>
       {open && (<>
         <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); leave(); }} />
