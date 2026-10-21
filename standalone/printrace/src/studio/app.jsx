@@ -249,7 +249,7 @@ function ApPopover({ open, onClose, children }) {
     </>
   );
 }
-function ApToolbar({ tpl, cfg, setCfg, trackColor, photos, bgPhoto, maxPhotos, onPhoto, onRemovePhoto, onRemoveBg, onSaveModel }) {
+function ApToolbar({ tpl, cfg, setCfg, trackColor, photos, bgPhoto, maxPhotos, onPhoto, onRemovePhoto, onRemoveBg, onSaveModel, save = {} }) {
   const photosCount = photos.length;
   const [open, setOpen] = useApState('');
   const rec = { colors: [], ...poRec(tpl, cfg.mode) };
@@ -388,9 +388,30 @@ function ApToolbar({ tpl, cfg, setCfg, trackColor, photos, bgPhoto, maxPhotos, o
         </ApPopover>
       </div>
       {sep}
-      <button onClick={onSaveModel} className={btn(false)} title="Enregistrer le poster dans mon compte (tracés, style et infos)">
-        <I.Folder size={15} /> Enregistrer
-      </button>
+      <div className="relative">
+        {/* Poster déjà enregistré : le mettre à jour, ou en garder une copie (3 posters par compte) */}
+        <button onClick={() => (save.current ? setOpen(open === 'save' ? '' : 'save') : onSaveModel('new'))} className={btn(open === 'save')}
+          title="Enregistrer le poster dans mon compte (tracés, style et infos)">
+          <I.Folder size={15} /> Enregistrer
+          {save.user && <span className="text-[11.5px] tabular-nums text-neutral-400">{save.count}/{save.max}</span>}
+        </button>
+        {open === 'save' && (<>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen('')} />
+          <div className="absolute top-full mt-2 right-0 z-50 w-[300px] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-2 animate-menu">
+            <div className={apEyebrow + ' px-2.5 pt-1.5 pb-2'}>Mes posters · {save.count}/{save.max}</div>
+            <button onClick={() => { setOpen(''); onSaveModel('update'); }} className="w-full flex items-start gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-white/[0.06]">
+              <I.Check size={15} className="mt-0.5 text-neutral-300 shrink-0" />
+              <span className="min-w-0"><span className="block text-[13px] font-medium text-white">Mettre à jour</span><span className="block text-[11.5px] text-neutral-500 truncate">« {save.current} »</span></span>
+            </button>
+            <button onClick={() => { setOpen(''); onSaveModel('new'); }} disabled={save.count >= save.max}
+              className="w-full flex items-start gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-white/[0.06] disabled:opacity-45 disabled:hover:bg-transparent disabled:cursor-not-allowed">
+              <I.Plus size={15} className="mt-0.5 text-neutral-300 shrink-0" />
+              <span className="min-w-0"><span className="block text-[13px] font-medium text-white">Enregistrer comme nouveau poster</span>
+                <span className="block text-[11.5px] text-neutral-500">{save.count >= save.max ? `${save.max} posters maximum : supprimez-en un` : 'Le poster ouvert reste tel quel'}</span></span>
+            </button>
+          </div>
+        </>)}
+      </div>
     </div>
   );
 }
@@ -435,7 +456,7 @@ function ApAccount({ user, designs, currentId, onOpen, onNew, onSignOut }) {
             </div>
           </div>
           <div className="px-2 pt-3">
-            <div className={apEyebrow + ' px-2 mb-1.5'}>Mes posters · {designs.length}</div>
+            <div className={apEyebrow + ' px-2 mb-1.5'}>Mes posters · {designs.length}/{AP_MAX_DESIGNS}</div>
             {designs.length ? (
               <div className="max-h-[300px] overflow-y-auto sb-scroll flex flex-col gap-0.5">
                 {designs.map((d) => (
@@ -463,6 +484,9 @@ function ApAccount({ user, designs, currentId, onOpen, onNew, onSignOut }) {
     </div>
   );
 }
+
+// Posters enregistrés par compte
+const AP_MAX_DESIGNS = 3;
 
 // ---------------------------------------------------------------- app
 const AP_DEFAULT_CFG = { tplId: 'nuit', color: 'auto', bg: null, mode: null, font: 'modele', zoom: 0, title: null, subtitle: null, actId: null,
@@ -654,7 +678,8 @@ function PrintraceStudio() {
   const fontsOf = AP_FONT_CHOICES[tpl.id] || AP_FONT_CHOICES.blueprint;
   // Enregistrer le poster dans le compte : tracés, réglages et vignette. Un poster
   // rouvert est mis à jour à sa place. Sans compte : connexion, puis enregistrement au retour.
-  const saveDesign = async () => {
+  // kind : 'update' (le poster ouvert), 'new' (nouveau poster), sinon l'un ou l'autre selon le cas
+  const saveDesign = async (kind) => {
     if (!user) {
       try { sessionStorage.setItem('pt_save_after_login', '1'); } catch (e) {}
       showToast('Connectez-vous pour enregistrer vos posters');
@@ -669,7 +694,10 @@ function PrintraceStudio() {
       await renderPoster(c, tpl, dataFor(tpl), fmt, cfg.border, w / PO_W);
       thumb = c.toDataURL('image/jpeg', 0.8);
     } catch (e) {}
-    const now = Date.now(), prev = designId && designs.find((x) => x.id === designId);
+    const open = designId && designs.find((x) => x.id === designId);
+    const prev = kind === 'new' ? null : open;
+    if (!prev && designs.length >= AP_MAX_DESIGNS) { showToast(`${AP_MAX_DESIGNS} posters maximum : supprimez-en un pour enregistrer celui-ci`); return; }
+    const now = Date.now();
     const d = { id: prev ? prev.id : 'p' + now.toString(36), name: (cfg.title && cfg.title.trim()) || defaultTitle,
       tplName: tpl.name + (tpl.modes ? ' · ' + tpl.modes[poMode(tpl, cfg.mode)].label : ''), thumb, tracks, cfg,
       createdAt: prev ? prev.createdAt : now, updatedAt: now };
@@ -690,7 +718,7 @@ function PrintraceStudio() {
   useApEffect(() => {
     let f = null;
     try { f = sessionStorage.getItem('pt_save_after_login'); sessionStorage.removeItem('pt_save_after_login'); } catch (e) {}
-    if (f && user && has) { const t = setTimeout(saveDesign, 800); return () => clearTimeout(t); }
+    if (f && user && has) { const t = setTimeout(() => saveDesign(), 800); return () => clearTimeout(t); }
   }, []);
   const setOrder = (f) => setCfg(() => ({ order: f(order), enabled: [...enabled] }));
   const toggleMetric = (k) => setCfg(() => { const n = new Set(enabled); if (n.has(k)) n.delete(k); else n.add(k); return { order, enabled: [...n] }; });
@@ -739,6 +767,7 @@ function PrintraceStudio() {
           {has && step >= 2 && (
             <ApToolbar tpl={tpl} cfg={cfg} setCfg={setCfg} trackColor={has ? tracks[0].color : null} photos={photos} bgPhoto={bgPhoto} maxPhotos={tpl.maxPhotos || 0}
               onPhoto={() => photoInput.current && photoInput.current.click()} onSaveModel={saveDesign}
+              save={{ user: !!user, count: designs.length, max: AP_MAX_DESIGNS, current: (designs.find((x) => x.id === designId) || {}).name || null }}
               onRemovePhoto={(i) => setPhotos((l) => l.filter((_, j) => j !== i))} onRemoveBg={() => setBgPhoto(null)} />
           )}
           {!has && <span className="text-[13px] text-neutral-500 pb-2">Votre tracé apparaîtra sur cette carte</span>}
@@ -826,9 +855,9 @@ function PrintraceStudio() {
             {step === 2 && (<>
               {designs.length > 0 && (
                 <div className="mb-6">
-                  <div className={apEyebrow + ' mb-2.5'}>Mes posters</div>
+                  <div className={apEyebrow + ' mb-2.5'}>Mes posters · {designs.length}/{AP_MAX_DESIGNS}</div>
                   <div className="grid grid-cols-3 gap-2.5">
-                    {designs.slice(0, 6).map((d) => (
+                    {designs.slice(0, AP_MAX_DESIGNS).map((d) => (
                       <div key={d.id} className="relative group">
                         <button onClick={() => openDesign(d)} title={'Rouvrir « ' + d.name + ' »'}
                           className={`block w-full text-left rounded-xl p-2 transition-all ${d.id === designId ? 'bg-white/[0.07] ring-2 ring-white' : 'bg-white/[0.025] ring-1 ring-white/[0.07] hover:bg-white/[0.05] hover:ring-white/20'}`}>
@@ -840,6 +869,14 @@ function PrintraceStudio() {
                         </button>
                         <button onClick={() => deleteDesign(d.id)} aria-label={'Supprimer « ' + d.name + ' »'}
                           className="absolute top-3 right-3 w-6 h-6 rounded-full grid place-items-center bg-black/70 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-red-500 transition"><I.Trash size={11} /></button>
+                      </div>
+                    ))}
+                    {/* Emplacements libres : jusqu'à 3 posters par compte */}
+                    {Array.from({ length: Math.max(0, AP_MAX_DESIGNS - designs.length) }, (_, k) => (
+                      <div key={'libre' + k} className="rounded-xl p-2 border border-dashed border-white/[0.12] flex flex-col">
+                        <span className="grid place-items-center rounded-[3px] text-neutral-600" style={{ aspectRatio: '297 / 420' }}><I.Plus size={16} /></span>
+                        <span className="mt-1.5 block text-[11.5px] font-medium text-neutral-500 truncate">Libre</span>
+                        <span className="block text-[10.5px] text-neutral-600 truncate">Pour un poster</span>
                       </div>
                     ))}
                   </div>
