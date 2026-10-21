@@ -838,8 +838,8 @@ const POSTER_TEMPLATES = [
         if (i || ends.loop) { ctx.beginPath(); ctx.arc(px, py, 2.4 * u, 0, Math.PI * 2); ctx.fillStyle = acc; ctx.fill(); }
       });
       // En-tête : logo discret, activité
-      await poDrawLogo(ctx, M, M + 4 * u, 17 * u, INK);
-      if (d.activityLabel) stLabel(ctx, d.activityLabel, w - M, M + 18 * u, 11 * u, ink(0.5), 'right');
+      await poDrawLogo(ctx, M, M - 2 * u, 26 * u, INK); // même taille que Plan
+      if (d.activityLabel) stLabel(ctx, d.activityLabel, w - M, M + 15 * u, 11 * u, ink(0.5), 'right');
       // Bas : titre et sous-titre à gauche, chiffres en liste à droite
       const by = my + mh + 92 * u, colW = mw * 0.4, lx = mx, rx = mx + mw - colW;
       // Titre dans la typo de la marque : gras italique
