@@ -39,7 +39,7 @@ const AP_FONT_CHOICES = {
 // Police « du modèle » (aperçu du bouton) : celle de ses titres
 const AP_NATIVE_FONT = { blueprint: ST_TXT, nuit: ST_TXT, relief: PO_SERIF, galerie: PO_SERIF, photo: PO_SERIF, polaroid: PO_SERIF };
 // Zoom de la carte : 0 = cadré sur le tracé, puis deux niveaux plus larges
-const AP_ZOOMS = [0, 0.7, 1.8];
+const AP_ZOOMS = [0, 0.35, 0.85, 1.8]; // pas plus doux ; le niveau le plus large reste celui d'avant
 // Carte de France (poster d'accueil, sans tracé)
 const AP_FRANCE = [[51.1, -4.9], [42.3, 8.3]];
 // Photo par défaut des modèles « photo » (remplaçable)
@@ -127,6 +127,11 @@ function ApImport({ tracks, onFiles, busy, onRemove, onClear }) {
   const [error, setError] = useApState({ src: '', msg: '' });
   const [linkBusy, setLinkBusy] = useApState('');
   const pickSrc = useApRef('file');
+  // Une fois un tracé importé, les champs d'import se replient (« Ajouter un tracé » les rouvre)
+  const [adding, setAdding] = useApState(false);
+  const count = useApRef(tracks.length);
+  useApEffect(() => { if (tracks.length > count.current) setAdding(false); count.current = tracks.length; }, [tracks.length]);
+  const showFields = !tracks.length || adding;
   const root = window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../../';
   const pick = (src = 'file') => { pickSrc.current = src; fileRef.current && fileRef.current.click(); };
   const submit = async (src) => {
@@ -155,6 +160,34 @@ function ApImport({ tracks, onFiles, busy, onRemove, onClear }) {
         onFiles(e.target.files, src === 'file' ? {} : { source: src }).then(() => { if (src !== 'file') { setGuided((g) => ({ ...g, [src]: null })); setLinks((l) => ({ ...l, [src]: '' })); } });
         e.target.value = '';
       }} />
+      {/* Tracés importés */}
+      {tracks.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className={apEyebrow}>Vos tracés · {tracks.length}</span>
+            <button onClick={onClear} className="text-[12px] text-neutral-500 hover:text-white">Tout retirer</button>
+          </div>
+          <ul className="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
+            {tracks.map((t) => (
+              <li key={t.id} className="flex items-center gap-3 pl-3.5 pr-2 h-14">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color || '#3b82f6' }} />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[13.5px] font-medium text-white truncate">{t.name}</span>
+                  <span className="block text-[11.5px] text-neutral-500 tabular-nums">{apKm(t.distance || 0)}{t.ascent ? ' · ' + Math.round(t.ascent).toLocaleString('fr-FR') + ' m D+' : ''}</span>
+                </span>
+                <UiIconButton icon="X" label={'Retirer ' + t.name} size="sm" onClick={() => onRemove(t.id)} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {tracks.length > 0 && (
+        <button onClick={() => setAdding((v) => !v)}
+          className="h-11 rounded-xl flex items-center justify-center gap-2 text-[13px] font-medium text-neutral-300 ring-1 ring-white/[0.1] hover:bg-white/[0.05] hover:text-white transition-colors">
+          {adding ? <><I.X size={14} /> Fermer l’import</> : <><I.Plus size={15} /> Ajouter un tracé</>}
+        </button>
+      )}
+      {showFields && (<>
       {/* Fichier */}
       <button onClick={() => pick()} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
         onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); onFiles(e.dataTransfer.files); }}
@@ -207,27 +240,7 @@ function ApImport({ tracks, onFiles, busy, onRemove, onClear }) {
           <UiRoutdoorLogo height={13} /><span className="flex-1 text-neutral-400">Créer mon tracé</span><I.ExternalLink size={14} className="text-neutral-500" />
         </a>
       </div>
-      {/* Tracés importés */}
-      {tracks.length > 0 && (
-        <div className="mt-2">
-          <div className="flex items-center justify-between mb-2">
-            <span className={apEyebrow}>Vos tracés · {tracks.length}</span>
-            <button onClick={onClear} className="text-[12px] text-neutral-500 hover:text-white">Tout retirer</button>
-          </div>
-          <ul className="rounded-2xl bg-white/[0.03] ring-1 ring-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
-            {tracks.map((t) => (
-              <li key={t.id} className="flex items-center gap-3 pl-3.5 pr-2 h-14">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color || '#3b82f6' }} />
-                <span className="flex-1 min-w-0">
-                  <span className="block text-[13.5px] font-medium text-white truncate">{t.name}</span>
-                  <span className="block text-[11.5px] text-neutral-500 tabular-nums">{apKm(t.distance || 0)}{t.ascent ? ' · ' + Math.round(t.ascent).toLocaleString('fr-FR') + ' m D+' : ''}</span>
-                </span>
-                <UiIconButton icon="X" label={'Retirer ' + t.name} size="sm" onClick={() => onRemove(t.id)} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      </>)}
     </div>
   );
 }
@@ -575,9 +588,24 @@ function PrintraceStudio() {
       <aside className="absolute left-5 top-5 bottom-5 w-[412px] z-30 flex flex-col rounded-[26px] bg-[#0f0f10]/90 backdrop-blur-xl ring-1 ring-white/[0.08] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)]">
         <div className="shrink-0 flex items-center justify-between px-6 h-[68px]">
           <a href={(window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../../') + 'printrace/'} aria-label="Printrace" className="text-white"><UiPrintraceLogo height={22} /></a>
-          <span className="text-[11.5px] text-neutral-500">Étape {step} sur 4</span>
         </div>
-        <div className="h-px mx-6 bg-white/[0.06]" />
+        {/* Stepper : revenir à l'import (ou à toute étape déjà ouverte) */}
+        <nav aria-label="Étapes" className="shrink-0 mx-6 mb-1 flex items-center gap-1">
+          {AP_STEPS.map((s, i) => {
+            const n = i + 1, on = n === step, ok = n === 1 || has;
+            return (
+              <React.Fragment key={n}>
+                {i > 0 && <span className={`flex-1 h-px ${n <= step ? 'bg-white/25' : 'bg-white/[0.08]'}`} />}
+                <button onClick={() => ok && go(n)} disabled={!ok} aria-current={on ? 'step' : undefined}
+                  className={`flex items-center gap-1.5 h-8 pl-1 pr-2 rounded-full text-[12px] font-medium transition-colors disabled:cursor-not-allowed ${on ? 'text-white' : ok ? 'text-neutral-400 hover:text-white' : 'text-neutral-600'}`}>
+                  <span className={`w-6 h-6 rounded-full grid place-items-center text-[11px] font-semibold tabular-nums ${on ? 'bg-white text-neutral-900' : ok ? 'bg-white/[0.06] ring-1 ring-white/15' : 'ring-1 ring-white/[0.08]'}`}>{n}</span>
+                  {s.name}
+                </button>
+              </React.Fragment>
+            );
+          })}
+        </nav>
+        <div className="h-px mx-6 mt-2 bg-white/[0.06]" />
 
         <div key={step} className="flex-1 min-h-0 overflow-y-auto sb-scroll px-6 py-6 ds-fade-up">
           <ApStepHead n={step} />
