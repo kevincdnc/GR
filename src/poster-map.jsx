@@ -319,7 +319,7 @@ async function pmDrawMap(ctx, o) {
           const name = F.props['name:latin'] || F.props.name;
           if (!name) return;
           const cls = kind === 'peak' ? 'peak' : F.props.class;
-          if (kind === 'place' && !def.places.includes(cls)) return;
+          if (kind === 'place' && !(o.places || def.places).includes(cls)) return;
           const key = kind + ':' + name;
           if (seen.has(key)) return;
           const [px, py] = F.parts[0][0];
@@ -339,7 +339,7 @@ async function pmDrawMap(ctx, o) {
     const lab = pal.label;
     const sizeOf = (c) => (c.cls === 'city' ? 19 : c.cls === 'town' ? 15.5 : c.cls === 'peak' ? 12.5 : 12.5) * u * (lab.scale || 1);
     for (const c of cands) {
-      if (placed.length - avoid.length >= def.maxLabels) break;
+      if (placed.length - avoid.length >= (o.maxLabels || def.maxLabels)) break;
       const size = sizeOf(c);
       const text = lab.upper && c.cls !== 'peak' ? c.name.toUpperCase() : c.name + (c.cls === 'peak' && c.ele ? ` ${Math.round(c.ele)} m` : '');
       g.font = poFont(lab.weight || 600, size, lab.family || ST_TXT, lab.italic || c.cls === 'peak');

@@ -275,7 +275,9 @@ async function poMap(ctx, d, proj, rect, pal, o = {}) {
   if ((!d.showMap && !d.mapLabels) || typeof pmDrawMap !== 'function') return false;
   try {
     return await pmDrawMap(ctx, { proj, rect, pal, style: d.mapStyle || 'epure', opacity: d.mapOpacity == null ? 1 : d.mapOpacity,
-      geometry: !!d.showMap, labels: !!d.mapLabels, routes: d.routes, ...o });
+      geometry: !!d.showMap, labels: !!d.mapLabels, routes: d.routes,
+      // Villes demandées : villes, bourgs et villages, jusqu'à 14 noms
+      ...(d.mapLabels ? { places: ['city', 'town', 'village'], maxLabels: 14 } : {}), ...o });
   } catch (e) { console.warn('carte vectorielle', e); return false; }
 }
 // Mélange de deux couleurs hex (t = part de b)
@@ -451,7 +453,7 @@ const PO_GRAPHITE_BGS = [
 ];
 const apKmLabel = (v) => (v >= 100 ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString('fr-FR') + ' km';
 // Profil altimétrique : aire en dégradé + trait fin ; renvoie false sans altitudes
-function poProfile(ctx, routes, x, y, w, h, color, u) {
+function poProfile(ctx, routes, x, y, w, h, color, u, o = {}) {
   const pts = []; let dist = 0, prev = null;
   routes.filter((r) => !r.ghost).forEach((r) => r.coords.forEach((c) => {
     if (prev) dist += stHaversine(prev, c);
@@ -459,7 +461,14 @@ function poProfile(ctx, routes, x, y, w, h, color, u) {
   }));
   if (pts.length < 2 || dist <= 0) return false;
   let lo = Math.min(...pts.map((p) => p[1])), hi = Math.max(...pts.map((p) => p[1]));
-  if (hi - lo < 20) { const m = (hi + lo) / 2; lo = m - 10; hi = m + 10; }
+  const rawLo = Math.round(lo), rawHi = Math.round(hi);
+  const minR = o.minRange || 20; // dénivelé minimal représenté : un profil plat reste plat
+  if (hi - lo < minR) { lo = lo - (minR - (hi - lo)) * 0.3; hi = lo + minR; }
+  if (o.smooth) { // moyenne glissante : courbe calme, sans le bruit du GPS
+    const k = Math.max(1, Math.round(pts.length * o.smooth)), src = pts.map((p) => p[1]);
+    let acc = 0; const pre = [0]; src.forEach((v) => { acc += v; pre.push(acc); });
+    pts.forEach((p, i) => { const a = Math.max(0, i - k), b = Math.min(src.length, i + k + 1); p[1] = (pre[b] - pre[a]) / (b - a); });
+  }
   const step = Math.max(1, Math.floor(pts.length / 600)); // ~600 points : courbe nette, fichier léger
   const P = (p) => [x + p[0] / dist * w, y + h - (p[1] - lo) / (hi - lo) * h];
   ctx.save();
@@ -468,13 +477,13 @@ function poProfile(ctx, routes, x, y, w, h, color, u) {
   ctx.lineTo(x + w, y + h); ctx.closePath();
   const g = ctx.createLinearGradient(0, y, 0, y + h);
   const rgb = /^#[0-9a-f]{6}$/i.test(color) ? [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16)).join(',') : '255,255,255';
-  g.addColorStop(0, `rgba(${rgb},0.22)`); g.addColorStop(1, `rgba(${rgb},0)`);
+  g.addColorStop(0, `rgba(${rgb},${o.fill == null ? 0.22 : o.fill})`); g.addColorStop(1, `rgba(${rgb},0)`);
   ctx.fillStyle = g; ctx.fill();
   ctx.beginPath();
   pts.forEach((p, i) => { if (i % step === 0 || i === pts.length - 1) { const [px, py] = P(p); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } });
-  ctx.strokeStyle = color; ctx.lineWidth = 1.6 * u; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.strokeStyle = color; ctx.lineWidth = (o.width || 1.6) * u; ctx.lineJoin = 'round'; ctx.globalAlpha = o.alpha || 1; ctx.stroke();
   ctx.restore();
-  return { lo: Math.round(Math.min(...pts.map((p) => p[1]))), hi: Math.round(Math.max(...pts.map((p) => p[1]))), dist };
+  return { lo: rawLo, hi: rawHi, dist };
 }
 
 const PO_PAL = {
@@ -689,8 +698,8 @@ const POSTER_TEMPLATES = [
       const titleSize = 64 * u;
       const titleBase = statsTop - (n ? 54 * u : 10 * u) - subH;
       const footTop = titleBase - titleSize * 0.74 - 44 * u;      // filet au-dessus du titre
-      const profH = 92 * u, profTop = footTop - 34 * u - profH;  // profil altimétrique
-      const headH = 96 * u, mapTop = y0 + headH, mapBot = profTop - 54 * u;
+      const profH = 50 * u, profTop = footTop - 40 * u - profH;  // profil altimétrique : bande fine
+      const headH = 96 * u, mapTop = y0 + headH, mapBot = profTop - 40 * u;
       const proj = stFit(d.routes, { x: x0 + 120 * u, y: mapTop + 70 * u, w: x1 - x0 - 240 * u, h: mapBot - mapTop - 120 * u }, 15);
       // Carte (discrète) dans la zone carte
       await poMap(ctx, d, proj, { x: x0, y: mapTop, w: x1 - x0, h: profTop - 20 * u - mapTop }, poBlueprintPal(bg),
@@ -732,18 +741,16 @@ const POSTER_TEMPLATES = [
         ctx.strokeStyle = ink; ctx.lineWidth = 1 * u; ctx.beginPath(); ctx.moveTo(nx, ny); ctx.lineTo(nx + 6 * u, ny + 20 * u); ctx.lineTo(nx, ny + 15 * u); ctx.closePath(); ctx.stroke();
         stLabel(ctx, 'N', nx, ny + 40 * u, 12 * u, mute, 'center'); }
       { const s = poScale(d, proj, 150 * u);
-        if (s) { const sx = x0 + P, sy = profTop - 52 * u;
+        if (s) { const sx = x0 + P, sy = profTop - 36 * u;
           hair1(sx, sy, sx + s.len, sy, ink, 1.2); [0, 0.5, 1].forEach((k) => hair1(sx + s.len * k, sy - (k === 0.5 ? 4 : 7) * u, sx + s.len * k, sy, ink, 1.2));
           ctx.font = stFont(600, 12 * u, ST_TXT); ctx.fillStyle = mute; stSpaced(ctx, s.label, sx + s.len + 12 * u, sy + 4 * u, 12 * u * 0.12, 'left'); } }
       // Profil altimétrique
-      const pf = poProfile(ctx, d.routes, x0 + P, profTop, x1 - x0 - 2 * P, profH, acc, u);
-      hair1(x0 + P, profTop + profH, x1 - P, profTop + profH, hair);
+      const pf = poProfile(ctx, d.routes, x0 + P, profTop, x1 - x0 - 2 * P, profH, acc, u, { minRange: 90, smooth: 0.004, fill: 0.12, width: 1.2, alpha: 0.75 });
       if (pf) {
         const tl = (t, x, y, al) => { ctx.font = stFont(600, 11 * u, ST_TXT); ctx.fillStyle = faint; stSpaced(ctx, t, x, y, 11 * u * 0.12, al); };
-        stLabel(ctx, 'Profil', x0 + P, profTop - 10 * u, 11 * u, faint);
-        tl(`alt. ${pf.lo} – ${pf.hi} m`, x1 - P, profTop - 10 * u, 'right');
-        tl('0 km', x0 + P, profTop + profH + 22 * u, 'left');
-        tl(apKmLabel(pf.dist), x1 - P, profTop + profH + 22 * u, 'right');
+        hair1(x0 + P, profTop + profH, x1 - P, profTop + profH, 'rgba(241,237,228,0.12)');
+        tl(`Profil · ${pf.lo} – ${pf.hi} m`, x0 + P, profTop + profH + 18 * u, 'left');
+        tl(apKmLabel(pf.dist), x1 - P, profTop + profH + 18 * u, 'right');
       }
       // Pied : titre, sous-titre, chiffres indexés
       hair1(x0, footTop, x1, footTop);
