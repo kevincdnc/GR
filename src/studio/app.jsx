@@ -18,8 +18,10 @@ const AP_TRACKS_KEY = 'printrace_app_tracks_v2';
 const AP_STATE_KEY = 'printrace_app_state_v2';
 const AP_MODELS_KEY = 'printrace_app_models_v2';
 
-// Modèles proposés (dans l'ordre de la grille)
-const AP_TEMPLATES = ['nuit', 'aube', 'blueprint', 'graphite', 'releve', 'relief', 'galerie', 'photo', 'polaroid'];
+// Cases de la grille des modèles, par paires : version sombre à gauche, claire à droite.
+// [modèle, mode] (mode : pour les modèles qui existent en sombre et en clair)
+const AP_TILES = [['nuit'], ['aube'], ['blueprint', 'dark'], ['blueprint', 'light'], ['releve', 'dark'], ['releve', 'light'],
+  ['graphite'], ['relief'], ['photo'], ['galerie'], ['polaroid', 'dark'], ['polaroid', 'light']];
 // Typographies des titres : 3 choix par modèle, testés sur chaque mise en page
 const AP_FONTS = {
   modele: null,
@@ -486,8 +488,9 @@ function PrintraceStudio() {
     const m = {}; if (agg) poStats(agg, order, infoX).forEach((st) => { m[st.key] = st.value + (st.unit ? ' ' + st.unit : ''); }); return m;
   }, [agg, order, infoX]);
 
-  const dataFor = (t) => {
-    const mode = t.id === cfg.tplId ? poMode(t, cfg.mode) : poMode(t, null); // vignettes des autres modèles : mode par défaut
+  const dataFor = (t, m) => {
+    // m : mode imposé (vignette) ; sinon celui choisi pour le modèle en cours, ou le mode par défaut
+    const mode = m !== undefined ? poMode(t, m) : t.id === cfg.tplId ? poMode(t, cfg.mode) : poMode(t, null);
     const rec = poRec(t, mode);
     const routes = has ? [...tracks, ...[apZoomGhost(tracks, AP_ZOOMS[cfg.zoom])].filter(Boolean)] : [apGhost(AP_FRANCE[0], AP_FRANCE[1])];
     const stats = has ? poStats(agg, order.filter((k) => enabled.has(k)), infoX).map((st) => (cfg.values[st.key] ? { ...st, value: cfg.values[st.key], unit: '' } : st)) : [];
@@ -556,12 +559,12 @@ function PrintraceStudio() {
         setReady(true);
       }
       if (step !== 2) return;
-      for (const id of AP_TEMPLATES) {
-        const tc = thumbRefs.current[id];
+      for (const [id, mode] of AP_TILES) {
+        const tc = thumbRefs.current[id + ':' + (mode || '')];
         if (!tc || my !== token.current) continue;
         const off = document.createElement('canvas');
         off.width = 260; off.height = Math.round(260 * fmt.mm[1] / fmt.mm[0]);
-        await renderPoster(off, apTpl(id), dataFor(apTpl(id)), fmt, 'none', 260 / PO_W);
+        await renderPoster(off, apTpl(id), dataFor(apTpl(id), mode || null), fmt, 'none', 260 / PO_W);
         if (my !== token.current) return;
         tc.width = off.width; tc.height = off.height; tc.getContext('2d').drawImage(off, 0, 0);
       }
@@ -733,19 +736,24 @@ function PrintraceStudio() {
               )}
               {models.length > 0 && <div className={apEyebrow + ' mb-2.5'}>Modèles Printrace</div>}
               <div className="grid grid-cols-2 gap-3">
-                {AP_TEMPLATES.map((id) => {
-                  const t = apTpl(id), on = id === cfg.tplId;
+                {AP_TILES.map(([id, mode]) => {
+                  const t = apTpl(id), key = id + ':' + (mode || '');
+                  const on = id === cfg.tplId && (!mode || poMode(t, cfg.mode) === mode);
+                  const pick = () => {
+                    if (id !== cfg.tplId) setCfg({ tplId: id, color: 'auto', font: 'modele', bg: null, mode: mode || null });
+                    else if (!on) setCfg({ mode, color: 'auto' }); // même modèle : on passe de sombre à clair
+                  };
                   return (
-                    <button key={id} onClick={() => { if (id !== cfg.tplId) setCfg({ tplId: id, color: 'auto', font: 'modele', bg: null, mode: null }); }}
+                    <button key={key} onClick={pick}
                       className={`text-left group rounded-2xl px-5 pt-5 pb-3.5 transition-all ${on ? 'bg-white/[0.07] ring-2 ring-white' : 'bg-white/[0.025] ring-1 ring-white/[0.07] hover:bg-white/[0.05] hover:ring-white/20'}`}>
                       <div className={`relative mx-auto w-[82%] rounded-[4px] overflow-hidden bg-neutral-800 shadow-[0_14px_28px_-12px_rgba(0,0,0,0.9)] transition-transform ${on ? '' : 'group-hover:-translate-y-0.5'}`}
                         style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
-                        <canvas ref={(el) => { thumbRefs.current[id] = el; }} width={260} height={368} className="block w-full h-full" />
+                        <canvas ref={(el) => { thumbRefs.current[key] = el; }} width={260} height={368} className="block w-full h-full" />
                         {t.photoBg && <span title="Avec votre photo" className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full grid place-items-center bg-black/60 text-white backdrop-blur"><I.ImagePlus size={10} /></span>}
                       </div>
                       <div className="mt-3.5 flex items-baseline justify-between gap-2">
                         <span className={`text-[13.5px] font-medium ${on ? 'text-white' : 'text-neutral-300'}`}>{t.name}</span>
-                        <span className="text-[11px] text-neutral-500">{t.photoBg ? 'Votre photo' : t.kind}</span>
+                        <span className="text-[11px] text-neutral-500">{mode ? t.modes[mode].label : t.photoBg ? 'Votre photo' : t.kind}</span>
                       </div>
                     </button>
                   );

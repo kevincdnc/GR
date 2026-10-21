@@ -522,7 +522,7 @@ const POSTER_TEMPLATES = [
     async draw(ctx, d, w, h) {
       // Mode clair : papier blanc, traits à la couleur choisie (tirage « diazo »)
       const light = d.mode === 'light', ink = d.bg || '#0f1d33';
-      const u = w / 1200, bg = light ? '#f6f7f9' : ink, FG = light ? ink : FG, fg = (a) => `rgba(${poRgb(FG)},${a})`, line = fg(0.85);
+      const u = w / 1200, bg = light ? '#f6f7f9' : ink, FG = light ? ink : '#ffffff', fg = (a) => `rgba(${poRgb(FG)},${a})`, line = fg(0.85);
       const M = 50 * u;
       const items = d.stats.map((s) => [s.short || s.label, s.value + (s.unit ? ' ' + s.unit : '')]);
       const cw = w * 0.5, rh = 50 * u, hh = d.subtitle ? 124 * u : 104 * u, ch = hh + items.length * rh;
@@ -787,9 +787,14 @@ const POSTER_TEMPLATES = [
       // Fenêtre de carte
       const mx = M, my = M + 64 * u, mw = w - 2 * M, mh = Math.round(h - my - M - 300 * u - Math.max(0, d.stats.length - 3) * 44 * u);
       const proj = stFit(d.routes, { x: mx + 70 * u, y: my + 70 * u, w: mw - 140 * u, h: mh - 140 * u }, 15);
-      const pal = { water: null, hatch: ink(light ? 0.26 : 0.2), hatchGap: 5.5, hatchWidth: 0.8, coast: ink(light ? 0.6 : 0.5), coastWidth: 1,
-        road: ink(0.14), roadMajor: ink(0.24), roadScale: 0.8, waterway: ink(0.3),
-        label: { color: ink(0.6), halo: bg, haloWidth: 3, upper: true, spacing: 0.16, weight: 600, scale: 0.85, dot: ink(0.6) } };
+      // Clair : carte teintée (terre sable, mer bleu gris hachurée) ; sombre : au trait
+      const pal = light
+        ? { land: '#ece4d3', water: '#cfdde2', hatch: 'rgba(74,113,132,0.42)', hatchGap: 5.5, hatchWidth: 0.8, coast: '#557c8e', coastWidth: 1.1,
+          road: '#d9cdb6', roadMajor: '#c4b496', roadScale: 0.9, waterway: '#8fb0bd', wood: '#dcdcc2', park: '#dcdcc2',
+          label: { color: '#4d4a43', halo: '#ece4d3', haloWidth: 3, upper: true, spacing: 0.16, weight: 600, scale: 0.85, dot: '#4d4a43' } }
+        : { water: null, hatch: ink(0.2), hatchGap: 5.5, hatchWidth: 0.8, coast: ink(0.5), coastWidth: 1,
+          road: ink(0.14), roadMajor: ink(0.24), roadScale: 0.8, waterway: ink(0.3),
+          label: { color: ink(0.6), halo: bg, haloWidth: 3, upper: true, spacing: 0.16, weight: 600, scale: 0.85, dot: ink(0.6) } };
       await poMap(ctx, d, proj, { x: mx, y: my, w: mw, h: mh }, pal, { u, labelRect: { x: mx + 24 * u, y: my + 24 * u, w: mw - 48 * u, h: mh - 48 * u } });
       ctx.strokeStyle = ink(0.45); ctx.lineWidth = 1 * u; ctx.strokeRect(mx, my, mw, mh);
       // Graduations extérieures (haut et gauche) et coordonnées des angles
@@ -802,12 +807,12 @@ const POSTER_TEMPLATES = [
       small(`${deg(tl[0], 'N', 'S')}   ${deg(tl[1], 'E', 'O')}`, mx + mw, my - 16 * u, 'right');
       small(`${deg(br[0], 'N', 'S')}   ${deg(br[1], 'E', 'O')}`, mx + mw, my + mh + 22 * u, 'right');
       // Tracé : fin, précis
-      stDrawRoutes(ctx, d.routes, proj, { color: bg, width: 7 * u, markers: false });
-      stDrawRoutes(ctx, d.routes, proj, { color: rc, width: 2.6 * u, markers: false });
+      stDrawRoutes(ctx, d.routes, proj, { color: light ? '#ffffff' : bg, width: 9.5 * u, markers: false });
+      stDrawRoutes(ctx, d.routes, proj, { color: rc, width: 3.8 * u, markers: false });
       const ends = stEnds(d.routes);
       if (ends) (ends.loop ? [ends.a] : [ends.a, ends.b]).forEach((c, i) => {
         const [px, py] = proj.px(c[0], c[1]);
-        ctx.beginPath(); ctx.arc(px, py, 6 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill(); ctx.lineWidth = 1.3 * u; ctx.strokeStyle = acc; ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, py, 7 * u, 0, Math.PI * 2); ctx.fillStyle = light ? '#ffffff' : bg; ctx.fill(); ctx.lineWidth = 1.8 * u; ctx.strokeStyle = acc; ctx.stroke();
         if (i || ends.loop) { ctx.beginPath(); ctx.arc(px, py, 2.4 * u, 0, Math.PI * 2); ctx.fillStyle = acc; ctx.fill(); }
       });
       // En-tête : logo discret, activité
