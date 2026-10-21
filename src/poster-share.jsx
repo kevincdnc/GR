@@ -442,6 +442,39 @@ function poPhotoPlaceholder(ctx, x, y, w, h, u, bg, onSlot) {
   ctx.restore();
 }
 
+// Fonds du modèle Graphite : sombres, profonds, légèrement teintés
+const PO_GRAPHITE_BGS = [
+  { hex: '#161719', name: 'Graphite' }, { hex: '#10161f', name: 'Encre' }, { hex: '#0f1c1a', name: 'Sapin' },
+  { hex: '#1c1d22', name: 'Anthracite' }, { hex: '#21151a', name: 'Bordeaux' }, { hex: '#1f1a16', name: 'Moka' },
+];
+const apKmLabel = (v) => (v >= 100 ? Math.round(v) : Math.round(v * 10) / 10).toLocaleString('fr-FR') + ' km';
+// Profil altimétrique : aire en dégradé + trait fin ; renvoie false sans altitudes
+function poProfile(ctx, routes, x, y, w, h, color, u) {
+  const pts = []; let dist = 0, prev = null;
+  routes.filter((r) => !r.ghost).forEach((r) => r.coords.forEach((c) => {
+    if (prev) dist += stHaversine(prev, c);
+    prev = c; if (c[2] != null && isFinite(c[2])) pts.push([dist, c[2]]);
+  }));
+  if (pts.length < 2 || dist <= 0) return false;
+  let lo = Math.min(...pts.map((p) => p[1])), hi = Math.max(...pts.map((p) => p[1]));
+  if (hi - lo < 20) { const m = (hi + lo) / 2; lo = m - 10; hi = m + 10; }
+  const step = Math.max(1, Math.floor(pts.length / 600)); // ~600 points : courbe nette, fichier léger
+  const P = (p) => [x + p[0] / dist * w, y + h - (p[1] - lo) / (hi - lo) * h];
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(x, y + h);
+  pts.forEach((p, i) => { if (i % step === 0 || i === pts.length - 1) ctx.lineTo(...P(p)); });
+  ctx.lineTo(x + w, y + h); ctx.closePath();
+  const g = ctx.createLinearGradient(0, y, 0, y + h);
+  const rgb = /^#[0-9a-f]{6}$/i.test(color) ? [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16)).join(',') : '255,255,255';
+  g.addColorStop(0, `rgba(${rgb},0.22)`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath();
+  pts.forEach((p, i) => { if (i % step === 0 || i === pts.length - 1) { const [px, py] = P(p); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } });
+  ctx.strokeStyle = color; ctx.lineWidth = 1.6 * u; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.restore();
+  return { lo: Math.round(Math.min(...pts.map((p) => p[1]))), hi: Math.round(Math.max(...pts.map((p) => p[1]))), dist };
+}
+
 const PO_PAL = {
   blueprint: { land: '#174b82', water: '#0e3765', coast: '#a9c6e6', coastWidth: 1.2, road: '#4f7aa9', roadMajor: '#8fb1d8', path: '#5f88b6', waterway: '#4a7cb0', wood: '#1a5089', park: '#1a5089',
     label: { color: 'rgba(255,255,255,0.92)', halo: '#123f70', haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: '#ffffff' } },
@@ -585,7 +618,6 @@ const POSTER_TEMPLATES = [
     id: 'nuit', name: 'Nuit', kind: 'Carte', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
     rec: { colors: ['#fc5200', '#ffffff'], route: '#ffb648', mapStyle: 'routes', mapOpacity: 100, map: true },
-    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', colors: ['#e8590c', '#2563eb'], route: '#e8590c' } },
     async draw(ctx, d, w, h) {
       const u = w / 1200, ts = d.typeScale || 1; // ts : échelle du titre et des chiffres
       const light = d.mode === 'light';
@@ -620,10 +652,110 @@ const POSTER_TEMPLATES = [
       }
       await poDrawLogo(ctx, w / 2, 110 * u, 29 * u, ink, 'center');
       if (ph) poPhotos(ctx, d.photos, 110 * u, photosTop, w - 220 * u, ph, { gap: 18 * u, radius: 14 * u, maxRatio: 1.5 });
-      if (d.title) poLine(ctx, d.title, w / 2, titleY, w - 220 * u, 84 * u * ts, ink, { upper: true, spacing: ts < 1 ? 0.16 : 0.1, align: 'center' });
+      if (d.title) poLine(ctx, d.title, w / 2, titleY, w - 220 * u, 68 * u * ts, ink, { upper: true, spacing: ts < 1 ? 0.16 : 0.1, align: 'center' });
       if (d.subtitle) stLabel(ctx, d.subtitle, w / 2, titleY + 50 * u * Math.max(0.8, ts), 20 * u * Math.max(0.85, ts), light ? 'rgba(36,34,31,0.6)' : 'rgba(255,255,255,0.6)', 'center');
       if (d.stats.length) stDrawStats(ctx, d.stats, 110 * u, statsTop, w - 220 * u, { layout: L, labelBelow: true, labelGap: 1.25, color: ink, labelColor: mute, dividers: true, dividerColor: light ? 'rgba(36,34,31,0.14)' : 'rgba(255,255,255,0.18)' });
       if (d.coords) stLabel(ctx, poCoords(d), w / 2, h - 60 * u, 16 * u, light ? 'rgba(36,34,31,0.45)' : 'rgba(255,255,255,0.45)', 'center');
+    },
+  },
+  {
+    // Aube : la carte Nuit en version claire (papier crème, carte pastel sans noms)
+    id: 'aube', name: 'Aube', kind: 'Carte claire', maxPhotos: 3, mapDefault: true,
+    rec: { colors: ['#e8590c', '#2563eb'], route: '#e8590c', mapStyle: 'routes', mapOpacity: 100, map: true },
+    draw(ctx, d, w, h) { return POSTER_TEMPLATES.find((t) => t.id === 'nuit').draw(ctx, { ...d, mode: 'light' }, w, h); },
+  },
+  {
+    // Graphite : planche technique sombre et sobre. Filets fins, grille de points,
+    // profil altimétrique, chiffres indexés. Fond au choix.
+    id: 'graphite', name: 'Graphite', kind: 'Technique', dark: true, maxPhotos: 0, mapDefault: true,
+    rec: { colors: ['#e6d3a8', '#ffffff', '#fc5200'], route: '#e6d3a8', mapStyle: 'epure', mapOpacity: 35, map: true, bg: '#161719' },
+    bgs: PO_GRAPHITE_BGS, infos: ['activity', 'start'],
+    async draw(ctx, d, w, h) {
+      const u = w / 1200, bg = d.bg || '#161719';
+      const ink = '#f1ede4', mute = 'rgba(241,237,228,0.5)', faint = 'rgba(241,237,228,0.28)', hair = 'rgba(241,237,228,0.2)';
+      const rc = poCol(d, '#e6d3a8'), acc = rc === 'routes' ? '#e6d3a8' : rc;
+      const M = 64 * u, x0 = M, x1 = w - M, y0 = M, y1 = h - M, P = 40 * u; // cadre et marge intérieure
+      const hair1 = (xa, ya, xb, yb, c = hair, lw = 1) => { ctx.fillStyle = c; if (ya === yb) ctx.fillRect(xa, ya - lw * u / 2, xb - xa, lw * u); else ctx.fillRect(xa - lw * u / 2, ya, lw * u, yb - ya); };
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+      // Mise en page verticale (du bas vers le haut)
+      const n = d.stats.length, statsH = n ? 96 * u : 0;
+      const statsTop = y1 - P - statsH;
+      const subH = d.subtitle ? 40 * u : 0;
+      const titleSize = 64 * u;
+      const titleBase = statsTop - (n ? 54 * u : 10 * u) - subH;
+      const footTop = titleBase - titleSize * 0.74 - 44 * u;      // filet au-dessus du titre
+      const profH = 92 * u, profTop = footTop - 34 * u - profH;  // profil altimétrique
+      const headH = 96 * u, mapTop = y0 + headH, mapBot = profTop - 54 * u;
+      const proj = stFit(d.routes, { x: x0 + 120 * u, y: mapTop + 70 * u, w: x1 - x0 - 240 * u, h: mapBot - mapTop - 120 * u }, 15);
+      // Carte (discrète) dans la zone carte
+      await poMap(ctx, d, proj, { x: x0, y: mapTop, w: x1 - x0, h: profTop - 20 * u - mapTop }, poBlueprintPal(bg),
+        { u, clip: (c) => { c.beginPath(); c.rect(x0, mapTop, x1 - x0, profTop - 20 * u - mapTop); }, labelRect: { x: x0 + 30 * u, y: mapTop + 30 * u, w: x1 - x0 - 60 * u, h: mapBot - mapTop - 60 * u } });
+      // Fondu de la carte vers le bas (le profil reste lisible)
+      { const g = ctx.createLinearGradient(0, mapBot - 80 * u, 0, profTop - 20 * u);
+        const rgb = [1, 3, 5].map((i) => parseInt(bg.slice(i, i + 2), 16)).join(',');
+        g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(1, `rgba(${rgb},1)`); ctx.fillStyle = g; ctx.fillRect(x0, mapBot - 80 * u, x1 - x0, profTop - 20 * u - mapBot + 80 * u); }
+      // Grille de points (alignée sur le cadre)
+      { const gs = 24 * u; ctx.fillStyle = 'rgba(241,237,228,0.09)';
+        for (let yy = mapTop + gs; yy < profTop - 30 * u; yy += gs) for (let xx = x0 + gs; xx < x1 - 1; xx += gs) ctx.fillRect(xx - 0.9 * u, yy - 0.9 * u, 1.8 * u, 1.8 * u); }
+      // Cadre : filet fin + traits de coupe dans la marge
+      ctx.strokeStyle = 'rgba(241,237,228,0.34)'; ctx.lineWidth = 1 * u; ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+      ctx.fillStyle = faint;
+      [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(([cx, cy, sx, sy]) => {
+        const g = 12 * u, L = 22 * u;
+        ctx.fillRect(sx < 0 ? cx - g - L : cx + g, cy - 0.5 * u, L, 1 * u);
+        ctx.fillRect(cx - 0.5 * u, sy < 0 ? cy - g - L : cy + g, 1 * u, L);
+      });
+      // En-tête : logo, activité, coordonnées
+      hair1(x0, mapTop, x1, mapTop);
+      await poDrawLogo(ctx, x0 + P, y0 + 36 * u, 22 * u, ink);
+      if (d.coords && d.routes[0]) stLabel(ctx, poCoords(d), x1 - P, y0 + 56 * u, 13 * u, mute, 'right');
+      if (d.activityLabel) stLabel(ctx, d.activityLabel, w / 2, y0 + 56 * u, 13 * u, mute, 'center');
+      // Graduations le long des bords de la zone carte
+      for (let yy = mapTop + 48 * u, i = 0; yy < profTop - 30 * u; yy += 48 * u, i++) { hair1(x0, yy, x0 + (i % 2 ? 6 : 12) * u, yy, faint); hair1(x1 - (i % 2 ? 6 : 12) * u, yy, x1, yy, faint); }
+      // Tracé : liseré couleur du fond, trait fin
+      stDrawRoutes(ctx, d.routes, proj, { color: bg, width: 11 * u, markers: false });
+      stDrawRoutes(ctx, d.routes, proj, { color: rc, width: 3.6 * u, markers: false });
+      const ends = stEnds(d.routes);
+      if (ends) (ends.loop ? [ends.a] : [ends.a, ends.b]).forEach((c, i) => {
+        const [px, py] = proj.px(c[0], c[1]);
+        ctx.beginPath(); ctx.arc(px, py, 8 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill(); ctx.lineWidth = 1.6 * u; ctx.strokeStyle = acc; ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, py, (i ? 4.2 : 2.6) * u, 0, Math.PI * 2); ctx.fillStyle = acc; ctx.fill();
+      });
+      // Nord (haut droite de la carte) et échelle (bas gauche)
+      { const nx = x1 - P - 6 * u, ny = mapTop + 40 * u;
+        ctx.fillStyle = ink; ctx.beginPath(); ctx.moveTo(nx, ny); ctx.lineTo(nx - 6 * u, ny + 20 * u); ctx.lineTo(nx, ny + 15 * u); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = ink; ctx.lineWidth = 1 * u; ctx.beginPath(); ctx.moveTo(nx, ny); ctx.lineTo(nx + 6 * u, ny + 20 * u); ctx.lineTo(nx, ny + 15 * u); ctx.closePath(); ctx.stroke();
+        stLabel(ctx, 'N', nx, ny + 40 * u, 12 * u, mute, 'center'); }
+      { const s = poScale(d, proj, 150 * u);
+        if (s) { const sx = x0 + P, sy = profTop - 52 * u;
+          hair1(sx, sy, sx + s.len, sy, ink, 1.2); [0, 0.5, 1].forEach((k) => hair1(sx + s.len * k, sy - (k === 0.5 ? 4 : 7) * u, sx + s.len * k, sy, ink, 1.2));
+          ctx.font = stFont(600, 12 * u, ST_TXT); ctx.fillStyle = mute; stSpaced(ctx, s.label, sx + s.len + 12 * u, sy + 4 * u, 12 * u * 0.12, 'left'); } }
+      // Profil altimétrique
+      const pf = poProfile(ctx, d.routes, x0 + P, profTop, x1 - x0 - 2 * P, profH, acc, u);
+      hair1(x0 + P, profTop + profH, x1 - P, profTop + profH, hair);
+      if (pf) {
+        const tl = (t, x, y, al) => { ctx.font = stFont(600, 11 * u, ST_TXT); ctx.fillStyle = faint; stSpaced(ctx, t, x, y, 11 * u * 0.12, al); };
+        stLabel(ctx, 'Profil', x0 + P, profTop - 10 * u, 11 * u, faint);
+        tl(`alt. ${pf.lo} – ${pf.hi} m`, x1 - P, profTop - 10 * u, 'right');
+        tl('0 km', x0 + P, profTop + profH + 22 * u, 'left');
+        tl(apKmLabel(pf.dist), x1 - P, profTop + profH + 22 * u, 'right');
+      }
+      // Pied : titre, sous-titre, chiffres indexés
+      hair1(x0, footTop, x1, footTop);
+      if (d.title) poLine(ctx, d.title, x0 + P, titleBase, x1 - x0 - 2 * P, titleSize, ink, { upper: true, spacing: 0.12, weight: 600 });
+      if (d.subtitle) stLabel(ctx, d.subtitle, x0 + P, titleBase + 34 * u, 15 * u, mute);
+      if (n) {
+        const cw = (x1 - x0 - 2 * P) / n;
+        hair1(x0 + P, statsTop - 22 * u, x1 - P, statsTop - 22 * u, hair);
+        d.stats.forEach((st, i) => {
+          const cx = x0 + P + i * cw + (i ? 24 * u : 0);
+          if (i) hair1(x0 + P + i * cw, statsTop - 6 * u, x0 + P + i * cw, statsTop + statsH - 4 * u, hair);
+          stLabel(ctx, String(i + 1).padStart(2, '0'), cx, statsTop + 12 * u, 11 * u, acc);
+          stLabel(ctx, st.short || st.label, cx + 30 * u, statsTop + 12 * u, 11 * u, mute);
+          const vs = Math.min(46 * u, (cw - 30 * u) / Math.max(1, stValueWidth(ctx, st, 46 * u) / (46 * u)));
+          stValue(ctx, st, cx, statsTop + 12 * u + 24 * u + vs * 0.74, vs, ink);
+        });
+      }
     },
   },
   {

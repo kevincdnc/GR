@@ -19,7 +19,7 @@ const AP_STATE_KEY = 'printrace_app_state_v2';
 const AP_MODELS_KEY = 'printrace_app_models_v2';
 
 // Modèles proposés (dans l'ordre de la grille)
-const AP_TEMPLATES = ['blueprint', 'nuit', 'relief', 'galerie', 'photo', 'polaroid'];
+const AP_TEMPLATES = ['nuit', 'aube', 'blueprint', 'graphite', 'relief', 'galerie', 'photo', 'polaroid'];
 // Typographies des titres : 3 choix par modèle, testés sur chaque mise en page
 const AP_FONTS = {
   modele: null,
@@ -31,13 +31,15 @@ const AP_FONTS = {
 const AP_FONT_CHOICES = {
   blueprint: [['modele', 'Technique'], ['affiche', 'Affiche'], ['classique', 'Classique']],
   nuit: [['modele', 'Moderne'], ['affiche', 'Affiche'], ['classique', 'Classique']],
+  aube: [['modele', 'Moderne'], ['affiche', 'Affiche'], ['classique', 'Classique']],
+  graphite: [['modele', 'Technique'], ['classique', 'Classique'], ['affiche', 'Affiche']],
   relief: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['ancienne', 'Ancienne carte']],
   galerie: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['affiche', 'Affiche']],
   photo: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['affiche', 'Affiche']],
   polaroid: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['ancienne', 'Ancienne carte']],
 };
 // Police « du modèle » (aperçu du bouton) : celle de ses titres
-const AP_NATIVE_FONT = { blueprint: ST_TXT, nuit: ST_TXT, relief: PO_SERIF, galerie: PO_SERIF, photo: PO_SERIF, polaroid: PO_SERIF };
+const AP_NATIVE_FONT = { blueprint: ST_TXT, nuit: ST_TXT, aube: ST_TXT, graphite: ST_TXT, relief: PO_SERIF, galerie: PO_SERIF, photo: PO_SERIF, polaroid: PO_SERIF };
 // Zoom de la carte : 0 = cadré sur le tracé, puis deux niveaux plus larges
 const AP_ZOOMS = [0, 0.2, 0.45]; // cadré sur le tracé, puis deux niveaux à peine plus larges
 // Carte de France (poster d'accueil, sans tracé)
@@ -388,7 +390,7 @@ function PrintraceStudio() {
   const saved = useApMemo(() => apLoad(AP_STATE_KEY, {}), []);
   const [step, setStep] = useApState(() => (tracks.length ? Math.max(2, saved.step || 2) : 1));
   const [cfg, setCfgState] = useApState(() => {
-    const c = { tplId: 'blueprint', color: 'auto', bg: null, mode: null, font: 'modele', zoom: 0, title: null, subtitle: null, actId: null,
+    const c = { tplId: 'nuit', color: 'auto', bg: null, mode: null, font: 'modele', zoom: 0, title: null, subtitle: null, actId: null,
       order: null, enabled: null, values: {}, fmtId: 'a3', border: 'none', mock: 'noir', ...(saved.cfg || {}) };
     return { ...c, zoom: Math.min(c.zoom || 0, AP_ZOOMS.length - 1) }; // niveaux de zoom d'une version précédente
   });
