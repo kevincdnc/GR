@@ -145,6 +145,15 @@ export function build({ single = false } = {}) {
   const dsCss = readFileSync(join(ROOT, 'src', 'ds', 'tokens.css'), 'utf8')
 
   const data = buildStagesData()
+  // Textes du site modifiés en mode édition (content/site.json) -> window.PT_CONTENT
+  const contentPath = join(ROOT, 'content', 'site.json')
+  let siteContent = {}
+  try {
+    if (existsSync(contentPath)) siteContent = JSON.parse(readFileSync(contentPath, 'utf8'))
+  } catch (e) {
+    console.warn(`[content] site.json invalide : ${e.message}`)
+  }
+  const contentJs = `window.PT_CONTENT = ${JSON.stringify(siteContent).replace(/</g, '\\u003c')};\n`
   // Parseur GPX (lib/gpx.mjs) exposé au navigateur pour l'import de fichiers
   const gpxLib = '(function () {\n' + readFileSync(join(ROOT, 'lib', 'gpx.mjs'), 'utf8').replace(/^export /gm, '') +
     '\nwindow.GpxLib = { buildStage: buildStage, buildStageFromTrack: buildStageFromTrack, parseTrack: parseTrack, parseGpx: parseGpx, TRACK_EXTENSIONS: TRACK_EXTENSIONS };\n})();\n'
@@ -205,7 +214,7 @@ export function build({ single = false } = {}) {
       // sont gardés (pas de renommage au niveau supérieur hors module).
       const classicRe = /<script(?: type="text\/babel")? src="([^"]+)"><\/script>\n?/g
       const parts = [...p.html.matchAll(classicRe)].map((m) => m[1])
-      const sources = { 'js/gpx.js': gpxLib, 'data/gr34.js': data }
+      const sources = { 'js/gpx.js': gpxLib, 'data/gr34.js': data, 'data/site-content.js': contentJs }
       const vendorCode = parts.filter((src) => vendor[src]).map((src) => readFileSync(vendor[src], 'utf8')).join('\n;\n')
       const appCode = esbuild.transformSync(parts.filter((src) => !vendor[src]).map((src) => compiled.get(src) ?? sources[src]).join('\n;\n'),
         { minify: true, target: 'es2019', legalComments: 'none', charset: 'utf8' }).code
@@ -254,6 +263,7 @@ export function build({ single = false } = {}) {
       .replace(/<script src="(vendor\/[\w-]+\.js)"><\/script>/g, (_, v) => inline(readFileSync(vendor[v], 'utf8')))
       .replace(/<script src="data\/gr34\.js"><\/script>/, () => inline(data))
       .replace('<script src="js/gpx.js"></script>', () => inline(gpxLib))
+      .replace('<script src="data/site-content.js"></script>', () => inline(contentJs))
       .replace(babelRe, (_, src) => inline(compiled.get(src)))
       .replace(/<meta name="ext-resource-dependency"[^>]*\/>\n?/g, '')
       .replace(/<link rel="icon"[^>]*\/>\n?/, '')

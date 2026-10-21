@@ -282,12 +282,12 @@ function SiteAccountButton() {
     return (
       <a href={siteStudioUrl()} className="inline-flex items-center gap-2 h-10 rounded-full bg-white/[0.06] ring-1 ring-white/10 pl-1.5 pr-3.5 text-[13.5px] font-medium text-white hover:bg-white/[0.1] transition-colors">
         <span className="w-7 h-7 rounded-full grid place-items-center bg-white text-neutral-900 text-[12px] font-bold uppercase">{(user.name || user.email)[0]}</span>
-        Mon espace
+        <Tx k="nav.espace" d="Mon espace" />
       </a>
     );
   }
   return (
-    <a href={ptLoginUrl()} className="inline-flex items-center h-10 rounded-full bg-white px-4 text-[13.5px] font-semibold text-neutral-900 hover:bg-neutral-200 transition-colors">Se connecter</a>
+    <a href={ptLoginUrl()} className="inline-flex items-center h-10 rounded-full bg-white px-4 text-[13.5px] font-semibold text-neutral-900 hover:bg-neutral-200 transition-colors"><Tx k="nav.connexion" d="Se connecter" /></a>
   );
 }
 
@@ -402,6 +402,7 @@ function SitePhoto({ c, i, photo, className = '', rotate = 0, style }) {
 // Poster d'exemple rendu par le moteur du studio, dans un cadre noir
 // finish : { border: 'none' | 'fine' (liseré) | 'marge', frame: bool } — choisi à l'étape 3
 function SitePoster({ c, photos, custom = {}, items = [], finish = {}, compact, children }) {
+  const t = useTx();
   const ref = useSiteRef(null);
   const drawn = useSiteRef(null); // cas d'usage déjà dessiné sur le canvas
   const [ready, setReady] = useSiteState(false);
@@ -452,7 +453,7 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, compact, 
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
       <div className={`relative z-10 mt-3 flex justify-center ${compact ? 'hidden' : ''}`}>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300 max-w-full">
-          <I.Poster size={13} /> <span className="truncate">{user ? 'Votre poster' : 'Exemple'} · {title} · A3{framed ? ' · cadre ' + frame.label.toLowerCase() : ''}</span>
+          <I.Poster size={13} /> <span className="truncate">{user ? t('poster.votre', 'Votre poster') : t('poster.exemple', 'Exemple')} · {title} · A3{framed ? ' · ' + t('poster.cadre', 'cadre') + ' ' + t('finition.cadre.' + frame.id, frame.label).toLowerCase() : ''}</span>
         </span>
       </div>
     </div>
@@ -473,6 +474,7 @@ const SITE_PLAN_BGS = [
   { hex: '#0f2a26', name: 'Vert forêt' }, { hex: '#2a1424', name: 'Aubergine' },
 ];
 function SiteCustomize({ c, value, onChange, items = [] }) {
+  const t = useTx();
   const set = (k, v) => onChange({ ...value, [k]: v });
   const p = sitePosterOf(c, value.tpl);
   const defColor = p.color === 'auto' ? '#ffffff' : p.color;
@@ -490,11 +492,11 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
   return (
     <div className="rounded-2xl bg-[#0e0e0e]/70 backdrop-blur-md ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
       <div className="flex items-center justify-between h-6">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Réglages</span>
-        {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors">Réinitialiser</button>}
+        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500"><Tx k="reglages.titre" d="Réglages" /></span>
+        {touched && <button onClick={() => onChange({})} className="text-[12.5px] text-neutral-400 hover:text-white transition-colors"><Tx k="reglages.reinitialiser" d="Réinitialiser" /></button>}
       </div>
       <label className="block mt-2.5">
-        <span className="sr-only">Nom du trip</span>
+        <span className="sr-only">{t('reglages.nom', 'Nom du trip')}</span>
         <span className="relative block">
           <input value={value.title || ''} maxLength={SITE_TITLE_MAX} placeholder={siteDefaultTitle(c, items)} onChange={(e) => set('title', e.target.value)}
             className="w-full h-10 rounded-lg bg-white/[0.05] ring-1 ring-white/10 focus:ring-white/30 outline-none pl-3.5 pr-12 text-[14px] text-white placeholder:text-neutral-500 transition-shadow" />
@@ -512,7 +514,7 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
         })}
       </div>
       <div className="mt-3 h-6 flex items-center justify-between gap-3">
-        <span className="text-[13px] text-neutral-400 whitespace-nowrap">Couleur du tracé</span>
+        <span className="text-[13px] text-neutral-400 whitespace-nowrap"><Tx k="reglages.couleur" d="Couleur du tracé" /></span>
         <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Couleur du tracé">
           {SITE_TRACE_COLORS.map((x) => (
             <button key={x.hex} role="radio" aria-checked={color === x.hex} title={x.name} aria-label={x.name}
@@ -524,7 +526,7 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
       </div>
       {p.tpl === 'blueprint' && (
         <div className="mt-3 h-6 flex items-center justify-between gap-3">
-          <span className="text-[13px] text-neutral-400 whitespace-nowrap">Fond</span>
+          <span className="text-[13px] text-neutral-400 whitespace-nowrap"><Tx k="reglages.fond" d="Fond" /></span>
           <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Fond du poster">
             {SITE_PLAN_BGS.map((x) => {
               const on = (value.bg || p.bg || '#0f1d33') === x.hex;
@@ -538,9 +540,9 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
           </div>
         </div>
       )}
-      {sw('photos', photosOn, 'Ajoutez des photos', !canPhotos, canPhotos ? undefined : items.length ? 'Vos photos s’ajoutent dans le studio' : 'Ce style n’affiche pas de photos')}
-      {sw('labels', (value.labels != null ? value.labels : p.labels) !== false, 'Afficher les villes')}
-      {sw('info', value.info !== false, 'Afficher les infos')}
+      {sw('photos', photosOn, <Tx k="reglages.photos" d="Ajoutez des photos" />, !canPhotos, canPhotos ? undefined : items.length ? t('reglages.photos.studio', 'Vos photos s’ajoutent dans le studio') : t('reglages.photos.style', 'Ce style n’affiche pas de photos'))}
+      {sw('labels', (value.labels != null ? value.labels : p.labels) !== false, <Tx k="reglages.villes" d="Afficher les villes" />)}
+      {sw('info', value.info !== false, <Tx k="reglages.infos" d="Afficher les infos" />)}
     </div>
   );
 }
@@ -562,18 +564,18 @@ function SiteFinish({ c, tplId, value, onChange, onOpen, opening, ready }) {
   return (
     <div>
       <div className="rounded-2xl bg-[#0e0e0e]/70 ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500">Finition</span>
+        <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500"><Tx k="finition.titre" d="Finition" /></span>
         <div className="mt-3 flex items-center justify-between gap-3">
-          <span className={lbl}>Bordure</span>
+          <span className={lbl}><Tx k="finition.bordure" d="Bordure" /></span>
           <div className="inline-flex rounded-lg bg-white/[0.04] ring-1 ring-white/10 p-0.5" role="radiogroup" aria-label="Bordure">
             {SITE_BORDERS.map((x) => (
               <button key={x.id} role="radio" aria-checked={border === x.id} onClick={() => onChange({ ...value, border: x.id })}
-                className={`h-7 px-2.5 rounded-md text-[12.5px] font-medium transition-colors ${border === x.id ? 'bg-white text-neutral-900' : 'text-neutral-400 hover:text-white'}`}>{x.label}</button>
+                className={`h-7 px-2.5 rounded-md text-[12.5px] font-medium transition-colors ${border === x.id ? 'bg-white text-neutral-900' : 'text-neutral-400 hover:text-white'}`}><Tx k={'finition.bordure.' + x.id} d={x.label} /></button>
             ))}
           </div>
         </div>
         <div className="mt-3.5">
-          <span className={lbl}>Cadre</span>
+          <span className={lbl}><Tx k="finition.cadre" d="Cadre" /></span>
           <div className="mt-2 grid grid-cols-4 gap-1.5" role="radiogroup" aria-label="Cadre">
             {SITE_FRAMES.map((f) => {
               const on = frame.id === f.id;
@@ -581,7 +583,7 @@ function SiteFinish({ c, tplId, value, onChange, onOpen, opening, ready }) {
                 <button key={f.id} role="radio" aria-checked={on} onClick={() => onChange({ ...value, frame: f.id })}
                   className={`flex flex-col items-center gap-1.5 rounded-lg py-2 ring-1 transition-colors ${on ? 'bg-white/[0.07] ring-white/35' : 'ring-white/[0.08] hover:bg-white/[0.04]'}`}>
                   <span className={`w-6 h-6 rounded-[5px] ${f.id === 'none' ? 'ring-1 ring-dashed ring-white/30 border border-dashed border-white/30' : 'ring-1 ring-black/40'}`} style={{ background: f.swatch }} />
-                  <span className={`text-[11.5px] ${on ? 'text-white' : 'text-neutral-500'}`}>{f.label}</span>
+                  <span className={`text-[11.5px] ${on ? 'text-white' : 'text-neutral-500'}`}><Tx k={'finition.cadre.' + f.id} d={f.label} /></span>
                 </button>
               );
             })}
@@ -595,8 +597,8 @@ function SiteFinish({ c, tplId, value, onChange, onOpen, opening, ready }) {
         {/* Reflet qui balaie le bouton au survol */}
         <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-[450%] transition-transform duration-700 ease-out" />
         <span className="relative flex-1 min-w-0">
-          <span className="block text-[16px] font-semibold leading-tight">Créer mon poster sur Printrace</span>
-          <span className="block mt-1 text-[12.5px] text-blue-100/80 leading-snug">{ready ? 'Vos tracés et réglages vous suivent dans l’app.' : 'Fichier HD ou poster livré, dans l’app.'}</span>
+          <span className="block text-[16px] font-semibold leading-tight"><Tx k="finition.cta" d="Créer mon poster sur Printrace" /></span>
+          <span className="block mt-1 text-[12.5px] text-blue-100/80 leading-snug">{ready ? <Tx k="finition.cta.importe" d="Vos tracés et réglages vous suivent dans l’app." /> : <Tx k="finition.cta.sous" d="Fichier HD ou poster livré, dans l’app." />}</span>
         </span>
         <span className="relative w-10 h-10 shrink-0 rounded-full bg-white text-blue-600 grid place-items-center shadow-[0_4px_12px_rgba(15,23,42,0.25)] transition-transform group-hover:translate-x-0.5">
           {opening ? <UiSpinner size={16} /> : <I.ChevronRight size={18} />}
@@ -625,7 +627,7 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
         {/* Fond du survol : déborde du mot (marges égales) sans changer la hauteur de ligne */}
         <span aria-hidden="true" className="absolute -left-[0.2em] -right-[0.16em] -top-[0.08em] -bottom-[0.22em] rounded-[0.2em] transition-colors group-hover:bg-white/[0.045]" />
         <span key={value} className="ds-fade-up relative inline-block italic pr-[0.06em]" style={{ color: c.accent }}>
-          {c.word}
+          <Tx k={'cas.' + c.id + '.mot'} d={c.word} />
           {/* Trait discret en pointillés ; en lecture auto, il se remplit jusqu'au mot suivant */}
           {/* Fine barre de progression : rail discret, remplissage dans la couleur du mot */}
           <span aria-hidden="true" className="site-bar absolute left-[0.04em] right-[0.04em] -bottom-[0.08em] overflow-hidden" style={{ background: c.accent + '17' }}>
@@ -648,8 +650,8 @@ function SiteUseCasePicker({ value, onChange, onInteract, auto }) {
                 <span className="w-9 h-9 shrink-0 rounded-lg grid place-items-center transition-colors"
                   style={on ? { background: 'rgba(255,255,255,0.12)', color: '#fff' } : { background: 'rgba(255,255,255,0.05)', color: '#a3a3a3' }}><Ico size={17} /></span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-[14px] font-semibold text-white">{x.label}</span>
-                  <span className="block text-[12px] text-neutral-500 truncate">{x.example}</span>
+                  <span className="block text-[14px] font-semibold text-white"><Tx k={'cas.' + x.id + '.nom'} d={x.label} /></span>
+                  <span className="block text-[12px] text-neutral-500 truncate"><Tx k={'cas.' + x.id + '.exemples'} d={x.example} /></span>
                 </span>
                 {on && <span className="text-neutral-300"><I.Check size={15} /></span>}
               </button>
@@ -700,6 +702,7 @@ const SITE_LINK_SOURCES = [
 ];
 
 function SiteImport({ c, items, setItems, onNext, opening }) {
+  const t = useTx();
   const fileRef = useSiteRef(null);
   const [busy, setBusy] = useSiteState(false);
   const [over, setOver] = useSiteState(false);
@@ -758,7 +761,7 @@ function SiteImport({ c, items, setItems, onNext, opening }) {
   const ctaUnder = bySource(lastSource).length ? lastSource : (['file', 'strava', 'komoot'].find((k) => bySource(k).length) || 'file');
   const next = (where) => items.length > 0 && ctaUnder === where && (
     <UiButton variant="primary" size="lg" block iconRight="ChevronRight" loading={opening} onClick={onNext} className="mt-3 ds-fade-up">
-      Personnaliser ma carte{items.length > 1 ? ` · ${items.length} tracés, ${ptKm(total)}` : ''}
+      <Tx k="import.cta" d="Personnaliser ma carte" />{items.length > 1 ? ` · ${items.length} tracés, ${ptKm(total)}` : ''}
     </UiButton>
   );
   const errorFor = (id) => error.msg && error.src === id && <p className="mt-2 text-[13px] text-red-300">{error.msg}</p>;
@@ -803,10 +806,10 @@ function SiteImport({ c, items, setItems, onNext, opening }) {
               {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-[14px] sm:text-[15px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? 'Lecture…' : over ? 'Déposez vos tracés' : bySource('file').length ? 'Ajoutez d’autres tracés' : 'Importez votre tracé'}</span>
-              <span className="block text-[12px] sm:text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em] whitespace-nowrap">GPX · FIT · TCX · KML</span>
+              <span className="block text-[14px] sm:text-[15px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? t('import.lecture', 'Lecture…') : over ? <Tx k="import.deposez" d="Déposez vos tracés" /> : bySource('file').length ? <Tx k="import.ajouter" d="Ajoutez d’autres tracés" /> : <Tx k="import.titre" d="Importez votre tracé" />}</span>
+              <span className="block text-[12px] sm:text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em] whitespace-nowrap"><Tx k="import.formats" d="GPX · FIT · TCX · KML" /></span>
             </span>
-            {!busy && <span className="shrink-0 w-[88px] h-10 rounded-lg grid lg:hidden xl:grid place-items-center text-[13px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors">Parcourir</span>}
+            {!busy && <span className="shrink-0 w-[88px] h-10 rounded-lg grid lg:hidden xl:grid place-items-center text-[13px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors"><Tx k="import.parcourir" d="Parcourir" /></span>}
           </button>
           {errorFor('file')}
           {list('file')}
@@ -821,11 +824,11 @@ function SiteImport({ c, items, setItems, onNext, opening }) {
                 <img src={ptRes(src.logo[0], src.logo[1])} alt="" width="26" height="26" className="w-7 h-7 sm:w-[30px] sm:h-[30px] rounded-[7px] shrink-0" />
                 <input value={links[src.id]} onChange={(e) => { const v = e.target.value; setLinks((l) => ({ ...l, [src.id]: v })); setError({ src: '', msg: '' }); setGuided((x) => ({ ...x, [src.id]: null })); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') submitLink(src); }}
-                  placeholder={narrow ? 'Lien ' + src.name : src.placeholder} aria-label={'Lien ' + src.name} inputMode="url"
+                  placeholder={narrow ? 'Lien ' + src.name : t('import.' + src.id + '.champ', src.placeholder)} aria-label={'Lien ' + src.name} inputMode="url"
                   style={{ outline: 'none', caretColor: src.color }} className="flex-1 min-w-0 h-full bg-transparent text-[14px] text-white placeholder:text-neutral-500" />
                 <button onClick={(e) => { e.preventDefault(); submitLink(src); }} disabled={linkBusy === src.id}
                   className="w-[88px] h-10 shrink-0 rounded-lg grid place-items-center text-[13px] font-semibold text-white transition-[filter] hover:brightness-110 disabled:opacity-70" style={{ background: src.color }}>
-                  {linkBusy === src.id ? <UiSpinner size={16} /> : 'Importer'}
+                  {linkBusy === src.id ? <UiSpinner size={16} /> : <Tx k={'import.' + src.id + '.bouton'} d="Importer" />}
                 </button>
               </label>
               {errorFor(src.id)}
@@ -835,10 +838,10 @@ function SiteImport({ c, items, setItems, onNext, opening }) {
                     <img src={ptRes(src.logo[0], src.logo[1])} alt="" width="28" height="28" className="rounded-md shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="text-[14px] font-semibold text-white">{src.label(g)}</div>
-                      <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">Téléchargez le GPX depuis votre compte {src.name}, puis déposez-le ici : il s'ajoute à vos tracés.</p>
+                      <p className="text-[13px] text-neutral-300 mt-0.5 leading-snug">{t('import.guide', 'Téléchargez le GPX depuis votre compte {source}, puis déposez-le ici : il s’ajoute à vos tracés.').replace('{source}', src.name)}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <a href={src.exportUrl(g)} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white hover:brightness-110" style={{ background: src.color }}><I.Download size={15} /> Télécharger le GPX</a>
-                        <UiButton icon="Upload" onClick={() => pick(src.id)}>Déposer le fichier</UiButton>
+                        <a href={src.exportUrl(g)} target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold text-white hover:brightness-110" style={{ background: src.color }}><I.Download size={15} /> <Tx k="import.guide.telecharger" d="Télécharger le GPX" /></a>
+                        <UiButton icon="Upload" onClick={() => pick(src.id)}><Tx k="import.guide.deposer" d="Déposer le fichier" /></UiButton>
                       </div>
                     </div>
                     <UiIconButton icon="X" label="Fermer" size="sm" onClick={() => setGuided((x) => ({ ...x, [src.id]: null }))} />
@@ -879,9 +882,9 @@ function SiteStepHead({ i, accent, snap }) {
         style={{ fontFamily: 'var(--ds-font-display)', backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em', willChange: snap ? 'opacity' : undefined }}>
         0{i + 1}
       </span>
-      <h2 className="lg:mt-3 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[22px] lg:text-[24px] text-white"><span className="sr-only">Étape {i + 1} : </span>{st.title}</h2>
+      <h2 className="lg:mt-3 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[22px] lg:text-[24px] text-white"><span className="sr-only">Étape {i + 1} : </span><Tx k={'etape.' + (i + 1) + '.titre'} d={st.title} /></h2>
       </div>
-      <p className="mt-2.5 lg:mt-3.5 text-[14px] lg:text-[15px] leading-[1.6] lg:leading-[1.7] text-neutral-400 max-w-[400px]">{st.text}</p>
+      <p className="mt-2.5 lg:mt-3.5 text-[14px] lg:text-[15px] leading-[1.6] lg:leading-[1.7] text-neutral-400 max-w-[400px]"><Tx k={'etape.' + (i + 1) + '.texte'} d={st.text} /></p>
     </div>
   );
 }
@@ -897,7 +900,7 @@ function SiteStepRail({ step, onGo }) {
             <li key={st.id}>
               <button onClick={() => onGo(i)} aria-current={on ? 'step' : undefined} className="group flex items-center gap-3 text-left">
                 <span className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12.5px] font-semibold tabular-nums transition-colors duration-300 ${on ? 'bg-white/[0.12] text-neutral-100 ring-1 ring-white/25' : 'bg-white/[0.04] text-neutral-500 ring-1 ring-white/15 group-hover:text-neutral-200 group-hover:ring-white/30'}`}>{i + 1}</span>
-                <span className={`text-[14px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-neutral-200 font-medium' : 'text-neutral-500 group-hover:text-neutral-300'}`}>{st.title}</span>
+                <span className={`text-[14px] whitespace-nowrap transition-colors duration-300 ${on ? 'text-neutral-200 font-medium' : 'text-neutral-500 group-hover:text-neutral-300'}`}><Tx k={'etape.' + (i + 1) + '.titre'} d={st.title} /></span>
               </button>
             </li>
           );
@@ -943,17 +946,18 @@ const SITE_IG = {
 };
 
 function SiteInstaPost({ post, i }) {
+  const t = useTx(), k = 'insta.post' + (i + 1) + '.';
   return (
     <figure className="w-[272px] sm:w-[300px] shrink-0 rounded-2xl bg-[#121213] ring-1 ring-white/[0.07] overflow-hidden text-left">
       <figcaption className="flex items-center gap-2.5 px-3 h-12">
         <span className="rounded-full p-[2px]" style={{ background: 'linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7)' }}><span className="block rounded-full ring-2 ring-[#121213]"><SiteAvatar i={i} /></span></span>
         <span className="min-w-0 leading-tight">
-          <span className="block text-[13px] font-semibold text-white truncate">{post.user}</span>
-          <span className="block text-[11px] text-neutral-500 truncate">{post.place}</span>
+          <span className="block text-[13px] font-semibold text-white truncate"><Tx k={k + 'pseudo'} d={post.user} /></span>
+          <span className="block text-[11px] text-neutral-500 truncate"><Tx k={k + 'lieu'} d={post.place} /></span>
         </span>
         <span className="ml-auto text-neutral-500 text-[18px] leading-none tracking-widest" aria-hidden="true">···</span>
       </figcaption>
-      <img src={post.src} alt={'Poster Printrace : ' + post.text} loading="lazy" decoding="async" width="640" height="800" className="block w-full aspect-[4/5] object-cover bg-neutral-900" />
+      <img src={post.src} alt={'Poster Printrace : ' + t(k + 'texte', post.text)} loading="lazy" decoding="async" width="640" height="800" className="block w-full aspect-[4/5] object-cover bg-neutral-900" />
       <div className="px-3 pt-2.5 pb-3.5">
         <div className="flex items-center gap-3.5 text-neutral-200">
           <span className="text-[#ff3b5c]"><SiteInstaIcon d={SITE_IG.heart} fill="currentColor" /></span>
@@ -961,20 +965,21 @@ function SiteInstaPost({ post, i }) {
           <span className="ml-auto"><SiteInstaIcon d={SITE_IG.save} /></span>
         </div>
         <p className="mt-2 text-[12.5px] font-semibold text-white">{String(post.likes).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')} J’aime</p>
-        <p className="mt-1 text-[12.5px] leading-snug text-neutral-300 line-clamp-2"><span className="font-semibold text-white">{post.user}</span> {post.text} <span className="text-[#7fa8ff]">{post.tags}</span></p>
+        <p className="mt-1 text-[12.5px] leading-snug text-neutral-300 line-clamp-2"><span className="font-semibold text-white">{t(k + 'pseudo', post.user)}</span> <Tx k={k + 'texte'} d={post.text} /> <span className="text-[#7fa8ff]"><Tx k={k + 'tags'} d={post.tags} /></span></p>
       </div>
     </figure>
   );
 }
 
 function SiteInstaWall({ snap }) {
+  const t = useTx();
   // Deux fois la liste à la suite : la boucle reprend sans saut à mi-parcours
   const row = SITE_POSTS.concat(SITE_POSTS);
   return (
     <section aria-label="Les posters Printrace sur Instagram" className="relative py-20 lg:py-28 border-t border-white/[0.06]" style={snap ? { scrollSnapAlign: 'start' } : undefined}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 text-center">
-        <h2 className="font-display italic font-bold tracking-[-0.02em] text-[clamp(28px,3.2vw,42px)] leading-tight">Vos aventures, au mur</h2>
-        <p className="mt-4 text-[16px] leading-relaxed text-neutral-400 max-w-[520px] mx-auto">Du canapé au garage, ils ont imprimé leur tracé. Partagez le vôtre avec <span className="text-white font-medium">#printrace</span>.</p>
+        <h2 className="font-display italic font-bold tracking-[-0.02em] text-[clamp(28px,3.2vw,42px)] leading-tight"><Tx k="insta.titre" d="Vos aventures, au mur" /></h2>
+        <p className="mt-4 text-[16px] leading-relaxed text-neutral-400 max-w-[520px] mx-auto"><Tx k="insta.texte" d="Du canapé au garage, ils ont imprimé leur tracé. Partagez le vôtre avec" /> <span className="text-white font-medium"><Tx k="insta.hashtag" d="#printrace" /></span>.</p>
       </div>
       <div className="site-marquee relative mt-12 overflow-hidden" style={{ maskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)', WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)' }}>
         <div className="site-marquee-track flex w-max gap-5">
@@ -982,8 +987,8 @@ function SiteInstaWall({ snap }) {
         </div>
       </div>
       <div className="mt-10 flex justify-center">
-        <a href="https://www.instagram.com/" target="_blank" rel="noopener" className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-white/[0.06] ring-1 ring-white/10 text-[14px] font-medium text-neutral-200 hover:bg-white/[0.1] hover:text-white transition-colors">
-          <SiteInstaIcon d={SITE_IG.logo} size={18} /> Suivre @printrace
+        <a href={t('lien.instagram', 'https://www.instagram.com/')} target="_blank" rel="noopener" className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-white/[0.06] ring-1 ring-white/10 text-[14px] font-medium text-neutral-200 hover:bg-white/[0.1] hover:text-white transition-colors">
+          <SiteInstaIcon d={SITE_IG.logo} size={18} /> <Tx k="insta.suivre" d="Suivre @printrace" />
         </a>
       </div>
     </section>
@@ -992,30 +997,32 @@ function SiteInstaWall({ snap }) {
 
 // Pied de page : petit logo, liens utiles
 function SiteFooter({ snap }) {
+  const t = useTx();
   const root = window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../';
+  // [clé, texte par défaut, liens [clé, texte, adresse]]
   const cols = [
-    ['Produit', [['Créer mon poster', ptLoginUrl()], ['Se connecter', ptLoginUrl()], ['Routdoor, l’app de tracés', root + 'routdoor/']]],
-    ['Suivre', [['Instagram', 'https://www.instagram.com/']]],
+    ['pied.produit', 'Produit', [['pied.creer', 'Créer mon poster', ptLoginUrl()], ['pied.connexion', 'Se connecter', ptLoginUrl()], ['pied.routdoor', 'Routdoor, l’app de tracés', root + 'routdoor/']]],
+    ['pied.suivre', 'Suivre', [['pied.instagram', 'Instagram', t('lien.instagram', 'https://www.instagram.com/')]]],
   ];
   return (
     <footer className="relative border-t border-white/[0.06]" style={snap ? { scrollSnapAlign: 'end' } : undefined}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 py-14 grid gap-10 sm:grid-cols-[2fr_repeat(2,minmax(0,1fr))]">
         <div>
           <a href="./" aria-label="Printrace" className="inline-block text-white opacity-90 hover:opacity-100"><UiPrintraceLogo height={20} /></a>
-          <p className="mt-3 text-[13.5px] leading-relaxed text-neutral-500 max-w-[260px]">Vos tracés GPX, Strava et Komoot, imprimés en posters prêts à encadrer.</p>
+          <p className="mt-3 text-[13.5px] leading-relaxed text-neutral-500 max-w-[260px]"><Tx k="pied.texte" d="Vos tracés GPX, Strava et Komoot, imprimés en posters prêts à encadrer." /></p>
         </div>
-        {cols.map(([t, links]) => (
-          <nav key={t} aria-label={t}>
-            <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-neutral-500">{t}</p>
+        {cols.map(([ck, cd, links]) => (
+          <nav key={ck} aria-label={t(ck, cd)}>
+            <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-neutral-500"><Tx k={ck} d={cd} /></p>
             <ul className="mt-3.5 space-y-2.5">
-              {links.map(([l, h]) => <li key={l}><a href={h} {...(/^https?:/.test(h) ? { target: '_blank', rel: 'noopener' } : {})} className="text-[14px] text-neutral-400 hover:text-white transition-colors">{l}</a></li>)}
+              {links.map(([lk, ld, h]) => <li key={lk}><a href={h} {...(/^https?:/.test(h) ? { target: '_blank', rel: 'noopener' } : {})} className="text-[14px] text-neutral-400 hover:text-white transition-colors"><Tx k={lk} d={ld} /></a></li>)}
             </ul>
           </nav>
         ))}
       </div>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 py-6 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-neutral-600">
-        <span>© {new Date().getFullYear()} Printrace</span>
-        <span>Fonds de carte © contributeurs OpenStreetMap</span>
+        <span>© {new Date().getFullYear()} <Tx k="pied.copyright" d="Printrace" /></span>
+        <span><Tx k="pied.credit" d="Fonds de carte © contributeurs OpenStreetMap" /></span>
       </div>
     </footer>
   );
@@ -1026,6 +1033,9 @@ function PrintraceSite() {
   const [auto, setAuto] = useSiteState(true); // défilement des cas d'usage tant qu'on n'a pas choisi
   const c = SITE_CASES.find((x) => x.id === caseId);
   const stop = () => setAuto(false);
+  // Mode édition des textes (administrateur) : « ?edit » dans l'adresse
+  const [editing, setEditing] = useSiteState(false);
+  useSiteEffect(() => { setEditing(ptEditRequested()); }, []);
   const [customs, setCustoms] = useSiteState({}); // personnalisation par cas d'usage
   const custom = customs[caseId] || {};
   // Photos du cas d'usage (fichiers locaux, Unsplash ou illustration)
@@ -1192,10 +1202,10 @@ function PrintraceSite() {
       <header className="relative z-10 max-w-[1240px] mx-auto px-5 sm:px-8 pt-10 lg:pt-12 pb-10 lg:pb-14 text-center">
         {/* Deux lignes fixes : la hauteur ne bouge pas quand le mot change */}
         <h1 className="font-display font-extrabold tracking-[-0.035em] leading-[1.08] text-[clamp(34px,4.4vw,62px)]">
-          <span className="block text-white/90">Imprimez votre</span>
+          <span className="block text-white/90"><Tx k="hero.titre" d="Imprimez votre" /></span>
           <span className="block" onMouseEnter={stop}><SiteUseCasePicker value={caseId} auto={auto} onChange={(id) => { setCaseId(id); stop(); }} onInteract={stop} /></span>
         </h1>
-        <p key={c.id} className="ds-fade-up mt-5 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[560px] mx-auto">{c.pitch}</p>
+        <p key={c.id} className="ds-fade-up mt-5 text-[17px] sm:text-[18px] leading-relaxed text-neutral-400 max-w-[560px] mx-auto"><Tx k={'cas.' + c.id + '.accroche'} d={c.pitch} /></p>
       </header>
 
       {/* Étapes à gauche (elles défilent), poster centré sur la page et progression à droite (ils restent à l'écran) */}
@@ -1212,7 +1222,7 @@ function PrintraceSite() {
             {/* Le site n'est qu'un aperçu : la personnalisation complète se fait dans l'app */}
             <a href={ptLoginUrl()} className="group mt-4 flex items-start gap-3 rounded-xl px-1 py-1 text-[13px] leading-relaxed text-neutral-500 hover:text-neutral-300 transition-colors">
               <I.Info size={15} className="mt-[3px] shrink-0 text-neutral-600 group-hover:text-neutral-400" />
-              <span>Ceci n’est qu’un aperçu : modèles, typographies, formats… bien plus d’options sur <span className="font-medium text-neutral-300 group-hover:text-white underline decoration-white/20 underline-offset-[3px] group-hover:decoration-white/60">printrace.app</span> <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">→</span></span>
+              <span><Tx k="apercu.texte" d="Ceci n’est qu’un aperçu : modèles, typographies, formats… bien plus d’options sur" /> <span className="font-medium text-neutral-300 group-hover:text-white underline decoration-white/20 underline-offset-[3px] group-hover:decoration-white/60"><Tx k="apercu.lien" d="printrace.app" /></span> <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">→</span></span>
             </a>
           </div>
           <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[40vh] ${dim(2)}`}>
@@ -1246,6 +1256,7 @@ function PrintraceSite() {
       <SiteInstaWall snap />
       <SiteFooter snap />
      </div>
+     {editing && <SiteEditor caseId={caseId} onCase={(id) => { setCaseId(id); stop(); }} onStart={stop} />}
     </div>
   );
 }
