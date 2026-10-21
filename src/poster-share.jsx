@@ -133,11 +133,11 @@ function poLine(ctx, text, x, y, maxW, size, color, o = {}) {
   const t = o.upper ? String(text || '').toUpperCase() : String(text || '');
   if (!t) return 0;
   const fam = poFam(ctx, o), wt = o.weight || 700, sp = o.spacing || 0;
-  const width = (sz) => { ctx.font = poFont(wt, sz, fam, o.italic); return ctx.measureText(t).width + sp * sz * Math.max(0, [...t].length - 1); };
+  const width = (sz) => { ctx.font = poFont(wt, sz, fam, o.italic); return stMeasure(ctx, t) + sp * sz * Math.max(0, stGraphemes(t).length - 1); };
   let sz = size; const w0 = width(sz); if (w0 > maxW) sz = sz * maxW / w0;
   ctx.font = poFont(wt, sz, fam, o.italic); ctx.fillStyle = color;
   if (sp) stSpaced(ctx, t, x, y, sp * sz, o.align || 'left');
-  else { ctx.textAlign = o.align || 'left'; ctx.fillText(t, x, y); }
+  else { ctx.textAlign = o.align || 'left'; stFill(ctx, t, x, y); }
   return sz;
 }
 // Titre sur plusieurs lignes (taille fixe) ; renvoie la hauteur
@@ -147,7 +147,7 @@ function poLines(ctx, text, x, y, maxW, size, color, o = {}) {
   ctx.font = poFont(o.weight || 700, size, poFam(ctx, o), o.italic); ctx.fillStyle = color; ctx.textAlign = o.align || 'left';
   const lines = stWrap(ctx, t, maxW, o.maxLines || 3);
   const lh = size * (o.lh || 1.04);
-  lines.forEach((l, i) => ctx.fillText(l, x, y + size * 0.82 + i * lh));
+  lines.forEach((l, i) => stFill(ctx, l, x, y + size * 0.82 + i * lh));
   return lines.length * lh;
 }
 function poLinesHeight(ctx, text, maxW, size, o = {}) {
@@ -731,6 +731,8 @@ async function renderPosterCtx(ctx, tpl, d, fmt, border, pr) {
   if (!d.routes.length) return;
   const dd = { ...d, pr, photos: (d.photos || []).slice(0, tpl.maxPhotos || 4), showMap: d.showMap != null ? d.showMap : !!tpl.mapDefault };
   ctx.__titleFont = d.titleFont || null;
+  // Émojis du titre, du sous-titre et des valeurs : chargés avant de dessiner
+  await stLoadEmojis([d.title, d.subtitle, ...(d.stats || []).map((x) => x.value)]);
   try {
     if (border === 'marge' || border === 'passe') {
       const m = border === 'passe' ? W * 0.085 : W * 0.035;
@@ -772,8 +774,9 @@ async function renderPosterSvg(tpl, d, fmt, border) {
   const draw = ctx.drawImage.bind(ctx);
   ctx.drawImage = function (img, ...rest) {
     if (img && img.nodeName === 'IMG' && !/^data:/.test(img.src)) {
-      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
-      c.getContext('2d').drawImage(img, 0, 0);
+      // (une image SVG sans taille propre, comme un émoji, est rastérisée en 256 px)
+      const c = document.createElement('canvas'); c.width = img.naturalWidth || 256; c.height = img.naturalHeight || 256;
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       return draw(c, ...rest);
     }
     return draw(img, ...rest);

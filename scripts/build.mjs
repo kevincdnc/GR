@@ -203,6 +203,14 @@ export function build({ single = false } = {}) {
     writeFileSync(join(out, 'data', 'gr34.js'), data)
     writeFileSync(join(out, 'js', 'gpx.js'), gpxLib)
     cpSync(join(ROOT, 'assets'), join(out, 'assets'), { recursive: true })
+    // Émojis des posters (Twemoji) : servis par le site, avec une taille propre (dessin sur canvas)
+    const emojiDir = nm('@twemoji/svg')
+    if (existsSync(emojiDir)) {
+      mkdirSync(join(out, 'assets', 'emoji'), { recursive: true })
+      for (const f of readdirSync(emojiDir).filter((x) => x.endsWith('.svg'))) {
+        writeFileSync(join(out, 'assets', 'emoji', f), readFileSync(join(emojiDir, f), 'utf8').replace('<svg ', '<svg width="72" height="72" '))
+      }
+    }
     mkdirSync(join(out, 'vendor'), { recursive: true })
     for (const [dest, src] of Object.entries(vendor)) cpSync(src, join(out, dest))
     writeFileSync(join(out, 'tailwind.css'), tailwindCss)

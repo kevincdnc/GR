@@ -238,19 +238,76 @@ function stDrawRoutes(ctx, routes, proj, o) {
 
 function stFont(weight, size, family = ST_TXT) { return `${weight} ${Math.round(size)}px ${family}`; }
 
+// ---------------------------------------------------------------------------
+// Émojis : dessinés en images (Twemoji), identiques sur tous les systèmes
+// (Windows n'affiche pas les drapeaux, certains Linux aucun émoji couleur).
+// stLoadEmojis() les charge avant le rendu ; sans réseau, le texte reste tel quel.
+// ---------------------------------------------------------------------------
+const ST_EMOJI_RE = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u;
+const stSegmenter = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter('fr', { granularity: 'grapheme' }) : null;
+const stGraphemes = (t) => (stSegmenter ? [...stSegmenter.segment(String(t))].map((x) => x.segment) : [...String(t)]);
+function stEmojiCode(g) {
+  const cps = [...g].map((c) => c.codePointAt(0));
+  const zwj = cps.includes(0x200d); // séquences : la variante FE0F reste dans le nom du fichier
+  return cps.filter((c) => zwj || c !== 0xfe0f).map((c) => c.toString(16)).join('-');
+}
+const stEmojiImgs = new Map(); // code -> image chargée (ou null)
+// Servis par le site (assets/emoji/, copiés au build depuis @twemoji/svg), sinon par le CDN
+const stEmojiUrls = (code) => ['assets/emoji/' + code + '.svg', `https://cdn.jsdelivr.net/npm/@twemoji/svg@15.0.0/${code}.svg`];
+async function stLoadEmojis(texts) {
+  const codes = new Set();
+  texts.forEach((t) => { if (t && ST_EMOJI_RE.test(t)) stGraphemes(t).forEach((g) => { if (ST_EMOJI_RE.test(g)) codes.add(stEmojiCode(g)); }); });
+  await Promise.all([...codes].filter((c) => !stEmojiImgs.has(c)).map(async (c) => {
+    let img = null;
+    for (const u of stEmojiUrls(c)) { img = await stLoadImage(u); if (img) break; }
+    stEmojiImgs.set(c, img);
+  }));
+}
+const stEmojiImg = (g) => (ST_EMOJI_RE.test(g) ? stEmojiImgs.get(stEmojiCode(g)) || null : null);
+const stFontPx = (ctx) => { const m = /(\d+(?:\.\d+)?)px/.exec(ctx.font); return m ? parseFloat(m[1]) : 16; };
+const stEmojiW = (size) => size * 1.1;
+// Largeur d'un texte qui peut contenir des émojis
+function stMeasure(ctx, t) {
+  t = String(t || '');
+  if (!ST_EMOJI_RE.test(t)) return ctx.measureText(t).width;
+  const size = stFontPx(ctx); let w = 0, buf = '';
+  stGraphemes(t).forEach((g) => { if (stEmojiImg(g)) { w += ctx.measureText(buf).width + stEmojiW(size); buf = ''; } else buf += g; });
+  return w + ctx.measureText(buf).width;
+}
+// fillText avec émojis (respecte textAlign)
+function stFill(ctx, t, x, y) {
+  t = String(t || '');
+  if (!ST_EMOJI_RE.test(t)) { ctx.fillText(t, x, y); return; }
+  const size = stFontPx(ctx), total = stMeasure(ctx, t), al = ctx.textAlign;
+  let cx = al === 'center' ? x - total / 2 : al === 'right' || al === 'end' ? x - total : x;
+  ctx.textAlign = 'left';
+  let buf = '';
+  const flush = () => { if (buf) { ctx.fillText(buf, cx, y); cx += ctx.measureText(buf).width; buf = ''; } };
+  stGraphemes(t).forEach((g) => {
+    const img = stEmojiImg(g);
+    if (!img) { buf += g; return; }
+    flush();
+    const e = size * 0.96;
+    ctx.drawImage(img, cx + (stEmojiW(size) - e) / 2, y - e * 0.84, e, e);
+    cx += stEmojiW(size);
+  });
+  flush();
+  ctx.textAlign = al;
+}
+
 function stWrap(ctx, text, maxW, maxLines) {
   const words = String(text || '').split(/\s+/).filter(Boolean);
   const lines = [];
   let cur = '';
   for (const w of words) {
     const t = cur ? cur + ' ' + w : w;
-    if (ctx.measureText(t).width <= maxW || !cur) cur = t; else { lines.push(cur); cur = w; }
+    if (stMeasure(ctx, t) <= maxW || !cur) cur = t; else { lines.push(cur); cur = w; }
   }
   if (cur) lines.push(cur);
   if (lines.length > maxLines) {
     const kept = lines.slice(0, maxLines);
     let last = kept[maxLines - 1] + '…';
-    while (ctx.measureText(last).width > maxW && last.length > 2) last = last.slice(0, -2) + '…';
+    while (stMeasure(ctx, last) > maxW && last.length > 2) last = last.slice(0, -2) + '…';
     kept[maxLines - 1] = last;
     return kept;
   }
@@ -270,13 +327,13 @@ const ST_PAD = 96; // marge latérale commune
 
 // Texte espacé (letter-spacing manuel : fiable sur tous les navigateurs)
 function stSpaced(ctx, text, x, y, spacing, align = 'left') {
-  const chars = [...String(text)];
-  const widths = chars.map((c) => ctx.measureText(c).width);
+  const chars = stGraphemes(text); // graphèmes : un drapeau ou un émoji composé reste entier
+  const widths = chars.map((c) => stMeasure(ctx, c));
   const total = widths.reduce((a, b) => a + b, 0) + spacing * Math.max(0, chars.length - 1);
   let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
   const prev = ctx.textAlign;
   ctx.textAlign = 'left';
-  chars.forEach((c, i) => { ctx.fillText(c, cx, y); cx += widths[i] + spacing; });
+  chars.forEach((c, i) => { stFill(ctx, c, cx, y); cx += widths[i] + spacing; });
   ctx.textAlign = prev;
   return total;
 }
