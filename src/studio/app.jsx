@@ -245,11 +245,13 @@ function ApPopover({ open, onClose, children }) {
     </>
   );
 }
-function ApToolbar({ tpl, cfg, setCfg, photosCount, maxPhotos, onPhoto, onSaveModel }) {
+function ApToolbar({ tpl, cfg, setCfg, trackColor, photosCount, maxPhotos, onPhoto, onSaveModel }) {
   const [open, setOpen] = useApState('');
   const rec = { colors: [], ...poRec(tpl, cfg.mode) };
   const colors = [...rec.colors, ...SHARE_COLORS.map((c) => c.value).filter((v) => v !== 'routes' && !rec.colors.includes(v))];
   const cur = cfg.color === 'auto' ? null : cfg.color;
+  // Couleur réellement dessinée sur le poster (en « Auto » : celle du modèle, ou du tracé)
+  const shown = cur || (rec.route === 'routes' ? trackColor : rec.route) || null;
   const fonts = AP_FONT_CHOICES[tpl.id] || AP_FONT_CHOICES.blueprint;
   const fontName = (fonts.find(([k]) => k === cfg.font) || fonts[0])[1];
   const btn = (on) => `h-10 rounded-full flex items-center gap-2 px-3.5 text-[13px] font-medium transition-colors ${on ? 'bg-white/[0.12] text-white' : 'text-neutral-300 hover:bg-white/[0.07] hover:text-white'}`;
@@ -258,7 +260,7 @@ function ApToolbar({ tpl, cfg, setCfg, photosCount, maxPhotos, onPhoto, onSaveMo
     <div className="relative z-20 inline-flex items-center gap-0.5 rounded-full bg-[#121212]/80 backdrop-blur-xl ring-1 ring-white/[0.09] shadow-[0_16px_40px_-14px_rgba(0,0,0,0.9)] p-1">
       <div className="relative">
         <button onClick={() => setOpen(open === 'color' ? '' : 'color')} className={btn(open === 'color')}>
-          <span className="w-4 h-4 rounded-full ring-1 ring-white/30" style={{ background: cur || 'conic-gradient(#fc5200,#facc15,#3b82f6,#ffffff,#fc5200)' }} /> Couleur
+          <span className="w-4 h-4 rounded-full ring-1 ring-white/30" style={{ background: shown || 'conic-gradient(#fc5200,#facc15,#3b82f6,#ffffff,#fc5200)' }} /> Couleur
         </button>
         <ApPopover open={open === 'color'} onClose={() => setOpen('')}>
           {tpl.modes && (<>
@@ -283,7 +285,7 @@ function ApToolbar({ tpl, cfg, setCfg, photosCount, maxPhotos, onPhoto, onSaveMo
               </span>
             ))}
             <label title="Ma couleur" className="relative w-7 h-7 rounded-full cursor-pointer overflow-hidden ring-1 ring-white/15" style={{ background: 'conic-gradient(#ef4444,#f59e0b,#eab308,#22c55e,#06b6d4,#3b82f6,#a855f7,#ec4899,#ef4444)' }}>
-              <input type="color" value={cur || '#ff6b35'} onChange={(e) => setCfg({ color: e.target.value })} className="absolute inset-0 opacity-0 cursor-pointer" />
+              <input type="color" value={/^#[0-9a-f]{6}$/i.test(shown || '') ? shown : '#ff6b35'} onChange={(e) => setCfg({ color: e.target.value })} className="absolute inset-0 opacity-0 cursor-pointer" />
             </label>
           </div>
           {tpl.bgs && (<>
@@ -566,7 +568,7 @@ function PrintraceStudio() {
   const nextLabel = ['', 'Choisir mon modèle', 'Mes infos', 'Finition et impression'][step];
 
   return (
-    <div className="h-full relative overflow-hidden font-site bg-[#1b1b1d] text-white" {...dropProps}>
+    <div className="h-full relative overflow-hidden font-site bg-[#1b1b1d] text-white" style={{ overflow: 'clip' }} {...dropProps}>
       {/* Fond : grille fine qui s'estompe, grain léger */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[520px]" style={{
         backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px)',
@@ -578,14 +580,14 @@ function PrintraceStudio() {
       <main className="absolute inset-y-0 right-0 left-[476px] flex flex-col items-center">
         <div className="shrink-0 h-[84px] flex items-end justify-center pb-3">
           {has && step >= 2 && (
-            <ApToolbar tpl={tpl} cfg={cfg} setCfg={setCfg} photosCount={photos.length} maxPhotos={tpl.maxPhotos || 0}
+            <ApToolbar tpl={tpl} cfg={cfg} setCfg={setCfg} trackColor={has ? tracks[0].color : null} photosCount={photos.length} maxPhotos={tpl.maxPhotos || 0}
               onPhoto={() => photoInput.current && photoInput.current.click()} onSaveModel={saveModel} />
           )}
           {!has && <span className="text-[13px] text-neutral-500 pb-2">Votre tracé apparaîtra sur cette carte</span>}
         </div>
         <input ref={photoInput} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { onPhotoFiles(e.target.files); e.target.value = ''; }} />
         <div ref={stageRef} {...stageHandlers}
-          className={`relative flex-1 min-h-0 w-full px-12 py-4 grid place-items-center select-none ${holding ? 'cursor-none' : ''}`} style={{ containerType: 'size', touchAction: 'none' }}>
+          className={`relative flex-1 min-h-0 w-full px-16 py-9 grid place-items-center select-none ${holding ? 'cursor-none' : ''}`} style={{ containerType: 'size', touchAction: 'none' }}>
           <div ref={boxRef} className="relative" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, width: `min(100cqw, calc(100cqh * ${fmt.mm[0] / fmt.mm[1]}))`,
             transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})`, transformOrigin: 'center', transition: holding && view.z > 1 ? 'transform .08s linear' : 'transform .3s cubic-bezier(.2,.8,.2,1)', cursor: holding ? 'none' : 'zoom-in', zIndex: view.z > 1 ? 10 : undefined }}>
             {/* Halo doux et large derrière le poster */}
@@ -623,15 +625,15 @@ function PrintraceStudio() {
         </div>
         {/* Fiche du poster : modèle, format, cadre */}
         <div className="shrink-0 h-[72px] flex items-start justify-center pt-2">
-          <span className="inline-flex items-stretch rounded-full bg-[#121212]/80 backdrop-blur ring-1 ring-white/[0.09] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.8)] p-1 text-[12px] leading-none">
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 h-7 font-semibold ${has ? 'bg-emerald-400/15 text-emerald-300' : 'bg-white/[0.08] text-neutral-200'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${has ? 'bg-emerald-400' : 'bg-neutral-400'}`} />{has ? 'Votre poster' : 'Aperçu'}
+          <span className="inline-flex items-stretch text-[11.5px] leading-none opacity-80">
+            <span className="inline-flex items-center gap-1.5 px-2.5 h-6 text-neutral-400">
+              <span className={`w-1.5 h-1.5 rounded-full ${has ? 'bg-emerald-400/80' : 'bg-neutral-500'}`} />{has ? 'Votre poster' : 'Aperçu'}
             </span>
             {[['Modèle', tpl.name], ['Format', fmt.name], ['Cadre', frame.label, frame]].map(([k, v, f]) => (
-              <span key={k} className="inline-flex items-center gap-1.5 px-2.5 h-7 border-l border-white/[0.07] whitespace-nowrap">
-                <span className="text-neutral-500">{k}</span>
+              <span key={k} className="inline-flex items-center gap-1.5 px-2.5 h-6 border-l border-white/[0.08] whitespace-nowrap">
+                <span className="text-neutral-600">{k}</span>
                 {f && <span className={`w-2.5 h-2.5 rounded-[3px] ${f.id === 'none' ? 'border border-dashed border-white/40' : 'ring-1 ring-white/20'}`} style={{ background: f.swatch }} />}
-                <span className="font-medium text-neutral-100">{v}</span>
+                <span className="font-medium text-neutral-400">{v}</span>
               </span>
             ))}
           </span>
@@ -641,7 +643,7 @@ function PrintraceStudio() {
       {/* Panneau flottant à gauche : les étapes */}
       <aside className="absolute left-5 top-5 bottom-5 w-[436px] z-30 flex flex-col rounded-[26px] bg-[#0f0f10]/90 backdrop-blur-xl ring-1 ring-white/[0.08] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)]">
         <div className="shrink-0 flex items-center justify-between px-8 h-[68px]">
-          <a href={(window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../../') + 'printrace/'} aria-label="Printrace" className="text-white"><UiPrintraceLogo height={22} /></a>
+          <a href={(window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../../') + 'printrace/'} aria-label="Printrace" className="relative top-1 text-white"><UiPrintraceLogo height={22} /></a>
         </div>
         {/* Stepper : revenir à l'import (ou à toute étape déjà ouverte) */}
         <nav aria-label="Étapes" className="shrink-0 mx-8 mb-1 flex items-center gap-1">

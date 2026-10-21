@@ -473,7 +473,7 @@ const POSTER_TEMPLATES = [
     // Plan technique : grille, cartouche, échelle, nord
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#0f1d33' },
+    rec: { colors: ['#ffffff', '#facc15'], route: '#ffffff', mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#0f1d33' },
     bgs: PO_DARK_BGS, photoSlot: true, infos: ['activity', 'start'],
     async draw(ctx, d, w, h) {
       const u = w / 1200, bg = d.bg || '#0f1d33', line = 'rgba(255,255,255,0.85)';
@@ -585,8 +585,8 @@ const POSTER_TEMPLATES = [
     // Carte de nuit : fond sombre, tracé lumineux. Mode clair : carte pastel sans noms.
     id: 'nuit', name: 'Nuit', kind: 'Carte', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#fc5200', '#ffffff'], mapStyle: 'routes', mapOpacity: 100, map: true },
-    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', colors: ['#e8590c', '#2563eb'] } },
+    rec: { colors: ['#fc5200', '#ffffff'], route: '#ffb648', mapStyle: 'routes', mapOpacity: 100, map: true },
+    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', colors: ['#e8590c', '#2563eb'], route: '#e8590c' } },
     async draw(ctx, d, w, h) {
       const u = w / 1200, ts = d.typeScale || 1; // ts : échelle du titre et des chiffres
       const light = d.mode === 'light';
@@ -668,7 +668,7 @@ const POSTER_TEMPLATES = [
     // Relief : ombrage du terrain sur papier, typographie éditoriale
     id: 'relief', name: 'Éditorial', kind: 'Magazine', maxPhotos: 4,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#fc5200', '#3b82f6'], mapStyle: 'nature', mapOpacity: 85, map: true },
+    rec: { colors: ['#fc5200', '#3b82f6'], route: '#c2410c', mapStyle: 'nature', mapOpacity: 85, map: true },
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#1c1a17', mute = '#7d776c', M = 90 * u;
       ctx.fillStyle = '#f3f0ea'; ctx.fillRect(0, 0, w, h);
@@ -700,7 +700,7 @@ const POSTER_TEMPLATES = [
     // Galerie : carte claire + photos du voyage, façon carnet
     id: 'galerie', name: 'Galerie', kind: 'Carnet', maxPhotos: 4,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#3b82f6', '#fc5200'], mapStyle: 'routes', mapOpacity: 100, map: true },
+    rec: { colors: ['#3b82f6', '#fc5200'], route: 'routes', mapStyle: 'routes', mapOpacity: 100, map: true },
     async draw(ctx, d, w, h) {
       const u = w / 1200, ink = '#161616', mute = '#8a857c', M = 80 * u;
       ctx.fillStyle = '#fbfaf7'; ctx.fillRect(0, 0, w, h);
@@ -732,7 +732,7 @@ const POSTER_TEMPLATES = [
     // Photo plein cadre : ta photo en fond, tracé et chiffres par-dessus
     id: 'photo', name: 'Photo', kind: 'Ta photo', photoBg: true, dark: true, maxPhotos: 3,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
-    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 60, map: false },
+    rec: { colors: ['#ffffff', '#facc15'], route: '#ffffff', mapStyle: 'epure', mapOpacity: 60, map: false },
     async draw(ctx, d, w, h) {
       const u = w / 1200, M = 100 * u;
       poPhotoBg(ctx, d, 0, 0, w, h);
@@ -764,7 +764,7 @@ const POSTER_TEMPLATES = [
   {
     // Polaroïd : ta photo encadrée de papier, tracé par-dessus ; titre et chiffres dessous
     id: 'polaroid', name: 'Polaroïd', kind: 'Ta photo', photoBg: true, maxPhotos: 0,
-    rec: { colors: ['#ffffff', '#facc15'], mapStyle: 'epure', mapOpacity: 60, map: false },
+    rec: { colors: ['#ffffff', '#facc15'], route: '#ffffff', mapStyle: 'epure', mapOpacity: 60, map: false },
     modes: { light: { label: 'Clair' }, dark: { label: 'Sombre' } },
     async draw(ctx, d, w, h) {
       // Noir et blanc adouci : papier crème et encre anthracite, ou l'inverse en mode sombre
