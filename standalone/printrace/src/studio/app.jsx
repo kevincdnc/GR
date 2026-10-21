@@ -172,8 +172,7 @@ function ApCatalog({ onPreview, onPick }) {
   return (
     <div className="relative">
       {/* Suggestions en tags (nom du trek seulement) + « Voir tous » */}
-      <div className="flex flex-wrap items-center gap-1.5" onMouseLeave={leave}>
-        <span className="text-[12px] text-neutral-500 mr-1">Grands itinéraires</span>
+      <div className="flex flex-wrap items-center justify-center gap-1.5" onMouseLeave={leave}>
         {ready.map((e) => (
           <button key={e.id} onMouseEnter={hover(e)} onFocus={hover(e)} onBlur={leave} onClick={() => pick(e)} title={`${e.name} · ${e.km} km`}
             className={tag + ' text-neutral-300 bg-white/[0.04] ring-white/[0.08] hover:text-white hover:bg-white/[0.09] hover:ring-white/20'}>
@@ -187,7 +186,7 @@ function ApCatalog({ onPreview, onPick }) {
       </div>
       {open && (<>
         <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); leave(); }} />
-        <div className="absolute left-0 right-0 bottom-full mb-2 z-50 rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 animate-menu max-h-[340px] overflow-y-auto sb-scroll" onMouseLeave={leave}>
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[360px] z-50 rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 animate-menu max-h-[380px] overflow-y-auto sb-scroll" onMouseLeave={leave}>
           {AP_CATALOG.map((e) => (
             <button key={e.id} onMouseEnter={hover(e)} onClick={() => pick(e)} disabled={e.soon}
               className="w-full flex items-center gap-3 rounded-xl px-2.5 py-2 text-left hover:bg-white/[0.06] disabled:hover:bg-transparent disabled:cursor-default">
@@ -207,7 +206,7 @@ function ApCatalog({ onPreview, onPick }) {
   );
 }
 
-function ApImport({ tracks, onFiles, busy, onRemove, onClear, catalog }) {
+function ApImport({ tracks, onFiles, busy, onRemove, onClear }) {
   const fileRef = useApRef(null);
   const [over, setOver] = useApState(false);
   const [links, setLinks] = useApState({ strava: '', komoot: '' });
@@ -312,7 +311,6 @@ function ApImport({ tracks, onFiles, busy, onRemove, onClear, catalog }) {
         );
       })}
       </>)}
-      {catalog && <ApCatalog {...catalog} />}
     </div>
   );
 }
@@ -608,6 +606,8 @@ function PrintraceStudio() {
 
   // Ajout de tracés : fichiers, liens, envoi du site ou de Routdoor
   const addTracks = (items, label) => {
+    // Premier tracé d'un poster vide : on démarre sur la carte noire (Nuit)
+    if (!tracks.length) setCfg({ tplId: 'nuit', mode: null, color: 'auto', bg: null, font: 'modele' });
     setTracks((prev) => {
       const fresh = items.filter((it) => !prev.some((p) => ptSame(p, it))).map((it, i) => ({ ...it, color: it.color || ptNextColor(prev, i) }));
       return [...prev, ...fresh];
@@ -688,7 +688,7 @@ function PrintraceStudio() {
     const mode = m !== undefined ? poMode(t, m) : t.id === cfg.tplId ? poMode(t, cfg.mode) : poMode(t, null);
     const rec = poRec(t, mode);
     // Grand itinéraire survolé : il remplace l'affichage le temps de l'aperçu
-    const pv = m === undefined && preview ? preview : null;
+    const pv = (m === undefined || m === 'main') && preview ? preview : null; // 'main' : aperçu principal en Nuit
     const routes = pv ? [pv.route, ...[apZoomGhost([pv.route], AP_ZOOMS[cfg.zoom])].filter(Boolean)]
       : has ? [...tracks, ...[apZoomGhost(tracks, AP_ZOOMS[cfg.zoom])].filter(Boolean)] : [apGhost(AP_FRANCE[0], AP_FRANCE[1])];
     const stats = has && !pv ? poStats(agg, order.filter((k) => enabled.has(k)), infoX).map((st) => (cfg.values[st.key] ? { ...st, value: cfg.values[st.key], unit: '' } : st)) : [];
@@ -753,7 +753,9 @@ function PrintraceStudio() {
       if (c) {
         const pw = 1700, off = document.createElement('canvas'); // assez fin pour la loupe
         off.width = pw; off.height = Math.round(pw * fmt.mm[1] / fmt.mm[0]);
-        await renderPoster(off, tpl, dataFor(tpl), fmt, cfg.border, pw / PO_W);
+        // Sans tracé : on commence toujours sur la carte noire (Nuit), quel que soit le dernier modèle
+        const shown = has ? tpl : apTpl('nuit');
+        await renderPoster(off, shown, dataFor(shown, has ? undefined : 'main'), fmt, cfg.border, pw / PO_W);
         if (my !== token.current) return;
         c.width = off.width; c.height = off.height; c.getContext('2d').drawImage(off, 0, 0);
         setReady(true);
@@ -874,7 +876,8 @@ function PrintraceStudio() {
               save={{ user: !!user, count: designs.length, max: AP_MAX_DESIGNS, current: (designs.find((x) => x.id === designId) || {}).name || null }}
               onRemovePhoto={(i) => setPhotos((l) => l.filter((_, j) => j !== i))} onRemoveBg={() => setBgPhoto(null)} />
           )}
-          {!has && <span className="text-[13px] text-neutral-500 pb-2">Votre tracé apparaîtra sur cette carte</span>}
+          {/* Étape 1 : grands itinéraires en suggestions, juste au-dessus du poster */}
+          {step === 1 && <div className="pb-1"><ApCatalog onPreview={previewRoute} onPick={pickRoute} /></div>}
         </div>
         <input ref={photoInput} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { onPhotoFiles(e.target.files); e.target.value = ''; }} />
         <div ref={stageRef} {...stageHandlers}
@@ -900,7 +903,7 @@ function PrintraceStudio() {
             <span className="inline-flex items-center gap-1.5 px-2.5 h-6 text-neutral-400">
               <span className={`w-1.5 h-1.5 rounded-full ${has ? 'bg-emerald-400/80' : 'bg-neutral-500'}`} />{has ? 'Votre poster' : 'Aperçu'}
             </span>
-            {[['Modèle', tpl.name], ['Format', fmt.name], ['Cadre', frame.label, frame]].map(([k, v, f]) => (
+            {[['Modèle', has ? tpl.name : apTpl('nuit').name], ['Format', fmt.name], ['Cadre', frame.label, frame]].map(([k, v, f]) => (
               <span key={k} className="inline-flex items-center gap-1.5 px-2.5 h-6 border-l border-white/[0.08] whitespace-nowrap">
                 <span className="text-neutral-600">{k}</span>
                 {f && <span className={`w-2.5 h-2.5 rounded-[3px] ${f.id === 'none' ? 'border border-dashed border-white/40' : 'ring-1 ring-white/20'}`} style={{ background: f.swatch }} />}
@@ -938,7 +941,7 @@ function PrintraceStudio() {
         <div key={step} className="flex-1 min-h-0 overflow-y-auto sb-scroll px-8 py-6 ds-fade-up">
           <ApStepHead n={step} />
           <div className="mt-6">
-            {step === 1 && <ApImport tracks={tracks} onFiles={importFiles} busy={busy} onRemove={removeTrack} onClear={() => { setTracks([]); setStep(1); }} catalog={{ onPreview: previewRoute, onPick: pickRoute }} />}
+            {step === 1 && <ApImport tracks={tracks} onFiles={importFiles} busy={busy} onRemove={removeTrack} onClear={() => { setTracks([]); setStep(1); }} />}
 
             {step === 2 && (<>
               {designs.length > 0 && (
