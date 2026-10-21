@@ -595,7 +595,7 @@ const POSTER_TEMPLATES = [
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       const L = stStatsLayout(ctx, d.stats, w - 220 * u, { maxSize: 70 * u * ts, labelSize: 18 * u * Math.max(0.85, ts), labelGap: 1.25, cols: poCols(d.stats.length) });
       const statsTop = h - 140 * u - L.height;
-      const titleY = statsTop - 90 * u;
+      const titleY = statsTop - 135 * u; // titre et sous-titre bien détachés des compteurs
       const ph = d.photos.length ? 190 * u : 0;
       const photosTop = titleY - 120 * u - ph;
       const mapBottom = ph ? photosTop - 50 * u : titleY - 160 * u;
@@ -619,7 +619,7 @@ const POSTER_TEMPLATES = [
         ctx.fillStyle = g; ctx.fillRect(0, fadeTop, w, h);
         stDrawRoutes(ctx, d.routes, proj, { color: poCol(d, '#ffb648'), width: 7 * u, glow: 30 * u });
       }
-      await poDrawLogo(ctx, w / 2, 110 * u, 24 * u, ink, 'center');
+      await poDrawLogo(ctx, w / 2, 110 * u, 29 * u, ink, 'center');
       if (ph) poPhotos(ctx, d.photos, 110 * u, photosTop, w - 220 * u, ph, { gap: 18 * u, radius: 14 * u, maxRatio: 1.5 });
       if (d.title) poLine(ctx, d.title, w / 2, titleY, w - 220 * u, 84 * u * ts, ink, { upper: true, spacing: ts < 1 ? 0.16 : 0.1, align: 'center' });
       if (d.subtitle) stLabel(ctx, d.subtitle, w / 2, titleY + 50 * u * Math.max(0.8, ts), 20 * u * Math.max(0.85, ts), light ? 'rgba(36,34,31,0.6)' : 'rgba(255,255,255,0.6)', 'center');

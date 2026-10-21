@@ -245,7 +245,8 @@ function ApPopover({ open, onClose, children }) {
     </>
   );
 }
-function ApToolbar({ tpl, cfg, setCfg, trackColor, photosCount, maxPhotos, onPhoto, onSaveModel }) {
+function ApToolbar({ tpl, cfg, setCfg, trackColor, photos, bgPhoto, maxPhotos, onPhoto, onRemovePhoto, onRemoveBg, onSaveModel }) {
+  const photosCount = photos.length;
   const [open, setOpen] = useApState('');
   const rec = { colors: [], ...poRec(tpl, cfg.mode) };
   const colors = [...rec.colors, ...SHARE_COLORS.map((c) => c.value).filter((v) => v !== 'routes' && !rec.colors.includes(v))];
@@ -334,10 +335,45 @@ function ApToolbar({ tpl, cfg, setCfg, trackColor, photosCount, maxPhotos, onPho
         <UiIconButton icon="Plus" label="Zoomer sur le tracé" size="sm" className="!rounded-full" disabled={cfg.zoom <= 0} onClick={() => setCfg({ zoom: Math.max(0, cfg.zoom - 1) })} />
       </div>
       {sep}
-      <button onClick={onPhoto} className={btn(false)} disabled={!tpl.photoBg && !maxPhotos}>
-        <I.ImagePlus size={16} /> {tpl.photoBg ? 'Photo' : 'Photos'}
-        {!tpl.photoBg && photosCount > 0 && <span className="text-[11.5px] tabular-nums text-neutral-400">{Math.min(photosCount, maxPhotos)}/{maxPhotos}</span>}
-      </button>
+      <div className="relative">
+        {/* Sans photo : ouvre directement le sélecteur ; sinon menu pour en ajouter ou en retirer */}
+        <button onClick={() => { if (tpl.photoBg ? bgPhoto : photosCount) setOpen(open === 'photo' ? '' : 'photo'); else onPhoto(); }}
+          className={btn(open === 'photo')} disabled={!tpl.photoBg && !maxPhotos}>
+          <I.ImagePlus size={16} /> {tpl.photoBg ? 'Photo' : 'Photos'}
+          {!tpl.photoBg && photosCount > 0 && <span className="text-[11.5px] tabular-nums text-neutral-400">{Math.min(photosCount, maxPhotos)}/{maxPhotos}</span>}
+        </button>
+        <ApPopover open={open === 'photo'} onClose={() => setOpen('')}>
+          <div className="w-[264px]">
+            <div className={apEyebrow + ' mb-2.5'}>{tpl.photoBg ? 'Photo de fond' : 'Photos du poster'}</div>
+            {tpl.photoBg ? (bgPhoto && (
+              <div className="relative rounded-xl overflow-hidden ring-1 ring-white/10 aspect-[4/3]">
+                <img src={bgPhoto.url} alt="" className="w-full h-full object-cover" />
+              </div>
+            )) : (
+              <div className="grid grid-cols-3 gap-2">
+                {photos.slice(0, maxPhotos).map((ph, i) => (
+                  <div key={i} className="relative group aspect-square rounded-lg overflow-hidden ring-1 ring-white/10">
+                    <img src={ph.url} alt="" className="w-full h-full object-cover" />
+                    <button onClick={() => { onRemovePhoto(i); if (photosCount <= 1) setOpen(''); }} title="Retirer cette photo" aria-label="Retirer cette photo"
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full grid place-items-center bg-black/70 text-white backdrop-blur hover:bg-red-500 transition-colors"><I.X size={12} /></button>
+                  </div>
+                ))}
+                {photosCount < maxPhotos && (
+                  <button onClick={() => { setOpen(''); onPhoto(); }} title="Ajouter une photo"
+                    className="aspect-square rounded-lg grid place-items-center border border-dashed border-white/20 text-neutral-400 hover:text-white hover:border-white/40 transition-colors"><I.Plus size={16} /></button>
+                )}
+              </div>
+            )}
+            <div className="mt-3 flex items-center justify-between gap-2">
+              {tpl.photoBg
+                ? <button onClick={() => { setOpen(''); onPhoto(); }} className="h-8 px-3 rounded-full text-[12px] font-semibold bg-white/[0.08] hover:bg-white/[0.14] text-white">Remplacer</button>
+                : <span className="text-[11.5px] text-neutral-500">{Math.min(photosCount, maxPhotos)} sur {maxPhotos}</span>}
+              <button onClick={() => { setOpen(''); tpl.photoBg ? onRemoveBg() : photos.forEach(() => onRemovePhoto(0)); }}
+                className="h-8 px-3 rounded-full text-[12px] font-semibold text-red-300 hover:bg-red-500/15 flex items-center gap-1.5"><I.Trash size={13} /> {tpl.photoBg ? 'Retirer la photo' : 'Tout retirer'}</button>
+            </div>
+          </div>
+        </ApPopover>
+      </div>
       {sep}
       <button onClick={onSaveModel} className={btn(false)} title="Enregistrer le modèle : style, couleur, typo, zoom et finition">
         <I.Folder size={15} /> Enregistrer
@@ -580,8 +616,9 @@ function PrintraceStudio() {
       <main className="absolute inset-y-0 right-0 left-[476px] flex flex-col items-center">
         <div className="shrink-0 h-[84px] flex items-end justify-center pb-3">
           {has && step >= 2 && (
-            <ApToolbar tpl={tpl} cfg={cfg} setCfg={setCfg} trackColor={has ? tracks[0].color : null} photosCount={photos.length} maxPhotos={tpl.maxPhotos || 0}
-              onPhoto={() => photoInput.current && photoInput.current.click()} onSaveModel={saveModel} />
+            <ApToolbar tpl={tpl} cfg={cfg} setCfg={setCfg} trackColor={has ? tracks[0].color : null} photos={photos} bgPhoto={bgPhoto} maxPhotos={tpl.maxPhotos || 0}
+              onPhoto={() => photoInput.current && photoInput.current.click()} onSaveModel={saveModel}
+              onRemovePhoto={(i) => setPhotos((l) => l.filter((_, j) => j !== i))} onRemoveBg={() => setBgPhoto(null)} />
           )}
           {!has && <span className="text-[13px] text-neutral-500 pb-2">Votre tracé apparaîtra sur cette carte</span>}
         </div>
@@ -669,6 +706,20 @@ function PrintraceStudio() {
             {step === 1 && <ApImport tracks={tracks} onFiles={importFiles} busy={busy} onRemove={removeTrack} onClear={() => { setTracks([]); setStep(1); }} />}
 
             {step === 2 && (<>
+              {models.length > 0 && (
+                <div className={apBlock + ' mb-5'}>
+                  <div className={apEyebrow + ' mb-2'}>Mes modèles</div>
+                  <div className="flex flex-col gap-1">
+                    {models.map((m) => (
+                      <div key={m.id} className="flex items-center gap-2 rounded-xl pl-3 pr-1 h-10 hover:bg-white/[0.05]">
+                        <button onClick={() => applyModel(m)} className="flex-1 min-w-0 text-left text-[13px] text-neutral-200 truncate">{m.name}</button>
+                        <UiIconButton icon="Trash" label="Supprimer ce modèle" size="xs" onClick={() => setModels((l) => l.filter((x) => x.id !== m.id))} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {models.length > 0 && <div className={apEyebrow + ' mb-2.5'}>Modèles Printrace</div>}
               <div className="grid grid-cols-2 gap-3">
                 {AP_TEMPLATES.map((id) => {
                   const t = apTpl(id), on = id === cfg.tplId;
@@ -688,19 +739,6 @@ function PrintraceStudio() {
                   );
                 })}
               </div>
-              {models.length > 0 && (
-                <div className={apBlock + ' mt-6'}>
-                  <div className={apEyebrow + ' mb-2'}>Mes modèles</div>
-                  <div className="flex flex-col gap-1">
-                    {models.map((m) => (
-                      <div key={m.id} className="flex items-center gap-2 rounded-xl pl-3 pr-1 h-10 hover:bg-white/[0.05]">
-                        <button onClick={() => applyModel(m)} className="flex-1 min-w-0 text-left text-[13px] text-neutral-200 truncate">{m.name}</button>
-                        <UiIconButton icon="Trash" label="Supprimer ce modèle" size="xs" onClick={() => setModels((l) => l.filter((x) => x.id !== m.id))} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </>)}
 
             {step === 3 && (<>
