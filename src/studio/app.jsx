@@ -39,7 +39,7 @@ const AP_FONT_CHOICES = {
 // Police « du modèle » (aperçu du bouton) : celle de ses titres
 const AP_NATIVE_FONT = { blueprint: ST_TXT, nuit: ST_TXT, relief: PO_SERIF, galerie: PO_SERIF, photo: PO_SERIF, polaroid: PO_SERIF };
 // Zoom de la carte : 0 = cadré sur le tracé, puis deux niveaux plus larges
-const AP_ZOOMS = [0, 0.35, 0.85, 1.8]; // pas plus doux ; le niveau le plus large reste celui d'avant
+const AP_ZOOMS = [0, 0.35, 0.85]; // pas doux : cadré sur le tracé, puis deux niveaux plus larges
 // Carte de France (poster d'accueil, sans tracé)
 const AP_FRANCE = [[51.1, -4.9], [42.3, 8.3]];
 // Photo par défaut des modèles « photo » (remplaçable)
@@ -110,7 +110,7 @@ function ApStepHead({ n }) {
         style={{ backgroundImage: 'linear-gradient(180deg, #353535 0%, #1b1b1b 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', paddingRight: '0.08em' }}>
         0{n}
       </span>
-      <h2 className="mt-2.5 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[23px] text-white">{st.title}</h2>
+      <h2 className="mt-2.5 font-display italic font-bold tracking-[-0.02em] leading-[1.15] text-[20px] text-white">{st.title}</h2>
       {/* Une seule ligne de description par étape */}
       <p className="mt-2.5 text-[14px] leading-[1.5] text-neutral-400 truncate">{st.text}</p>
     </div>
@@ -133,7 +133,6 @@ function ApImport({ tracks, onFiles, busy, onRemove, onClear }) {
   const count = useApRef(tracks.length);
   useApEffect(() => { if (tracks.length > count.current) setAdding(false); count.current = tracks.length; }, [tracks.length]);
   const showFields = !tracks.length || adding;
-  const root = window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../../';
   const pick = (src = 'file') => { pickSrc.current = src; fileRef.current && fileRef.current.click(); };
   const submit = async (src) => {
     setError({ src: '', msg: '' });
@@ -148,12 +147,6 @@ function ApImport({ tracks, onFiles, busy, onRemove, onClear }) {
     }
     setGuided((g) => ({ ...g, [src.id]: r }));
   };
-  const soon = (icon, label) => (
-    <div className="flex items-center gap-3 h-11 px-3.5 rounded-xl bg-white/[0.02] ring-1 ring-white/[0.06] text-[13px] text-neutral-400">
-      <span className="text-neutral-500">{icon}</span><span className="flex-1">{label}</span>
-      <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-neutral-500">Bientôt</span>
-    </div>
-  );
   return (
     <div className="flex flex-col gap-3">
       <input ref={fileRef} type="file" multiple accept={TRACK_ACCEPT} className="hidden" onChange={(e) => {
@@ -231,16 +224,6 @@ function ApImport({ tracks, onFiles, busy, onRemove, onClear }) {
           </div>
         );
       })}
-      {/* Autres sources */}
-      <div className="mt-2 flex flex-col gap-2">
-        <div className={apEyebrow}>Autres sources</div>
-        {soon(<I.MarkerPin size={15} />, 'Itinéraire Google Maps')}
-        {soon(<I.Camera size={15} />, 'Depuis une capture d’écran')}
-        <a href={root + 'routdoor/'} target="_blank" rel="noopener"
-          className="flex items-center gap-3 h-11 px-3.5 rounded-xl bg-white/[0.04] ring-1 ring-white/[0.1] hover:bg-white/[0.07] transition-colors text-[13px] text-neutral-200">
-          <UiRoutdoorLogo height={13} /><span className="flex-1 text-neutral-400">Créer mon tracé</span><I.ExternalLink size={14} className="text-neutral-500" />
-        </a>
-      </div>
       </>)}
     </div>
   );
@@ -292,6 +275,21 @@ function ApToolbar({ tpl, cfg, setCfg, photosCount, maxPhotos, onPhoto, onSaveMo
               <input type="color" value={cur || '#ff6b35'} onChange={(e) => setCfg({ color: e.target.value })} className="absolute inset-0 opacity-0 cursor-pointer" />
             </label>
           </div>
+          {tpl.bgs && (<>
+            <div className={apEyebrow + ' mt-4 mb-2.5'}>Couleur de fond</div>
+            <div className="flex items-center gap-1.5 w-max">
+              {tpl.bgs.map((b) => {
+                const on = (cfg.bg || rec.bg) === b.hex;
+                return (
+                  <span key={b.hex} className="relative">
+                    <button onClick={() => setCfg({ bg: b.hex === rec.bg ? null : b.hex })} title={b.name}
+                      className={`block w-7 h-7 rounded-lg transition-transform hover:scale-110 ${on ? 'ring-2 ring-white ring-offset-2 ring-offset-[#141415]' : 'ring-1 ring-white/15'}`} style={{ background: b.hex }} />
+                    {b.hex === rec.bg && <UiRecDot floating />}
+                  </span>
+                );
+              })}
+            </div>
+          </>)}
           <p className="mt-2.5 text-[11.5px] text-neutral-500 flex items-center gap-1.5"><UiRecDot /> Recommandé pour l’impression</p>
         </ApPopover>
       </div>
@@ -340,10 +338,11 @@ function PrintraceStudio() {
   const [tracks, setTracks] = useApState(() => apLoad(AP_TRACKS_KEY, []));
   const saved = useApMemo(() => apLoad(AP_STATE_KEY, {}), []);
   const [step, setStep] = useApState(() => (tracks.length ? Math.max(2, saved.step || 2) : 1));
-  const [cfg, setCfgState] = useApState(() => ({
-    tplId: 'blueprint', color: 'auto', font: 'modele', zoom: 0, title: null, subtitle: null, actId: null,
-    order: null, enabled: null, values: {}, fmtId: 'a3', border: 'none', mock: 'noir', ...(saved.cfg || {}),
-  }));
+  const [cfg, setCfgState] = useApState(() => {
+    const c = { tplId: 'blueprint', color: 'auto', bg: null, font: 'modele', zoom: 0, title: null, subtitle: null, actId: null,
+      order: null, enabled: null, values: {}, fmtId: 'a3', border: 'none', mock: 'noir', ...(saved.cfg || {}) };
+    return { ...c, zoom: Math.min(c.zoom || 0, AP_ZOOMS.length - 1) }; // niveaux de zoom d'une version précédente
+  });
   const setCfg = (p) => setCfgState((c) => ({ ...c, ...(typeof p === 'function' ? p(c) : p) }));
   const [models, setModels] = useApState(() => apLoad(AP_MODELS_KEY, []));
   const [photos, setPhotos] = useApState([]);     // photos du voyage (poster)
@@ -435,7 +434,7 @@ function PrintraceStudio() {
       title: (cfg.title != null && cfg.title.trim()) || defaultTitle, subtitle: cfg.subtitle != null ? cfg.subtitle : defaultSub,
       stats, photoSlot: false, photos: t.photoBg ? [] : photos, bgPhoto: (bgPhoto && bgPhoto.img) || defaultBg,
       showMap: has ? !!rec.map : true, mapStyle: rec.mapStyle || 'epure', mapOpacity: (rec.mapOpacity || 100) / 100,
-      mapLabels: true, bg: rec.bg || null, preview: true,
+      mapLabels: true, bg: (t.bgs && cfg.bg) || rec.bg || null, preview: true,
       titleFont: AP_FONTS[cfg.font] || null,
     };
   };
@@ -525,11 +524,11 @@ function PrintraceStudio() {
   };
   const fontsOf = AP_FONT_CHOICES[tpl.id] || AP_FONT_CHOICES.blueprint;
   const saveModel = () => {
-    const m = { id: Date.now(), name: `${tpl.name} · ${(fontsOf.find(([k]) => k === cfg.font) || fontsOf[0])[1]}`, tplId: cfg.tplId, color: cfg.color, font: cfg.font, zoom: cfg.zoom, border: cfg.border, mock: cfg.mock, fmtId: cfg.fmtId };
+    const m = { id: Date.now(), name: `${tpl.name} · ${(fontsOf.find(([k]) => k === cfg.font) || fontsOf[0])[1]}`, tplId: cfg.tplId, color: cfg.color, bg: cfg.bg || null, font: cfg.font, zoom: cfg.zoom, border: cfg.border, mock: cfg.mock, fmtId: cfg.fmtId };
     setModels((ms) => [m, ...ms].slice(0, 8));
     showToast('Modèle enregistré : retrouvez-le à l’étape 2');
   };
-  const applyModel = (m) => setCfg({ tplId: m.tplId, color: m.color, font: m.font, zoom: m.zoom, border: m.border, mock: m.mock, fmtId: m.fmtId });
+  const applyModel = (m) => setCfg({ tplId: m.tplId, color: m.color, bg: m.bg || null, font: m.font, zoom: Math.min(m.zoom || 0, AP_ZOOMS.length - 1), border: m.border, mock: m.mock, fmtId: m.fmtId });
   const setOrder = (f) => setCfg(() => ({ order: f(order), enabled: [...enabled] }));
   const toggleMetric = (k) => setCfg(() => { const n = new Set(enabled); if (n.has(k)) n.delete(k); else n.add(k); return { order, enabled: [...n] }; });
   const setMetricValue = (k, v) => setCfg((c) => { const vals = { ...c.values }; if (v && v.trim()) vals[k] = v.trim(); else delete vals[k]; return { values: vals }; });
@@ -574,7 +573,7 @@ function PrintraceStudio() {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-[0.025]" style={{ backgroundImage: AP_GRAIN }} />
 
       {/* Poster en grand, à droite du panneau */}
-      <main className="absolute inset-y-0 right-0 left-[452px] flex flex-col items-center">
+      <main className="absolute inset-y-0 right-0 left-[476px] flex flex-col items-center">
         <div className="shrink-0 h-[84px] flex items-end justify-center pb-3">
           {has && step >= 2 && (
             <ApToolbar tpl={tpl} cfg={cfg} setCfg={setCfg} photosCount={photos.length} maxPhotos={tpl.maxPhotos || 0}
@@ -640,12 +639,12 @@ function PrintraceStudio() {
       </main>
 
       {/* Panneau flottant à gauche : les étapes */}
-      <aside className="absolute left-5 top-5 bottom-5 w-[412px] z-30 flex flex-col rounded-[26px] bg-[#0f0f10]/90 backdrop-blur-xl ring-1 ring-white/[0.08] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)]">
-        <div className="shrink-0 flex items-center justify-between px-6 h-[68px]">
+      <aside className="absolute left-5 top-5 bottom-5 w-[436px] z-30 flex flex-col rounded-[26px] bg-[#0f0f10]/90 backdrop-blur-xl ring-1 ring-white/[0.08] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)]">
+        <div className="shrink-0 flex items-center justify-between px-8 h-[68px]">
           <a href={(window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : '../../') + 'printrace/'} aria-label="Printrace" className="text-white"><UiPrintraceLogo height={22} /></a>
         </div>
         {/* Stepper : revenir à l'import (ou à toute étape déjà ouverte) */}
-        <nav aria-label="Étapes" className="shrink-0 mx-6 mb-1 flex items-center gap-1">
+        <nav aria-label="Étapes" className="shrink-0 mx-8 mb-1 flex items-center gap-1">
           {AP_STEPS.map((s, i) => {
             const n = i + 1, on = n === step, ok = n === 1 || has;
             return (
@@ -660,9 +659,9 @@ function PrintraceStudio() {
             );
           })}
         </nav>
-        <div className="h-px mx-6 mt-2 bg-white/[0.06]" />
+        <div className="h-px mx-8 mt-2 bg-white/[0.06]" />
 
-        <div key={step} className="flex-1 min-h-0 overflow-y-auto sb-scroll px-6 py-6 ds-fade-up">
+        <div key={step} className="flex-1 min-h-0 overflow-y-auto sb-scroll px-8 py-6 ds-fade-up">
           <ApStepHead n={step} />
           <div className="mt-6">
             {step === 1 && <ApImport tracks={tracks} onFiles={importFiles} busy={busy} onRemove={removeTrack} onClear={() => { setTracks([]); setStep(1); }} />}
@@ -672,7 +671,7 @@ function PrintraceStudio() {
                 {AP_TEMPLATES.map((id) => {
                   const t = apTpl(id), on = id === cfg.tplId;
                   return (
-                    <button key={id} onClick={() => setCfg({ tplId: id, color: 'auto', font: 'modele' })} className="text-left group">
+                    <button key={id} onClick={() => setCfg({ tplId: id, color: 'auto', font: 'modele', bg: null })} className="text-left group">
                       <div className={`relative rounded-[8px] overflow-hidden bg-neutral-800 transition-all ${on ? 'ring-2 ring-white ring-offset-[3px] ring-offset-[#0f0f10]' : 'ring-1 ring-white/10 group-hover:ring-white/40 group-hover:-translate-y-0.5'}`}
                         style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}` }}>
                         <canvas ref={(el) => { thumbRefs.current[id] = el; }} width={260} height={368} className="block w-full h-full" />
@@ -785,7 +784,7 @@ function PrintraceStudio() {
         </div>
 
         {/* Navigation entre les étapes */}
-        <div className="shrink-0 flex items-center gap-2 px-6 py-4 border-t border-white/[0.06]">
+        <div className="shrink-0 flex items-center gap-2 px-8 py-4 border-t border-white/[0.06]">
           {step > 1 && <button onClick={() => go(step - 1)} className="h-11 px-4 rounded-xl text-[13.5px] font-medium text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-colors">Retour</button>}
           {step < 4 && (
             <button onClick={() => go(step + 1)} disabled={!canNext}
