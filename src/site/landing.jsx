@@ -279,7 +279,7 @@ function SiteAccountButton() {
   if (user) {
     return (
       <a href={siteStudioUrl()} className="inline-flex items-center gap-2 h-10 rounded-full bg-white/[0.06] ring-1 ring-white/10 pl-1.5 pr-3.5 text-[13.5px] font-medium text-white hover:bg-white/[0.1] transition-colors">
-        <span className="w-7 h-7 rounded-full grid place-items-center bg-white text-neutral-900 text-[12px] font-bold uppercase">{(user.name || user.email)[0]}</span>
+        <PtAvatar user={user} size={28} />
         <Tx k="nav.espace" d="Mon espace" />
       </a>
     );

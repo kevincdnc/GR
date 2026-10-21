@@ -81,10 +81,43 @@ function ptAuthEmail(email) {
   return ptAuthSave({ email: e, name: e.split('@')[0], provider: 'email', at: Date.now() });
 }
 
+// ---------------------------------------------------------------- posters du compte
+// Posters enregistrés (tracés + réglages + vignette), rangés par compte. Pour l'instant
+// dans ce navigateur (localStorage) ; ils passeront sur le serveur avec les vrais comptes.
+const ptDesignsKey = (u) => 'printrace_designs_v1:' + String(u.email || '').toLowerCase();
+function ptDesignsLoad(u) {
+  if (!u) return [];
+  try { return JSON.parse(localStorage.getItem(ptDesignsKey(u)) || '[]') || []; } catch (e) { return []; }
+}
+function ptDesignsSave(u, list) {
+  if (!u) return false;
+  try { localStorage.setItem(ptDesignsKey(u), JSON.stringify(list)); return true; } catch (e) { return false; }
+}
+
+// Photo de profil : celle du compte Google, sinon les initiales sur une pastille colorée
+const PT_AVATAR_COLORS = [['#3b82f6', '#1d4ed8'], ['#f97316', '#c2410c'], ['#10b981', '#047857'], ['#8b5cf6', '#6d28d9'], ['#ec4899', '#be185d'], ['#eab308', '#a16207']];
+function PtAvatar({ user, size = 32, className = '' }) {
+  const [broken, setBroken] = React.useState(false);
+  const st = { width: size, height: size };
+  if (user && user.picture && !broken) {
+    return <img src={user.picture} alt="" referrerPolicy="no-referrer" onError={() => setBroken(true)} className={'rounded-full object-cover shrink-0 ' + className} style={st} />;
+  }
+  const label = user ? (user.name || user.email || '') : '';
+  const ini = label.split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  let h = 0; for (const ch of String((user && user.email) || '')) h = (h * 31 + ch.charCodeAt(0)) | 0;
+  const [c1, c2] = PT_AVATAR_COLORS[Math.abs(h) % PT_AVATAR_COLORS.length];
+  return (
+    <span aria-hidden="true" className={'rounded-full grid place-items-center shrink-0 font-bold text-white select-none ' + className}
+      style={{ ...st, fontSize: Math.round(size * 0.38), background: user ? `linear-gradient(135deg, ${c1}, ${c2})` : 'rgba(255,255,255,0.08)' }}>
+      {user ? ini || '?' : <I.User size={Math.round(size * 0.5)} />}
+    </span>
+  );
+}
+
 // Adresse de la page de connexion ; `hash` transmet les tracés (#t=…) jusqu'au studio
 function ptLoginUrl(hash) {
   const root = window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : './';
   return root + 'login/' + (hash ? (hash[0] === '#' ? hash : '#' + hash) : '');
 }
 
-Object.assign(window, { PT_AUTH_KEY, ptAuthUser, ptAuthSignOut, ptAuthGoogle, ptAuthEmail, ptAuthGoogleId, ptLoginUrl });
+Object.assign(window, { ptDesignsLoad, ptDesignsSave, PtAvatar, PT_AUTH_KEY, ptAuthUser, ptAuthSignOut, ptAuthGoogle, ptAuthEmail, ptAuthGoogleId, ptLoginUrl });

@@ -82,6 +82,7 @@ Voir `workers/strava/README.md`. Renseigner `ALLOWED_ORIGINS` (wrangler.toml) av
 ## Limites actuelles
 
 - **Connexion de démonstration** : la session est gardée dans le navigateur (localStorage), sans serveur ni vérification. Ce n'est pas une authentification de production.
+- **Posters du compte** : « Enregistrer » range le poster (tracés, réglages, vignette) dans le compte, réouvrable depuis la photo de profil ou l'étape 2. Ils sont gardés dans ce navigateur (`printrace_designs_v1:<e-mail>`), pas sur un serveur, et sans les photos ajoutées.
 - **Pas de commande ni de paiement** : « Commander le poster » affiche seulement « La commande de tirages arrive bientôt » ; seuls les téléchargements (PDF d'impression 300 dpi avec fond perdu 3 mm, PNG 300 dpi, SVG) fonctionnent.
 - **PDF en RVB** : pas de conversion CMJN (accepté par la plupart des imprimeurs en ligne).
 - **Fonds de carte** : tuiles vectorielles OpenFreeMap chargées en direct (réseau requis).

@@ -16,7 +16,6 @@ const { useState: useApState, useEffect: useApEffect, useMemo: useApMemo, useRef
 
 const AP_TRACKS_KEY = 'printrace_app_tracks_v2';
 const AP_STATE_KEY = 'printrace_app_state_v2';
-const AP_MODELS_KEY = 'printrace_app_models_v2';
 
 // Cases de la grille des modèles, par paires : version sombre à gauche, claire à droite.
 // [modèle, mode] (mode : pour les modèles qui existent en sombre et en clair)
@@ -389,25 +388,94 @@ function ApToolbar({ tpl, cfg, setCfg, trackColor, photos, bgPhoto, maxPhotos, o
         </ApPopover>
       </div>
       {sep}
-      <button onClick={onSaveModel} className={btn(false)} title="Enregistrer le modèle : style, couleur, typo, zoom et finition">
+      <button onClick={onSaveModel} className={btn(false)} title="Enregistrer le poster dans mon compte (tracés, style et infos)">
         <I.Folder size={15} /> Enregistrer
       </button>
     </div>
   );
 }
 
+// ---------------------------------------------------------------- compte
+const apAgo = (t) => {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return 'à l’instant';
+  if (m < 60) return `il y a ${m} min`;
+  if (m < 24 * 60) return `il y a ${Math.round(m / 60)} h`;
+  return new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+};
+// Photo de profil en haut du panneau : accès au compte (posters enregistrés, nouveau poster, déconnexion)
+function ApAccount({ user, designs, currentId, onOpen, onNew, onSignOut }) {
+  const [open, setOpen] = useApState(false);
+  useApEffect(() => {
+    if (!open) return;
+    const k = (e) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+  }, [open]);
+  if (!user) {
+    return (
+      <a href={ptLoginUrl()} className="relative top-1 inline-flex items-center gap-2 h-9 pl-1 pr-3.5 rounded-full bg-white/[0.05] ring-1 ring-white/10 text-[12.5px] font-medium text-neutral-200 hover:bg-white/[0.09] hover:text-white transition-colors">
+        <PtAvatar user={null} size={28} /> Se connecter
+      </a>
+    );
+  }
+  return (
+    <div className="relative top-1">
+      <button onClick={() => setOpen(!open)} aria-label="Mon compte" aria-expanded={open} title={user.email}
+        className={`block rounded-full p-0.5 transition-shadow ${open ? 'ring-2 ring-white' : 'ring-1 ring-white/15 hover:ring-white/40'}`}>
+        <PtAvatar user={user} size={32} />
+      </button>
+      {open && (<>
+        <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+        <div className="absolute right-0 top-full mt-2 z-50 w-[320px] rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] animate-menu overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.06]">
+            <PtAvatar user={user} size={40} />
+            <div className="min-w-0">
+              <div className="text-[14px] font-semibold text-white truncate">{user.name || user.email.split('@')[0]}</div>
+              <div className="text-[12px] text-neutral-500 truncate">{user.email}</div>
+            </div>
+          </div>
+          <div className="px-2 pt-3">
+            <div className={apEyebrow + ' px-2 mb-1.5'}>Mes posters · {designs.length}</div>
+            {designs.length ? (
+              <div className="max-h-[300px] overflow-y-auto sb-scroll flex flex-col gap-0.5">
+                {designs.map((d) => (
+                  <button key={d.id} onClick={() => { setOpen(false); onOpen(d); }}
+                    className={`flex items-center gap-3 rounded-xl px-2 py-1.5 text-left transition-colors ${d.id === currentId ? 'bg-white/[0.07]' : 'hover:bg-white/[0.05]'}`}>
+                    {d.thumb ? <img src={d.thumb} alt="" className="w-9 h-[51px] rounded-[3px] object-cover ring-1 ring-white/10 bg-neutral-800 shrink-0" />
+                      : <span className="w-9 h-[51px] rounded-[3px] bg-neutral-800 shrink-0" />}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-medium text-neutral-100 truncate">{d.name}</span>
+                      <span className="block text-[11.5px] text-neutral-500 truncate">{d.tplName} · {apAgo(d.updatedAt)}</span>
+                    </span>
+                    {d.id === currentId && <span className="text-[11px] text-emerald-300 shrink-0">Ouvert</span>}
+                  </button>
+                ))}
+              </div>
+            ) : <p className="px-2 pb-1 text-[12.5px] text-neutral-500 leading-snug">Aucun poster pour l’instant : « Enregistrer », dans la barre du poster, le range ici.</p>}
+          </div>
+          <div className="p-2 mt-2 border-t border-white/[0.06] flex flex-col">
+            <button onClick={() => { setOpen(false); onNew(); }} className="flex items-center gap-2.5 h-10 px-2.5 rounded-xl text-[13px] text-neutral-200 hover:bg-white/[0.05]"><I.Plus size={15} /> Nouveau poster</button>
+            <button onClick={() => { setOpen(false); onSignOut(); }} className="flex items-center gap-2.5 h-10 px-2.5 rounded-xl text-[13px] text-neutral-400 hover:text-white hover:bg-white/[0.05]"><I.LogOut size={15} /> Se déconnecter</button>
+          </div>
+          <p className="px-4 pb-3 text-[11px] text-neutral-600 leading-snug">Compte de démonstration : vos posters sont gardés dans ce navigateur.</p>
+        </div>
+      </>)}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- app
+const AP_DEFAULT_CFG = { tplId: 'nuit', color: 'auto', bg: null, mode: null, font: 'modele', zoom: 0, title: null, subtitle: null, actId: null,
+  order: null, enabled: null, values: {}, fmtId: 'a3', border: 'none', mock: 'noir' };
 function PrintraceStudio() {
   const [tracks, setTracks] = useApState(() => apLoad(AP_TRACKS_KEY, []));
   const saved = useApMemo(() => apLoad(AP_STATE_KEY, {}), []);
   const [step, setStep] = useApState(() => (tracks.length ? Math.max(2, saved.step || 2) : 1));
   const [cfg, setCfgState] = useApState(() => {
-    const c = { tplId: 'nuit', color: 'auto', bg: null, mode: null, font: 'modele', zoom: 0, title: null, subtitle: null, actId: null,
-      order: null, enabled: null, values: {}, fmtId: 'a3', border: 'none', mock: 'noir', ...(saved.cfg || {}) };
+    const c = { ...AP_DEFAULT_CFG, ...(saved.cfg || {}) };
     return { ...c, zoom: Math.min(c.zoom || 0, AP_ZOOMS.length - 1) }; // niveaux de zoom d'une version précédente
   });
   const setCfg = (p) => setCfgState((c) => ({ ...c, ...(typeof p === 'function' ? p(c) : p) }));
-  const [models, setModels] = useApState(() => apLoad(AP_MODELS_KEY, []));
   const [photos, setPhotos] = useApState([]);     // photos du voyage (poster)
   const [bgPhoto, setBgPhoto] = useApState(null); // photo de fond (modèles « photo »)
   const [busy, setBusy] = useApState(false);
@@ -415,12 +483,15 @@ function PrintraceStudio() {
   const [ordered, setOrdered] = useApState(false);
   const [ready, setReady] = useApState(false);
   const [toast, showToast] = useUiToast();
-  const user = useApMemo(() => (typeof ptAuthUser === 'function' ? ptAuthUser() : null), []);
+  // Compte (session de démonstration) et posters enregistrés dans ce compte
+  const [user, setUser] = useApState(() => (typeof ptAuthUser === 'function' ? ptAuthUser() : null));
+  const [designs, setDesigns] = useApState(() => ptDesignsLoad(user));
+  const [designId, setDesignId] = useApState(saved.designId || null); // poster ouvert (ré-enregistré à sa place)
   const previewRef = useApRef(null), thumbRefs = useApRef({}), photoInput = useApRef(null);
 
   useApEffect(() => { if (!apSave(AP_TRACKS_KEY, tracks) && tracks.length) showToast('Stockage du navigateur plein'); }, [tracks]);
-  useApEffect(() => { apSave(AP_STATE_KEY, { step, cfg }); }, [step, cfg]);
-  useApEffect(() => { apSave(AP_MODELS_KEY, models); }, [models]);
+  useApEffect(() => { apSave(AP_STATE_KEY, { step, cfg, designId }); }, [step, cfg, designId]);
+  useApEffect(() => { if (user && !ptDesignsSave(user, designs)) showToast('Stockage du navigateur plein : supprimez un poster'); }, [designs]);
 
   // Photo de fond par défaut (modèles « photo »), en attendant la vôtre
   const [defaultBg, setDefaultBg] = useApState(null);
@@ -580,12 +651,46 @@ function PrintraceStudio() {
     else { setPhotos((p) => [...p, ...list].slice(0, 4)); showToast(list.length > 1 ? `${list.length} photos ajoutées` : 'Photo ajoutée'); }
   };
   const fontsOf = AP_FONT_CHOICES[tpl.id] || AP_FONT_CHOICES.blueprint;
-  const saveModel = () => {
-    const m = { id: Date.now(), name: `${tpl.name} · ${(fontsOf.find(([k]) => k === cfg.font) || fontsOf[0])[1]}`, tplId: cfg.tplId, color: cfg.color, bg: cfg.bg || null, mode: cfg.mode || null, labels: cfg.labels === true, font: cfg.font, zoom: cfg.zoom, border: cfg.border, mock: cfg.mock, fmtId: cfg.fmtId };
-    setModels((ms) => [m, ...ms].slice(0, 8));
-    showToast('Modèle enregistré : retrouvez-le à l’étape 2');
+  // Enregistrer le poster dans le compte : tracés, réglages et vignette. Un poster
+  // rouvert est mis à jour à sa place. Sans compte : connexion, puis enregistrement au retour.
+  const saveDesign = async () => {
+    if (!user) {
+      try { sessionStorage.setItem('pt_save_after_login', '1'); } catch (e) {}
+      showToast('Connectez-vous pour enregistrer vos posters');
+      setTimeout(() => { location.href = ptLoginUrl(); }, 900);
+      return;
+    }
+    if (!has) { showToast('Importez d’abord un tracé'); return; }
+    let thumb = '';
+    try {
+      const w = 240, c = document.createElement('canvas');
+      c.width = w; c.height = Math.round(w * fmt.mm[1] / fmt.mm[0]);
+      await renderPoster(c, tpl, dataFor(tpl), fmt, cfg.border, w / PO_W);
+      thumb = c.toDataURL('image/jpeg', 0.8);
+    } catch (e) {}
+    const now = Date.now(), prev = designId && designs.find((x) => x.id === designId);
+    const d = { id: prev ? prev.id : 'p' + now.toString(36), name: (cfg.title && cfg.title.trim()) || defaultTitle,
+      tplName: tpl.name + (tpl.modes ? ' · ' + tpl.modes[poMode(tpl, cfg.mode)].label : ''), thumb, tracks, cfg,
+      createdAt: prev ? prev.createdAt : now, updatedAt: now };
+    setDesigns((l) => [d, ...l.filter((x) => x.id !== d.id)]);
+    setDesignId(d.id);
+    showToast(prev ? 'Modifications enregistrées dans votre compte' : 'Poster enregistré dans votre compte');
   };
-  const applyModel = (m) => setCfg({ tplId: m.tplId, color: m.color, bg: m.bg || null, mode: m.mode || null, labels: m.labels === true, font: m.font, zoom: Math.min(m.zoom || 0, AP_ZOOMS.length - 1), border: m.border, mock: m.mock, fmtId: m.fmtId });
+  // Rouvrir un poster du compte pour le modifier
+  const openDesign = (d) => {
+    setTracks(d.tracks || []); setCfgState({ ...AP_DEFAULT_CFG, ...(d.cfg || {}) });
+    setPhotos([]); setBgPhoto(null); setDesignId(d.id); setStep((d.tracks || []).length ? 3 : 1);
+    showToast(`« ${d.name} » rouvert`);
+  };
+  const deleteDesign = (id) => { setDesigns((l) => l.filter((x) => x.id !== id)); if (id === designId) setDesignId(null); };
+  const newDesign = () => { setTracks([]); setCfgState({ ...AP_DEFAULT_CFG }); setPhotos([]); setBgPhoto(null); setDesignId(null); setStep(1); };
+  const signOut = () => { ptAuthSignOut(); setUser(null); setDesigns([]); setDesignId(null); showToast('Vous êtes déconnecté'); };
+  // Retour de la connexion demandée par « Enregistrer » : on enregistre aussitôt
+  useApEffect(() => {
+    let f = null;
+    try { f = sessionStorage.getItem('pt_save_after_login'); sessionStorage.removeItem('pt_save_after_login'); } catch (e) {}
+    if (f && user && has) { const t = setTimeout(saveDesign, 800); return () => clearTimeout(t); }
+  }, []);
   const setOrder = (f) => setCfg(() => ({ order: f(order), enabled: [...enabled] }));
   const toggleMetric = (k) => setCfg(() => { const n = new Set(enabled); if (n.has(k)) n.delete(k); else n.add(k); return { order, enabled: [...n] }; });
   const setMetricValue = (k, v) => setCfg((c) => { const vals = { ...c.values }; if (v && v.trim()) vals[k] = v.trim(); else delete vals[k]; return { values: vals }; });
@@ -632,7 +737,7 @@ function PrintraceStudio() {
         <div className="shrink-0 h-[84px] flex items-end justify-center pb-3">
           {has && step >= 2 && (
             <ApToolbar tpl={tpl} cfg={cfg} setCfg={setCfg} trackColor={has ? tracks[0].color : null} photos={photos} bgPhoto={bgPhoto} maxPhotos={tpl.maxPhotos || 0}
-              onPhoto={() => photoInput.current && photoInput.current.click()} onSaveModel={saveModel}
+              onPhoto={() => photoInput.current && photoInput.current.click()} onSaveModel={saveDesign}
               onRemovePhoto={(i) => setPhotos((l) => l.filter((_, j) => j !== i))} onRemoveBg={() => setBgPhoto(null)} />
           )}
           {!has && <span className="text-[13px] text-neutral-500 pb-2">Votre tracé apparaîtra sur cette carte</span>}
@@ -696,6 +801,7 @@ function PrintraceStudio() {
       <aside className="absolute left-5 top-5 bottom-5 w-[436px] z-30 flex flex-col rounded-[26px] bg-[#0f0f10]/90 backdrop-blur-xl ring-1 ring-white/[0.08] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.9)]">
         <div className="shrink-0 flex items-center justify-between px-8 h-[68px]">
           <a href={window.RoutdoorLink ? window.RoutdoorLink.siteRoot() : './'} aria-label="Printrace" className="relative top-1 text-white"><UiPrintraceLogo height={22} /></a>
+          <ApAccount user={user} designs={designs} currentId={designId} onOpen={openDesign} onNew={newDesign} onSignOut={signOut} />
         </div>
         {/* Stepper : revenir à l'import (ou à toute étape déjà ouverte) */}
         <nav aria-label="Étapes" className="shrink-0 mx-8 mb-1 flex items-center gap-1">
@@ -721,20 +827,28 @@ function PrintraceStudio() {
             {step === 1 && <ApImport tracks={tracks} onFiles={importFiles} busy={busy} onRemove={removeTrack} onClear={() => { setTracks([]); setStep(1); }} />}
 
             {step === 2 && (<>
-              {models.length > 0 && (
-                <div className={apBlock + ' mb-5'}>
-                  <div className={apEyebrow + ' mb-2'}>Mes modèles</div>
-                  <div className="flex flex-col gap-1">
-                    {models.map((m) => (
-                      <div key={m.id} className="flex items-center gap-2 rounded-xl pl-3 pr-1 h-10 hover:bg-white/[0.05]">
-                        <button onClick={() => applyModel(m)} className="flex-1 min-w-0 text-left text-[13px] text-neutral-200 truncate">{m.name}</button>
-                        <UiIconButton icon="Trash" label="Supprimer ce modèle" size="xs" onClick={() => setModels((l) => l.filter((x) => x.id !== m.id))} />
+              {designs.length > 0 && (
+                <div className="mb-6">
+                  <div className={apEyebrow + ' mb-2.5'}>Mes posters</div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {designs.slice(0, 6).map((d) => (
+                      <div key={d.id} className="relative group">
+                        <button onClick={() => openDesign(d)} title={'Rouvrir « ' + d.name + ' »'}
+                          className={`block w-full text-left rounded-xl p-2 transition-all ${d.id === designId ? 'bg-white/[0.07] ring-2 ring-white' : 'bg-white/[0.025] ring-1 ring-white/[0.07] hover:bg-white/[0.05] hover:ring-white/20'}`}>
+                          <span className="block rounded-[3px] overflow-hidden bg-neutral-800 shadow-[0_8px_18px_-8px_rgba(0,0,0,0.9)]" style={{ aspectRatio: '297 / 420' }}>
+                            {d.thumb && <img src={d.thumb} alt="" className="w-full h-full object-cover" />}
+                          </span>
+                          <span className="mt-1.5 block text-[11.5px] font-medium text-neutral-200 truncate">{d.name}</span>
+                          <span className="block text-[10.5px] text-neutral-500 truncate">{apAgo(d.updatedAt)}</span>
+                        </button>
+                        <button onClick={() => deleteDesign(d.id)} aria-label={'Supprimer « ' + d.name + ' »'}
+                          className="absolute top-3 right-3 w-6 h-6 rounded-full grid place-items-center bg-black/70 text-white opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-red-500 transition"><I.Trash size={11} /></button>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              {models.length > 0 && <div className={apEyebrow + ' mb-2.5'}>Modèles Printrace</div>}
+              {designs.length > 0 && <div className={apEyebrow + ' mb-2.5'}>Modèles Printrace</div>}
               <div className="grid grid-cols-2 gap-3">
                 {AP_TILES.map(([id, mode]) => {
                   const t = apTpl(id), key = id + ':' + (mode || '');
