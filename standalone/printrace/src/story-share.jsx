@@ -859,7 +859,7 @@ async function storyFontsReady({ vintage = true } = {}) {
   try {
     await Promise.all([
       document.fonts.load(`700 40px "Barlow Semi Condensed"`), document.fonts.load(`600 40px "Barlow Semi Condensed"`),
-      document.fonts.load(`700 40px Barlow`), document.fonts.load(`500 40px Barlow`), document.fonts.load(`800 40px Unbounded`),
+      document.fonts.load(`700 40px Barlow`), document.fonts.load(`500 40px Barlow`), document.fonts.load(`800 40px Unbounded`), document.fonts.load(`italic 800 40px Montserrat`),
       document.fonts.load(`700 40px "Playfair Display"`), document.fonts.load(`italic 400 40px "Playfair Display"`), document.fonts.load(`400 40px "Playfair Display"`),
       document.fonts.load(`400 40px "IM Fell English"`), ...(vintage ? [document.fonts.load(`italic 400 40px "IM Fell English"`)] : []),
     ]);

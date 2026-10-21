@@ -34,14 +34,14 @@ const AP_FONT_CHOICES = {
   nuit: [['modele', 'Moderne'], ['affiche', 'Affiche'], ['classique', 'Classique']],
   aube: [['modele', 'Moderne'], ['affiche', 'Affiche'], ['classique', 'Classique']],
   graphite: [['modele', 'Technique'], ['classique', 'Classique'], ['affiche', 'Affiche']],
-  releve: [['modele', 'Technique'], ['classique', 'Classique'], ['ancienne', 'Ancienne carte']],
+  releve: [['modele', 'Printrace'], ['moderne', 'Moderne'], ['classique', 'Classique']],
   relief: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['ancienne', 'Ancienne carte']],
   galerie: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['affiche', 'Affiche']],
   photo: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['affiche', 'Affiche']],
   polaroid: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['ancienne', 'Ancienne carte']],
 };
 // Police « du modèle » (aperçu du bouton) : celle de ses titres
-const AP_NATIVE_FONT = { blueprint: ST_TXT, nuit: ST_TXT, aube: ST_TXT, graphite: ST_TXT, releve: ST_TXT, relief: PO_SERIF, galerie: PO_SERIF, photo: PO_SERIF, polaroid: PO_SERIF };
+const AP_NATIVE_FONT = { blueprint: ST_TXT, nuit: ST_TXT, aube: ST_TXT, graphite: ST_TXT, releve: PO_BRAND, relief: PO_SERIF, galerie: PO_SERIF, photo: PO_SERIF, polaroid: PO_SERIF };
 // Zoom de la carte : 0 = cadré sur le tracé, puis deux niveaux plus larges
 const AP_ZOOMS = [0, 0.2, 0.45]; // cadré sur le tracé, puis deux niveaux à peine plus larges
 // Carte de France (poster d'accueil, sans tracé)

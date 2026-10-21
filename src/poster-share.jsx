@@ -10,6 +10,8 @@ const { useState: usePoState, useEffect: usePoEffect, useMemo: usePoMemo, useRef
 const PO_W = 1200;
 const PO_SERIF = '"Playfair Display", Georgia, serif';
 const PO_FELL = '"IM Fell English", Georgia, serif';
+// Typo de la marque Printrace (Mont, sinon Montserrat) : titres en gras italique
+const PO_BRAND = '"Mont", "Montserrat", Barlow, system-ui, sans-serif';
 
 const POSTER_FORMATS = [
   { id: 'a4', name: 'A4', sub: '21 × 29,7 cm', mm: [210, 297] },
@@ -287,12 +289,32 @@ function poMix(a, b, t) {
   return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
 }
 // Palette de carte « plan » dérivée de la couleur de fond (routes discrètes)
+// Même teinte que `hex`, mais franche (saturée, mi-claire) : couleur de la carte sur papier clair
+function poVivid(hex) {
+  let [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l0 = (mx + mn) / 2, d = mx - mn;
+  let h = 0, sat = d ? d / (1 - Math.abs(2 * l0 - 1)) : 0;
+  if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (h * 60 + 360) % 360;
+  if (sat > 0.05) sat = Math.max(sat, 0.62);
+  const l = 0.46, c = (1 - Math.abs(2 * l - 1)) * sat, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+  const [a, bb, cc] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return '#' + [a, bb, cc].map((v) => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
+}
 const poRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(',');
 // fg : couleur des traits (blanc sur fond sombre, encre sur papier blanc)
 function poBlueprintPal(bg, fg = '#ffffff') {
   const W = fg, light = fg !== '#ffffff';
+  // Papier clair : carte franchement teintée à la couleur de l'encre (mer soutenue, terre lavée)
+  const V = light ? poVivid(W) : W; // teinte franche de l'encre
+  if (light) return {
+    land: poMix(bg, V, 0.1), water: poMix(bg, V, 0.5), coast: poMix(V, W, 0.5), coastWidth: 1.4,
+    road: poMix(bg, V, 0.3), roadMajor: poMix(bg, V, 0.5), path: poMix(bg, V, 0.34), waterway: poMix(bg, V, 0.6),
+    wood: poMix(bg, V, 0.22), park: poMix(bg, V, 0.22),
+    label: { color: W, halo: poMix(bg, W, 0.1), haloWidth: 3.5, upper: true, spacing: 0.14, weight: 700, dot: W },
+  };
   return {
-    land: poMix(bg, W, 0.07), water: light ? poMix(bg, W, 0.1) : poMix(bg, '#000000', 0.14), coast: poMix(bg, W, 0.55), coastWidth: 1.2,
+    land: poMix(bg, W, 0.07), water: poMix(bg, '#000000', 0.14), coast: poMix(bg, W, 0.55), coastWidth: 1.2,
     road: poMix(bg, W, 0.13), roadMajor: poMix(bg, W, 0.22), path: poMix(bg, W, 0.15), waterway: poMix(bg, W, 0.24),
     wood: poMix(bg, W, 0.1), park: poMix(bg, W, 0.1),
     label: { color: `rgba(${poRgb(W)},0.9)`, halo: bg, haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: W },
@@ -517,12 +539,12 @@ const POSTER_TEMPLATES = [
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
     rec: { colors: ['#ffffff', '#facc15'], route: '#ffffff', mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#0f1d33' },
-    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', route: '#0f1d33', colors: ['#0f1d33', '#e4572e'], bgLabel: 'Couleur de l’encre' } },
+    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', route: '#0f1d33', colors: ['#0f1d33', '#e4572e'], bgLabel: 'Couleur de l’encre', mapOpacity: 90 } },
     bgs: PO_DARK_BGS, photoSlot: true, infos: ['activity', 'start'],
     async draw(ctx, d, w, h) {
       // Mode clair : papier blanc, traits à la couleur choisie (tirage « diazo »)
       const light = d.mode === 'light', ink = d.bg || '#0f1d33';
-      const u = w / 1200, bg = light ? '#f6f7f9' : ink, FG = light ? ink : '#ffffff', fg = (a) => `rgba(${poRgb(FG)},${a})`, line = fg(0.85);
+      const u = w / 1200, bg = light ? poMix('#ffffff', poVivid(ink), 0.08) : ink, FG = light ? ink : '#ffffff', fg = (a) => `rgba(${poRgb(FG)},${a})`, line = fg(0.85);
       const M = 50 * u;
       const items = d.stats.map((s) => [s.short || s.label, s.value + (s.unit ? ' ' + s.unit : '')]);
       const cw = w * 0.5, rh = 50 * u, hh = d.subtitle ? 124 * u : 104 * u, ch = hh + items.length * rh;
@@ -771,9 +793,9 @@ const POSTER_TEMPLATES = [
     },
   },
   {
-    // Relevé : planche technique discrète. Carte « gravure » (eau hachurée) dans une
+    // Marine : planche technique discrète. Carte « gravure » (eau hachurée) dans une
     // fenêtre graduée avec ses coordonnées d'angle, textes petits, chiffres en liste.
-    id: 'releve', name: 'Relevé', kind: 'Technique', maxPhotos: 0, mapDefault: true,
+    id: 'releve', name: 'Marine', kind: 'Technique', maxPhotos: 0, mapDefault: true,
     rec: { colors: ['#e4572e', '#ecebe6'], route: '#e4572e', mapStyle: 'gravure', mapOpacity: 100, map: true },
     modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', colors: ['#e4572e', '#1d1d1b'] } },
     infos: ['activity', 'start'],
@@ -820,15 +842,17 @@ const POSTER_TEMPLATES = [
       if (d.activityLabel) stLabel(ctx, d.activityLabel, w - M, M + 18 * u, 11 * u, ink(0.5), 'right');
       // Bas : titre et sous-titre à gauche, chiffres en liste à droite
       const by = my + mh + 92 * u, colW = mw * 0.4, lx = mx, rx = mx + mw - colW;
-      const th = poLinesHeight(ctx, d.title, mw - colW - 60 * u, 46 * u, { maxLines: 3, weight: 500, lh: 1.08 });
-      if (d.title) poLines(ctx, d.title, lx, by - 10 * u, mw - colW - 60 * u, 46 * u, INK, { maxLines: 3, weight: 500, lh: 1.08 });
-      if (d.subtitle) stLabel(ctx, d.subtitle, lx, by - 10 * u + th + 26 * u, 12 * u, ink(0.5));
+      // Titre dans la typo de la marque : gras italique
+      const TT = { maxLines: 3, weight: 800, italic: true, family: PO_BRAND, lh: 1.04 };
+      const th = poLinesHeight(ctx, d.title, mw - colW - 60 * u, 50 * u, TT);
+      if (d.title) poLines(ctx, d.title, lx, by - 12 * u, mw - colW - 60 * u, 50 * u, INK, TT);
+      if (d.subtitle) stLabel(ctx, d.subtitle, lx, by - 12 * u + th + 26 * u, 12 * u, ink(0.55));
       const rowH = 44 * u;
       d.stats.forEach((st, i) => {
         const y = by + i * rowH;
         ctx.fillStyle = ink(0.16); ctx.fillRect(rx, y, colW, 1 * u);
         stLabel(ctx, st.short || st.label, rx, y + 28 * u, 11 * u, ink(0.5));
-        ctx.font = stFont(600, 22 * u, ST_NUM); ctx.fillStyle = INK; ctx.textAlign = 'right';
+        ctx.font = stFont(700, 25 * u, ST_NUM); ctx.fillStyle = INK; ctx.textAlign = 'right';
         stFill(ctx, st.value + (st.unit ? ' ' + st.unit : ''), rx + colW, y + 30 * u);
       });
       if (d.stats.length) { ctx.fillStyle = ink(0.16); ctx.fillRect(rx, by + d.stats.length * rowH, colW, 1 * u); }
@@ -1804,4 +1828,4 @@ function PosterPane({ allRoutes, routes, included, setIncluded, title, setTitle,
   );
 }
 
-Object.assign(window, { poMode, poRec, PosterPane, POSTER_TEMPLATES, POSTER_FORMATS, renderPoster, StudioSection, readImageFile });
+Object.assign(window, { PO_BRAND, poMode, poRec, PosterPane, POSTER_TEMPLATES, POSTER_FORMATS, renderPoster, StudioSection, readImageFile });
