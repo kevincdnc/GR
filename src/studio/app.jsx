@@ -439,6 +439,52 @@ function PrintraceStudio() {
     };
   };
 
+  // ---- vue : zoom d'affichage de l'aperçu (100 à 300 %), déplacement une fois zoomé
+  const AP_VIEW_STEPS = [1, 1.5, 2, 3];
+  const [view, setView] = useApState({ z: 1, x: 0, y: 0 });
+  const [panning, setPanning] = useApState(false);
+  const stageRef = useApRef(null), boxRef = useApRef(null), viewRef = useApRef(view);
+  viewRef.current = view;
+  // Garde le poster dans l'écran : déplacement limité à ce qui dépasse
+  const clampView = (v) => {
+    const b = boxRef.current; if (!b || v.z <= 1) return { z: Math.max(1, v.z), x: 0, y: 0 };
+    const mx = b.offsetWidth * (v.z - 1) / 2 + 40, my = b.offsetHeight * (v.z - 1) / 2 + 40;
+    return { z: v.z, x: Math.max(-mx, Math.min(mx, v.x)), y: Math.max(-my, Math.min(my, v.y)) };
+  };
+  // Zoom autour d'un point de l'écran (curseur) ; sans point : autour du centre
+  const zoomTo = (z2, cx, cy) => setView((v) => {
+    z2 = Math.max(1, Math.min(3, z2));
+    const st = stageRef.current; if (!st) return clampView({ ...v, z: z2 });
+    const r = st.getBoundingClientRect();
+    const sx = cx == null ? 0 : cx - (r.left + r.width / 2), sy = cy == null ? 0 : cy - (r.top + r.height / 2);
+    return clampView({ z: z2, x: sx - (sx - v.x) * z2 / v.z, y: sy - (sy - v.y) * z2 / v.z });
+  });
+  const zoomStep = (dir) => {
+    const z = viewRef.current.z;
+    const next = dir > 0 ? AP_VIEW_STEPS.find((k) => k > z + 0.01) : [...AP_VIEW_STEPS].reverse().find((k) => k < z - 0.01);
+    zoomTo(next != null ? next : z);
+  };
+  // Ctrl/⌘ + molette ou pincement du trackpad : zoom ; molette seule une fois zoomé : déplacement
+  useApEffect(() => {
+    const st = stageRef.current; if (!st) return;
+    const onWheel = (e) => {
+      if (e.ctrlKey || e.metaKey) { e.preventDefault(); const v = viewRef.current; zoomTo(v.z * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY); return; }
+      if (viewRef.current.z > 1) { e.preventDefault(); setView((v) => clampView({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY })); }
+    };
+    st.addEventListener('wheel', onWheel, { passive: false });
+    return () => st.removeEventListener('wheel', onWheel);
+  }, []);
+  const dragFrom = useApRef(null);
+  const stageHandlers = {
+    onPointerDown: (e) => { if (viewRef.current.z <= 1 || e.button !== 0) return; dragFrom.current = { px: e.clientX, py: e.clientY, x: viewRef.current.x, y: viewRef.current.y }; setPanning(true); e.currentTarget.setPointerCapture(e.pointerId); },
+    onPointerMove: (e) => { const d = dragFrom.current; if (!d) return; setView((v) => clampView({ ...v, x: d.x + e.clientX - d.px, y: d.y + e.clientY - d.py })); },
+    onPointerUp: () => { dragFrom.current = null; setPanning(false); },
+    onPointerCancel: () => { dragFrom.current = null; setPanning(false); },
+    onDoubleClick: (e) => zoomTo(viewRef.current.z > 1.05 ? 1 : 2, e.clientX, e.clientY),
+  };
+  // Résolution de l'aperçu : plus fine quand on zoome (le poster reste net)
+  const viewRes = view.z > 2.2 ? 2.4 : view.z > 1.2 ? 1.6 : 1;
+
   // ---- rendu : aperçu, puis vignettes des modèles (étape 2), hors écran puis copiés
   const token = useApRef(0);
   useApEffect(() => {
@@ -448,7 +494,7 @@ function PrintraceStudio() {
       if (my !== token.current) return;
       const c = previewRef.current;
       if (c) {
-        const pw = 1100, off = document.createElement('canvas');
+        const pw = Math.round(1100 * viewRes), off = document.createElement('canvas');
         off.width = pw; off.height = Math.round(pw * fmt.mm[1] / fmt.mm[0]);
         await renderPoster(off, tpl, dataFor(tpl), fmt, cfg.border, pw / PO_W);
         if (my !== token.current) return;
@@ -467,7 +513,7 @@ function PrintraceStudio() {
       }
     }, 80);
     return () => clearTimeout(t);
-  }, [tracks, cfg, photos, bgPhoto, defaultBg, step]);
+  }, [tracks, cfg, photos, bgPhoto, defaultBg, step, viewRes]);
 
   // ---- actions
   const onPhotoFiles = async (files) => {
@@ -536,8 +582,10 @@ function PrintraceStudio() {
           {!has && <span className="text-[13px] text-neutral-500 pb-2">Votre tracé apparaîtra sur cette carte</span>}
         </div>
         <input ref={photoInput} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { onPhotoFiles(e.target.files); e.target.value = ''; }} />
-        <div className="relative flex-1 min-h-0 w-full px-12 py-4 grid place-items-center" style={{ containerType: 'size' }}>
-          <div className="relative" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, width: `min(100cqw, calc(100cqh * ${fmt.mm[0] / fmt.mm[1]}))` }}>
+        <div ref={stageRef} {...stageHandlers}
+          className={`relative flex-1 min-h-0 w-full px-12 py-4 grid place-items-center select-none ${view.z > 1 ? (panning ? 'cursor-grabbing' : 'cursor-grab') : ''}`} style={{ containerType: 'size', touchAction: 'none' }}>
+          <div ref={boxRef} className="relative" style={{ aspectRatio: `${fmt.mm[0]} / ${fmt.mm[1]}`, width: `min(100cqw, calc(100cqh * ${fmt.mm[0] / fmt.mm[1]}))`,
+            transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})`, transformOrigin: 'center', transition: panning ? 'none' : 'transform .25s cubic-bezier(.2,.8,.2,1)', zIndex: view.z > 1 ? 10 : undefined }}>
             {/* Halo doux et large derrière le poster */}
             <div aria-hidden="true" className="pointer-events-none absolute -inset-x-[90%] -top-[45%] -bottom-[40%] -z-10" style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.11) 22%, rgba(255,255,255,0.065) 42%, rgba(255,255,255,0.03) 64%, rgba(255,255,255,0.01) 84%, rgba(255,255,255,0) 100%)' }} />
             {/* Cadre (ou poster seul) */}
@@ -567,6 +615,12 @@ function PrintraceStudio() {
             })}
           </ol>
         </nav>
+        {/* Zoom de l'aperçu : − / % / + ; « Ajuster » revient à 100 % */}
+        <div className="absolute right-6 bottom-5 z-20 inline-flex items-center gap-0.5 rounded-full bg-[#121212]/80 backdrop-blur ring-1 ring-white/[0.09] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.8)] p-1">
+          <UiIconButton icon="ZoomOut" label="Réduire l'aperçu" size="sm" className="!rounded-full" disabled={view.z <= 1} onClick={() => zoomStep(-1)} />
+          <button onClick={() => setView({ z: 1, x: 0, y: 0 })} title="Ajuster à l'écran" className="h-8 min-w-[52px] px-2 rounded-full text-[12px] font-medium tabular-nums text-neutral-200 hover:bg-white/[0.07]">{Math.round(view.z * 100)} %</button>
+          <UiIconButton icon="ZoomIn" label="Agrandir l'aperçu" size="sm" className="!rounded-full" disabled={view.z >= 3} onClick={() => zoomStep(1)} />
+        </div>
         {/* Fiche du poster : modèle, format, cadre */}
         <div className="shrink-0 h-[72px] flex items-start justify-center pt-2">
           <span className="inline-flex items-stretch rounded-full bg-[#121212]/80 backdrop-blur ring-1 ring-white/[0.09] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.8)] p-1 text-[12px] leading-none">
