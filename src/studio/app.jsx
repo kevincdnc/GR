@@ -567,7 +567,8 @@ function PrintraceStudio() {
     const stats = has ? poStats(agg, order.filter((k) => enabled.has(k)), infoX).map((st) => (cfg.values[st.key] ? { ...st, value: cfg.values[st.key], unit: '' } : st)) : [];
     return {
       routes, agg: agg || {}, color: cfg.color, coords: has, activityLabel: has ? act.label : '',
-      title: (cfg.title != null && cfg.title.trim()) || defaultTitle, subtitle: cfg.subtitle != null ? cfg.subtitle : defaultSub,
+      // Sans tracé : poster d'attente qui invite à importer (le nom saisi revient avec le tracé)
+      title: !has ? 'Importez un tracé' : (cfg.title != null && cfg.title.trim()) || defaultTitle, subtitle: !has ? '' : cfg.subtitle != null ? cfg.subtitle : defaultSub,
       stats, photoSlot: false, photos: t.photoBg ? [] : photos, bgPhoto: (bgPhoto && bgPhoto.img) || defaultBg,
       showMap: has ? !!rec.map : true, mapStyle: rec.mapStyle || 'epure', mapOpacity: (rec.mapOpacity || 100) / 100,
       mapLabels: cfg.labels === true, bg: (t.bgs && cfg.bg) || rec.bg || null, preview: true,
@@ -776,10 +777,6 @@ function PrintraceStudio() {
             })}
           </ol>
         </nav>
-        {/* Aide de la loupe */}
-        <div className={`absolute right-6 bottom-6 z-20 inline-flex items-center gap-2 rounded-full bg-[#121212]/80 backdrop-blur ring-1 ring-white/[0.09] px-3.5 h-9 text-[12px] text-neutral-400 transition-opacity ${holding ? 'opacity-0' : ''}`}>
-          <I.ZoomIn size={14} /> Maintenez le clic sur le poster pour zoomer
-        </div>
         {/* Fiche du poster : modèle, format, cadre */}
         <div className="shrink-0 h-[72px] flex items-start justify-center pt-2">
           <span className="inline-flex items-stretch text-[11.5px] leading-none opacity-80">
