@@ -1189,6 +1189,25 @@ function PrintraceSite() {
   // un appui sur les étapes la ramène
   const [peek, setPeek] = useSiteState(false);
   useSiteEffect(() => { setPeek(false); }, [step, desktop]);
+  // Mobile, arrivée sur la page : poster centré sous le titre ; au scroll, il glisse à droite
+  // en rétrécissant un peu, et l'étape 1 apparaît à sa gauche, centrée sur le cadre.
+  // --m (sur la section) : 1 = poster centré, 0 = poster à droite ; réglé au scroll
+  const sectionRef = useSiteRef(null), mIntro = useSiteRef(1);
+  useSiteEffect(() => {
+    const sc = scroller.current, sec = sectionRef.current;
+    if (desktop || !sc || !sec) return;
+    let raf = 0;
+    const upd = () => {
+      raf = 0;
+      const t = Math.max(0, Math.min(1, sc.scrollTop / Math.max(1, sec.offsetTop)));
+      const m = 1 - t * t * (3 - 2 * t); // départ et arrivée en douceur
+      mIntro.current = m;
+      sec.style.setProperty('--m', m.toFixed(3));
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(upd); };
+    sc.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); upd();
+    return () => { sc.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); cancelAnimationFrame(raf); };
+  }, [desktop]);
   const stepProps = (i) => ({
     ref: stepRefs[i], 'data-step': i, style: mStep,
     onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); }
@@ -1230,10 +1249,11 @@ function PrintraceSite() {
 
       {/* Étapes à gauche (elles défilent), poster centré sur la page et progression à droite (ils restent à l'écran) */}
       {/* Mobile : étapes sur 60 % de la largeur à gauche, poster collé à droite (rogné par le bord de l'écran) */}
-      <section aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-0"
-        style={desktop ? undefined : { gridTemplateColumns: `calc(${SITE_M_COL} - 20px) ${SITE_M_POSTER_W}`, columnGap: SITE_M_GAP, paddingLeft: 20, paddingRight: 0,
+      <section ref={sectionRef} aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-0"
+        style={desktop ? undefined : { '--m': 1, gridTemplateColumns: `calc(${SITE_M_COL} - 20px) ${SITE_M_POSTER_W}`, columnGap: SITE_M_GAP, paddingLeft: 20, paddingRight: 0,
           transform: peek ? `translateX(calc(-1 * (${SITE_M_POSTER_W} + ${SITE_M_COL} + ${SITE_M_GAP} - 100vw + 16px)))` : 'none', transition: 'transform .45s cubic-bezier(.2,.8,.2,1)' }}>
-        <div className="min-w-0 lg:w-full lg:max-w-[360px] lg:ml-auto">
+        <div className="min-w-0 lg:w-full lg:max-w-[360px] lg:ml-auto"
+          style={desktop ? undefined : { opacity: 'max(0, calc(1 - var(--m) * 1.6))', transform: 'translateX(calc(var(--m) * -24px))' }}>
           <div {...stepProps(0)} className={`${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : mStep}>
             <SiteStepHead i={0} accent={c.accent} snap={desktop} />
             <div className="mt-5 lg:mt-9"><SiteImport c={c} items={items} setItems={setItems} opening={opening === 'custom'} onNext={() => open('custom')} /></div>
@@ -1256,11 +1276,14 @@ function PrintraceSite() {
         {/* Poster : collé au centre de l'écran pendant que les étapes défilent */}
         <div ref={posterRef} className="sticky self-start col-start-2 row-start-1"
           style={{ top: desktop ? SITE_POSTER_TOP : SITE_M_POSTER_TOP, willChange: 'transform', transform: 'translateZ(0)' }}>
-          <div className={`relative mx-auto lg:max-w-none ${desktop ? '' : 'cursor-pointer'}`} style={{ width: desktop ? SITE_POSTER_W : SITE_M_POSTER_W }}
-            onClick={desktop ? undefined : () => setPeek((v) => !v)}>
+          <div className={`relative mx-auto lg:max-w-none ${desktop ? '' : 'cursor-pointer'}`}
+            style={desktop ? { width: SITE_POSTER_W } : { width: SITE_M_POSTER_W, transformOrigin: 'top center', willChange: 'transform',
+              // Arrivée : centré sur l'écran et un peu plus grand ; --m passe à 0 au scroll
+              transform: `translateX(calc((-16vw - ${SITE_M_POSTER_W} / 2) * var(--m))) scale(calc(1 + 0.14 * var(--m)))` }}
+            onClick={desktop ? undefined : () => { if (mIntro.current < 0.1) setPeek((v) => !v); }}>
             {/* Mobile : pastille qui indique qu'on peut faire glisser vers le poster (et revenir) */}
             {!desktop && (
-              <span aria-hidden="true" className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full grid place-items-center bg-[#1a1a1a]/90 ring-1 ring-white/20 text-white shadow-lg backdrop-blur transition-transform duration-300" style={{ transform: `translateY(-50%) rotate(${peek ? 180 : 0}deg)` }}>
+              <span aria-hidden="true" className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full grid place-items-center bg-[#1a1a1a]/90 ring-1 ring-white/20 text-white shadow-lg backdrop-blur transition-transform duration-300" style={{ transform: `translateY(-50%) rotate(${peek ? 180 : 0}deg)`, opacity: 'max(0, calc(1 - var(--m) * 3))' }}>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 6-6 6 6 6" /></svg>
               </span>
             )}
