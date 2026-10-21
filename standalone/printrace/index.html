@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Printrace · Votre trace GPX ou Strava en poster à encadrer</title>
+<meta name="description" content="Transformez votre trek, marathon, road trip ou virée moto en poster à encadrer : importez votre GPX, FIT ou lien Strava, personnalisez la carte, imprimez en haute définition." />
+<link rel="canonical" href="%SITE_URL%" />
+<meta name="robots" content="index,follow,max-image-preview:large" />
+<meta name="theme-color" content="#0a0a0a" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Printrace" />
+<meta property="og:locale" content="fr_FR" />
+<meta property="og:url" content="%SITE_URL%" />
+<meta property="og:title" content="Printrace · Votre trace GPX ou Strava en poster à encadrer" />
+<meta property="og:description" content="Importez votre GPX ou votre activité Strava, personnalisez la carte, imprimez votre trek, marathon ou road trip en poster haute définition." />
+<meta property="og:image" content="%SITE_URL%assets/site/og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Poster Printrace du GR20 à côté du titre « Imprimez votre trek »" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Printrace · Votre trace GPX ou Strava en poster à encadrer" />
+<meta name="twitter:description" content="Importez votre GPX ou votre activité Strava, personnalisez la carte, imprimez en poster haute définition." />
+<meta name="twitter:image" content="%SITE_URL%assets/site/og.jpg" />
+<link rel="icon" href="assets/printrace-favicon.svg" type="image/svg+xml" />
+<script type="application/ld+json" data-site-url>
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","@id":"%SITE_URL%#site","url":"%SITE_URL%","name":"Printrace","inLanguage":"fr-FR"},
+ {"@type":"Organization","@id":"%SITE_URL%#org","name":"Printrace","url":"%SITE_URL%","logo":"%SITE_URL%assets/printrace-favicon.svg"},
+ {"@type":"WebApplication","name":"Printrace","url":"%SITE_URL%studio/","applicationCategory":"DesignApplication","operatingSystem":"Web","inLanguage":"fr-FR","description":"Créez un poster à encadrer à partir de votre tracé GPX, FIT, TCX, KML ou d'une activité Strava.","publisher":{"@id":"%SITE_URL%#org"}},
+ {"@type":"HowTo","name":"Imprimer votre tracé en poster","step":[
+  {"@type":"HowToStep","position":1,"name":"Importez votre tracé","text":"Fichier GPX, FIT, TCX ou KML, activité Strava ou tour Komoot : votre tracé s’affiche aussitôt sur le poster."},
+  {"@type":"HowToStep","position":2,"name":"Personnalisez votre poster","text":"Nommez votre aventure, choisissez la couleur du tracé, gardez ou non vos photos."},
+  {"@type":"HowToStep","position":3,"name":"Imprimez-le","text":"Choisissez la bordure et le cadre, puis téléchargez le fichier HD ou recevez votre poster chez vous."}]}
+]}
+</script>
+<!-- Fonds de carte vectoriels du poster d'exemple -->
+<link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin />
+<!-- Polices du premier écran : chargées en priorité -->
+<link rel="preload" href="fonts/montserrat-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/montserrat-latin-800-italic.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/inter-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+
+<meta name="ext-resource-dependency" content="assets/strava.svg" data-resource-id="stravaLogo" />
+<meta name="ext-resource-dependency" content="assets/garmin.svg" data-resource-id="garminLogo" />
+<meta name="ext-resource-dependency" content="assets/komoot.svg" data-resource-id="komootLogo" />
+<meta name="ext-resource-dependency" content="assets/komoot-dark.svg" data-resource-id="komootDark" />
+<meta name="ext-resource-dependency" content="assets/site/trek-1.webp" data-resource-id="siteTrek1" />
+<meta name="ext-resource-dependency" content="assets/site/trek-2.webp" data-resource-id="siteTrek2" />
+<meta name="ext-resource-dependency" content="assets/site/moto-1.webp" data-resource-id="siteMoto1" />
+<meta name="ext-resource-dependency" content="assets/site/roadtrip-1.webp" data-resource-id="siteRoad1" />
+<meta name="ext-resource-dependency" content="assets/site/roadtrip-2.webp" data-resource-id="siteRoad2" />
+<meta name="ext-resource-dependency" content="assets/site/roadtrip-3.webp" data-resource-id="siteRoad3" />
+<meta name="ext-resource-dependency" content="assets/site/marathon-1.webp" data-resource-id="siteMarathon1" />
+<meta name="ext-resource-dependency" content="assets/site/drapeau-breton.webp" data-resource-id="siteFlagBzh" />
+<meta name="ext-resource-dependency" content="assets/site/gpx-1.webp" data-resource-id="siteGpx1" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-1.webp" data-resource-id="siteInsta1" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-2.webp" data-resource-id="siteInsta2" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-3.webp" data-resource-id="siteInsta3" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-4.webp" data-resource-id="siteInsta4" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-5.webp" data-resource-id="siteInsta5" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-6.webp" data-resource-id="siteInsta6" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-7.webp" data-resource-id="siteInsta7" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-8.webp" data-resource-id="siteInsta8" />
+<meta name="ext-resource-dependency" content="assets/site/insta/post-9.webp" data-resource-id="siteInsta9" />
+
+<!-- Configuration publique (printrace.config.mjs) : générée au build -->
+<script src="data/config.js"></script>
+
+<link rel="stylesheet" href="ds.css" />
+<script src="vendor/react.js"></script>
+<script src="vendor/react-dom.js"></script>
+<style>
+  body { background: #0a0a0a; color: #fff; overflow: hidden; }
+  /* Trait discret sous le mot du titre ; en lecture auto, il se remplit jusqu'au mot suivant */
+  /* Site : chiffres dans la police du texte (le design system les met en Barlow condensé) */
+  .font-site .tabular-nums, .font-site .font-mono { font-family: inherit; letter-spacing: inherit; word-spacing: normal; }
+  .site-bar { height: max(3px, 0.04em); border-radius: 99px; }
+  .site-bar-fill { width: 100%; border-radius: 99px; transform: scaleX(0); transform-origin: left; will-change: transform; animation: siteFill linear 1 forwards; }
+  @keyframes siteFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @media (prefers-reduced-motion: reduce) { .site-bar-fill { animation: none; transform: none; opacity: .6; } }
+  /* Banderole Instagram : défilement continu (transform seulement), pause au survol */
+  .site-marquee-track { animation: siteMarquee 70s linear infinite; will-change: transform; }
+  .site-marquee:hover .site-marquee-track { animation-play-state: paused; }
+  @keyframes siteMarquee { to { transform: translateX(calc(-50% - 10px)); } }
+  @media (prefers-reduced-motion: reduce) { .site-marquee { overflow-x: auto; } .site-marquee-track { animation: none; } }
+  /* Mode édition : textes modifiables soulignés, modifiés en orange */
+  .pt-editing [data-tx] { outline: 1px dashed rgba(96,165,250,0.55); outline-offset: 3px; border-radius: 2px; cursor: text; }
+  .pt-editing [data-tx]:hover { outline: 2px solid #60a5fa; background: rgba(96,165,250,0.10); }
+  .pt-editing [data-tx][data-tx-changed] { outline: 2px solid #f59e0b; }
+</style>
+<link rel="stylesheet" href="tailwind.css" />
+</head>
+<body>
+<div id="root"></div>
+
+<script src="js/gpx.js"></script>
+<script type="text/babel" src="src/icons.jsx"></script>
+<script type="text/babel" src="src/ds/ui.jsx"></script>
+<script type="text/babel" src="src/data.jsx"></script>
+<script type="text/babel" src="src/track-io.jsx"></script>
+<script type="text/babel" src="src/share-link.jsx"></script>
+<script type="text/babel" src="src/story-share.jsx"></script>
+<script type="text/babel" src="src/poster-map.jsx"></script>
+<script type="text/babel" src="src/poster-share.jsx"></script>
+<script type="text/babel" src="src/printrace/library.jsx"></script>
+<script type="text/babel" src="src/printrace/import.jsx"></script>
+<script type="text/babel" src="src/printrace/auth.jsx"></script>
+<script src="data/site-content.js"></script>
+<script type="text/babel" src="src/site/gr34-trace.jsx"></script>
+<script type="text/babel" src="src/site/texts.jsx"></script>
+<script type="text/babel" src="src/site/editor.jsx"></script>
+<script type="text/babel" src="src/site/landing.jsx"></script>
+</body>
+</html>
