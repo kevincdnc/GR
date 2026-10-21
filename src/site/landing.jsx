@@ -450,7 +450,8 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, compact, 
     })();
     return () => { live = false; };
   }, [c.id, routes, border, photos && photos.map((p) => (p ? p.src : '')).join('|'), custom.photos, custom.title, custom.color, custom.tpl, custom.info, custom.stages, custom.duration, custom.labels, custom.bg]);
-  const title = (custom.title || '').trim() || siteDefaultTitle(c, items);
+  // Nom du modèle affiché sous le poster (Plan, Nuit, Éditorial…)
+  const tplName = (POSTER_TEMPLATES.find((x) => x.id === sitePosterOf(c, custom.tpl).tpl) || {}).name || '';
   return (
     <div className="relative mx-auto w-full">
       {/* Éclairage : halo doux et large derrière le poster (plusieurs paliers pour un fondu sans marches) */}
@@ -468,8 +469,23 @@ function SitePoster({ c, photos, custom = {}, items = [], finish = {}, compact, 
       </div>
       <div className="pointer-events-none mx-auto -mt-2 h-6 w-[86%] rounded-[50%] bg-black/50 blur-xl" />
       <div className={`relative z-10 mt-3 flex justify-center ${compact ? 'hidden' : ''}`}>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] ring-1 ring-white/10 px-3 h-7 text-[12px] text-neutral-300 max-w-full">
-          <I.Poster size={13} /> <span className="truncate">{user ? t('poster.votre', 'Votre poster') : t('poster.exemple', 'Exemple')} · {title} · A3{framed ? ' · ' + t('poster.cadre', 'cadre') + ' ' + t('finition.cadre.' + frame.id, frame.label).toLowerCase() : ''}</span>
+        {/* Fiche du poster : exemple ou poster de l'utilisateur, puis modèle, format et cadre */}
+        <span className="inline-flex items-stretch max-w-full rounded-full bg-[#121212]/80 backdrop-blur ring-1 ring-white/[0.09] shadow-[0_10px_30px_-12px_rgba(0,0,0,0.8)] p-1 text-[12px] leading-none">
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 h-7 font-semibold ${user ? 'bg-emerald-400/15 text-emerald-300' : 'bg-white/[0.08] text-neutral-200'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${user ? 'bg-emerald-400' : 'bg-neutral-400'}`} />
+            {user ? t('poster.votre', 'Votre poster') : t('poster.exemple', 'Exemple')}
+          </span>
+          {[
+            [t('poster.modele', 'Modèle'), tplName],
+            [t('poster.format', 'Format'), 'A3'],
+            [t('finition.cadre', 'Cadre'), t('finition.cadre.' + frame.id, frame.label), frame],
+          ].map(([k, v, f]) => (
+            <span key={k} className="inline-flex items-center gap-1.5 px-2.5 h-7 border-l border-white/[0.07] first-of-type:border-0 whitespace-nowrap">
+              <span className="text-neutral-500">{k}</span>
+              {f && <span className={`w-2.5 h-2.5 rounded-[3px] ${f.id === 'none' ? 'border border-dashed border-white/40' : 'ring-1 ring-white/20'}`} style={{ background: f.swatch }} />}
+              <span className="font-medium text-neutral-100">{v}</span>
+            </span>
+          ))}
         </span>
       </div>
     </div>
