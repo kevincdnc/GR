@@ -1042,6 +1042,11 @@ function SiteFooter({ snap }) {
       </div>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 py-6 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-neutral-600">
         <span>© {new Date().getFullYear()} <Tx k="pied.copyright" d="Printrace" /></span>
+        {/* Fait en Bretagne : drapeau breton (Gwenn-ha-du) */}
+        <span className="inline-flex items-center gap-1.5 text-neutral-500">
+          <Tx k="pied.made" d="Made with 🤍 in" />
+          <img src={ptRes('siteFlagBzh', 'assets/site/drapeau-breton.webp')} alt="Bretagne" title="Bretagne" width="22" height="16" loading="lazy" className="w-[22px] h-auto" />
+        </span>
         <span><Tx k="pied.credit" d="Fonds de carte © contributeurs OpenStreetMap" /></span>
       </div>
     </footer>
