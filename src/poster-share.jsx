@@ -394,11 +394,10 @@ function poSheetFrame(ctx, w, h, M, B, u, color, gs) {
 }
 // Marqueurs départ / arrivée : même pastille (anneau + point) aux deux bouts
 function poStartEnd(ctx, d, proj, u, color, bg) {
-  const rs = d.routes.filter((r) => !r.ghost); // tracés fantômes : cadrage seulement
-  if (!rs.length) return;
-  const a = rs[0].coords[0], lr = rs[rs.length - 1], b = lr.coords[lr.coords.length - 1];
+  const ends = stEnds(d.routes); // tracés fantômes ignorés ; trek : un départ, une arrivée
+  if (!ends) return;
   ctx.save();
-  [a, b].forEach((c) => {
+  (ends.loop ? [ends.a] : [ends.a, ends.b]).forEach((c) => {
     const [x, y] = proj.px(c[0], c[1]);
     ctx.beginPath(); ctx.arc(x, y, 11 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill();
     ctx.lineWidth = 3 * u; ctx.strokeStyle = color; ctx.stroke();

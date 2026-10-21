@@ -30,6 +30,27 @@ function stHaversine(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+// Départ et arrivée de l'ensemble des tracés. Trek en plusieurs tracés : un seul départ
+// (le début qui ne prolonge aucun autre tracé) et une seule arrivée, quel que soit l'ordre
+// d'import. loop : départ et arrivée se rejoignent (boucle) → un seul point.
+function stEnds(routes) {
+  const rs = routes.filter((r) => !r.ghost && r.coords && r.coords.length);
+  if (!rs.length) return null;
+  const S = (r) => r.coords[0], E = (r) => r.coords[r.coords.length - 1];
+  let a = S(rs[0]), b = E(rs[rs.length - 1]);
+  if (rs.length > 1) {
+    const loneest = (pts, others) => pts.reduce((best, p, i) => {
+      const dd = Math.min(...others.filter((_, j) => j !== i).map((q) => stHaversine(p, q)));
+      return dd > best.d ? { p, d: dd } : best;
+    }, { p: null, d: -1 }).p;
+    a = loneest(rs.map(S), rs.map(E)) || a;
+    b = loneest(rs.map(E), rs.map(S)) || b;
+  }
+  const total = rs.reduce((t, r) => t + (r.distance || 0), 0); // km
+  const tol = Math.max(0.3, total * 0.015);
+  return { a, b, loop: stHaversine(a, b) <= tol };
+}
+
 function stReadMeta() {
   let local = {};
   try { local = JSON.parse(localStorage.getItem('gr34_meta_v1') || '{}') || {}; } catch (e) {}
@@ -222,13 +243,15 @@ function stDrawRoutes(ctx, routes, proj, o) {
     ctx.shadowBlur = 0;
   });
   if (markers && routes.length) {
-    const first = routes[0].coords[0], lastR = routes[routes.length - 1], last = lastR.coords[lastR.coords.length - 1];
+    const ends = stEnds(routes), first = ends.a, last = ends.b, lastR = routes[routes.length - 1];
     const startCol = color === 'routes' ? routes[0].color : color;
     const endCol = color === 'routes' ? lastR.color : color;
     const r0 = Math.max(10, width * 1.5);
     let [x, y] = proj.px(first[0], first[1]);
-    ctx.beginPath(); ctx.arc(x, y, r0, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
-    ctx.beginPath(); ctx.arc(x, y, r0 * 0.5, 0, Math.PI * 2); ctx.fillStyle = startCol; ctx.fill();
+    if (!ends.loop) { // boucle : seulement le point d'arrivée, qui marque aussi le départ
+      ctx.beginPath(); ctx.arc(x, y, r0, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, r0 * 0.5, 0, Math.PI * 2); ctx.fillStyle = startCol; ctx.fill();
+    }
     [x, y] = proj.px(last[0], last[1]);
     ctx.beginPath(); ctx.arc(x, y, r0, 0, Math.PI * 2); ctx.fillStyle = endCol; ctx.fill();
     ctx.lineWidth = r0 * 0.35; ctx.strokeStyle = '#fff'; ctx.stroke();
