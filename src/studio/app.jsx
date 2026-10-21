@@ -128,8 +128,8 @@ const apEyebrow = 'text-[11.5px] font-semibold uppercase tracking-[0.12em] text-
 // Tracés réels, servis par le site (assets/routes/) : survol = aperçu sur le poster, clic = chargé.
 // « soon » : pas encore de tracé fiable (à récupérer sur OpenStreetMap).
 const AP_CATALOG = [
-  { id: 'gr34', name: 'GR34 · Finistère', sub: 'Locquirec → Le Pouldu', km: 925, dplus: 11400, file: 'assets/routes/gr34-finistere.json', title: 'GR34 ⚪️🔴', subtitle: 'Locquirec → Le Pouldu · Finistère' },
-  { id: 'tmb', name: 'Tour du Mont-Blanc', sub: 'Les Houches → Chamonix · 3 pays', km: 156, dplus: 9525, file: 'assets/routes/tmb.json', title: 'Tour du Mont-Blanc', subtitle: 'Les Houches → Chamonix · France, Italie, Suisse' },
+  { id: 'gr34', short: 'GR34 Finistère', name: 'GR34 · Finistère', sub: 'Locquirec → Le Pouldu', km: 925, dplus: 11400, file: 'assets/routes/gr34-finistere.json', title: 'GR34 ⚪️🔴', subtitle: 'Locquirec → Le Pouldu · Finistère' },
+  { id: 'tmb', short: 'TMB', name: 'Tour du Mont-Blanc', sub: 'Les Houches → Chamonix · 3 pays', km: 156, dplus: 9525, file: 'assets/routes/tmb.json', title: 'Tour du Mont-Blanc', subtitle: 'Les Houches → Chamonix · France, Italie, Suisse' },
   { id: 'gr20', name: 'GR20', sub: 'Corse · Calenzana → Conca', km: 180, soon: true },
   { id: 'utmb', name: 'UTMB', sub: 'Chamonix · 171 km', km: 171, soon: true },
   { id: 'gr11', name: 'GR11', sub: 'Pyrénées espagnoles', km: 840, soon: true },
@@ -141,9 +141,26 @@ function apLoadRoute(e) {
     .catch((err) => { delete apRouteCache[e.id]; throw err; });
   return apRouteCache[e.id];
 }
+// Silhouette du tracé (mini aperçu dans la liste)
+function ApRouteGlyph({ coords, size = 30 }) {
+  if (!coords || coords.length < 2) return <I.Route size={15} />;
+  const step = Math.max(1, Math.floor(coords.length / 120)), pts = coords.filter((_, i) => i % step === 0);
+  const k = Math.cos(pts[0][0] * Math.PI / 180), xs = pts.map((c) => c[1] * k), ys = pts.map((c) => -c[0]);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys), sc = (size - 6) / Math.max(Math.max(...xs) - x0, Math.max(...ys) - y0, 1e-9);
+  const ox = (size - (Math.max(...xs) - x0) * sc) / 2, oy = (size - (Math.max(...ys) - y0) * sc) / 2;
+  const d = pts.map((c, i) => `${i ? 'L' : 'M'}${(ox + (xs[i] - x0) * sc).toFixed(1)} ${(oy + (ys[i] - y0) * sc).toFixed(1)}`).join('');
+  return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true"><path d={d} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round" /></svg>;
+}
+// Une carte, comme les lignes Strava / Komoot : pastilles de suggestion + liste complète
 function ApCatalog({ onPreview, onPick }) {
   const [open, setOpen] = useApState(false);
   const [loading, setLoading] = useApState('');
+  const [shapes, setShapes] = useApState({});
+  const ready = AP_CATALOG.filter((e) => !e.soon);
+  useApEffect(() => {
+    if (!open) return;
+    ready.forEach((e) => { if (!shapes[e.id]) apLoadRoute(e).then((d) => setShapes((m) => ({ ...m, [e.id]: d.coords }))).catch(() => {}); });
+  }, [open]);
   const pick = async (e) => {
     if (e.soon) return;
     setLoading(e.id);
@@ -151,42 +168,44 @@ function ApCatalog({ onPreview, onPick }) {
   };
   const hover = (e) => () => { if (!e.soon) onPreview(e); };
   const leave = () => onPreview(null);
-  const ready = AP_CATALOG.filter((e) => !e.soon);
   return (
-    <div className="mt-3 pt-5 border-t border-white/[0.06]">
-      <div className={apEyebrow + ' mb-1'}>Grands itinéraires</div>
-      <p className="text-[12.5px] text-neutral-500 mb-3">Survolez pour voir le tracé sur le poster, cliquez pour le charger.</p>
-      <div className="flex flex-wrap gap-2" onMouseLeave={leave}>
-        {ready.map((e) => (
-          <button key={e.id} onMouseEnter={hover(e)} onFocus={hover(e)} onBlur={leave} onClick={() => pick(e)}
-            className="h-9 pl-3 pr-3.5 rounded-full flex items-center gap-2 text-[13px] font-medium text-neutral-100 bg-white/[0.05] ring-1 ring-white/10 hover:bg-white/[0.1] hover:ring-white/25 transition">
-            {loading === e.id ? <UiSpinner size={13} /> : <I.Route size={14} className="text-neutral-400" />}
-            {e.name}<span className="text-[11.5px] text-neutral-500 tabular-nums">{e.km} km</span>
+    <div className="relative">
+      <div className="rounded-[20px] bg-white/[0.03] ring-1 ring-white/[0.14] pl-4 pr-3.5 py-3.5">
+        <div className="flex items-center gap-3">
+          <span className="w-7 h-7 rounded-[7px] grid place-items-center bg-white text-neutral-900 shrink-0"><I.Route size={15} /></span>
+          <span className="flex-1 min-w-0 text-[14px] text-neutral-300 truncate">Partir d’un grand itinéraire</span>
+          <button onClick={() => setOpen(!open)} aria-expanded={open}
+            className={`h-10 pl-3.5 pr-2.5 shrink-0 rounded-lg flex items-center gap-1 text-[13px] font-semibold transition-colors ${open ? 'bg-white text-neutral-900' : 'bg-white/[0.08] text-white hover:bg-white/[0.14]'}`}>
+            Voir <I.ChevronDown size={15} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
-        ))}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5" onMouseLeave={leave}>
+          {ready.map((e) => (
+            <button key={e.id} onMouseEnter={hover(e)} onFocus={hover(e)} onBlur={leave} onClick={() => pick(e)}
+              className="h-7 px-2.5 rounded-full flex items-center gap-1.5 text-[12px] font-medium text-neutral-300 bg-white/[0.04] ring-1 ring-white/[0.08] hover:text-white hover:bg-white/[0.09] hover:ring-white/20 transition">
+              {loading === e.id && <UiSpinner size={11} />}{e.short || e.name}<span className="text-neutral-500 tabular-nums">{e.km} km</span>
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="relative mt-2.5">
-        <button onClick={() => setOpen(!open)} aria-expanded={open}
-          className={`w-full h-11 px-4 rounded-xl flex items-center justify-between text-[13.5px] bg-white/[0.03] ring-1 transition ${open ? 'ring-white/30 text-white' : 'ring-white/[0.12] text-neutral-300 hover:ring-white/25'}`}>
-          Tous les itinéraires <I.ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
-        </button>
-        {open && (<>
-          <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); leave(); }} />
-          <div className="absolute left-0 right-0 bottom-full mb-2 z-50 rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 animate-menu max-h-[320px] overflow-y-auto sb-scroll" onMouseLeave={leave}>
-            {AP_CATALOG.map((e) => (
-              <button key={e.id} onMouseEnter={hover(e)} onClick={() => pick(e)} disabled={e.soon}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-white/[0.06] disabled:hover:bg-transparent disabled:cursor-default">
-                <span className={`w-8 h-8 rounded-lg grid place-items-center shrink-0 ${e.soon ? 'bg-white/[0.03] text-neutral-600' : 'bg-white/[0.07] text-neutral-200'}`}><I.Route size={15} /></span>
-                <span className="min-w-0 flex-1">
-                  <span className={`block text-[13.5px] font-medium truncate ${e.soon ? 'text-neutral-500' : 'text-neutral-100'}`}>{e.name}</span>
-                  <span className="block text-[11.5px] text-neutral-500 truncate">{e.sub}</span>
-                </span>
-                {e.soon ? <UiBadge>Bientôt</UiBadge> : loading === e.id ? <UiSpinner size={14} /> : <span className="text-[12px] text-neutral-400 tabular-nums shrink-0">{e.km} km</span>}
-              </button>
-            ))}
-          </div>
-        </>)}
-      </div>
+      {open && (<>
+        <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); leave(); }} />
+        <div className="absolute left-0 right-0 bottom-full mb-2 z-50 rounded-2xl bg-[#141415] ring-1 ring-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] p-1.5 animate-menu max-h-[340px] overflow-y-auto sb-scroll" onMouseLeave={leave}>
+          {AP_CATALOG.map((e) => (
+            <button key={e.id} onMouseEnter={hover(e)} onClick={() => pick(e)} disabled={e.soon}
+              className="w-full flex items-center gap-3 rounded-xl px-2.5 py-2 text-left hover:bg-white/[0.06] disabled:hover:bg-transparent disabled:cursor-default">
+              <span className={`w-10 h-10 rounded-lg grid place-items-center shrink-0 ring-1 ${e.soon ? 'ring-white/[0.05] text-neutral-700' : 'ring-white/10 bg-white/[0.04] text-neutral-200'}`}>
+                {e.soon ? <I.Route size={15} /> : <ApRouteGlyph coords={shapes[e.id]} />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className={`block text-[13.5px] font-medium truncate ${e.soon ? 'text-neutral-500' : 'text-neutral-100'}`}>{e.name}</span>
+                <span className="block text-[11.5px] text-neutral-500 truncate">{e.sub}</span>
+              </span>
+              {e.soon ? <span className="text-[11px] text-neutral-600 shrink-0">Bientôt</span> : loading === e.id ? <UiSpinner size={14} /> : <span className="text-[12px] text-neutral-400 tabular-nums shrink-0">{e.km} km</span>}
+            </button>
+          ))}
+        </div>
+      </>)}
     </div>
   );
 }
