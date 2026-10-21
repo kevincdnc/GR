@@ -525,7 +525,7 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
           );
         })}
       </div>
-      <div className="mt-3 h-6 flex items-center justify-between gap-3">
+      <div className="mt-3 min-h-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <span className="text-[13px] text-neutral-400 whitespace-nowrap"><Tx k="reglages.couleur" d="Couleur du tracé" /></span>
         <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Couleur du tracé">
           {SITE_TRACE_COLORS.map((x) => (
@@ -537,7 +537,7 @@ function SiteCustomize({ c, value, onChange, items = [] }) {
         </div>
       </div>
       {p.tpl === 'blueprint' && (
-        <div className="mt-3 h-6 flex items-center justify-between gap-3">
+        <div className="mt-3 min-h-6 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <span className="text-[13px] text-neutral-400 whitespace-nowrap"><Tx k="reglages.fond" d="Fond" /></span>
           <div className="flex items-center gap-1.5" role="radiogroup" aria-label="Fond du poster">
             {SITE_PLAN_BGS.map((x) => {
@@ -577,7 +577,7 @@ function SiteFinish({ c, tplId, value, onChange, onOpen, opening, ready }) {
     <div>
       <div className="rounded-2xl bg-[#0e0e0e]/70 ring-1 ring-white/[0.07] px-4 pt-3.5 pb-4">
         <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-neutral-500"><Tx k="finition.titre" d="Finition" /></span>
-        <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <span className={lbl}><Tx k="finition.bordure" d="Bordure" /></span>
           <div className="inline-flex rounded-lg bg-white/[0.04] ring-1 ring-white/10 p-0.5" role="radiogroup" aria-label="Bordure">
             {SITE_BORDERS.map((x) => (
@@ -588,7 +588,7 @@ function SiteFinish({ c, tplId, value, onChange, onOpen, opening, ready }) {
         </div>
         <div className="mt-3.5">
           <span className={lbl}><Tx k="finition.cadre" d="Cadre" /></span>
-          <div className="mt-2 grid grid-cols-4 gap-1.5" role="radiogroup" aria-label="Cadre">
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-1.5" role="radiogroup" aria-label="Cadre">
             {SITE_FRAMES.map((f) => {
               const on = frame.id === f.id;
               return (
@@ -728,7 +728,7 @@ function SiteImport({ c, items, setItems, onNext, opening }) {
   // Colonne étroite (écrans 1024-1279 px) : textes d'aide raccourcis, jamais coupés
   const [narrow, setNarrow] = useSiteState(false);
   useSiteEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px) and (max-width: 1279px)');
+    const mq = window.matchMedia('(max-width: 639px), (min-width: 1024px) and (max-width: 1279px)');
     const on = () => setNarrow(mq.matches);
     on(); mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
@@ -813,15 +813,15 @@ function SiteImport({ c, items, setItems, onNext, opening }) {
           <button onClick={() => pick()}
             onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
             onDrop={(e) => { e.preventDefault(); setOver(false); importFiles(e.dataTransfer.files); }}
-            className={`group w-full h-[76px] sm:h-[84px] rounded-[20px] border-[1.5px] border-dashed flex items-center gap-3 sm:gap-4 px-3.5 sm:px-4 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
+            className={`group w-full min-h-[64px] py-3 sm:py-0 sm:h-[84px] rounded-[18px] sm:rounded-[20px] border-[1.5px] border-dashed flex items-center gap-3 sm:gap-4 px-3.5 sm:px-4 text-left transition-all ${over ? 'border-white bg-white/[0.08] scale-[1.01]' : 'border-white/25 bg-white/[0.03] hover:border-white/50 hover:bg-white/[0.05]'}`}>
             <span className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-[10px] grid place-items-center ring-1 transition-colors ${over ? 'bg-white text-neutral-900 ring-white' : 'bg-white/[0.07] text-white ring-white/10 group-hover:bg-white group-hover:text-neutral-900'}`}>
               {busy ? <UiSpinner size={18} /> : <I.Upload size={19} />}
             </span>
             <span className="flex-1 min-w-0">
-              <span className="block text-[14px] sm:text-[15px] font-semibold text-white leading-snug whitespace-nowrap">{busy ? t('import.lecture', 'Lecture…') : over ? <Tx k="import.deposez" d="Déposez vos tracés" /> : bySource('file').length ? <Tx k="import.ajouter" d="Ajoutez d’autres tracés" /> : <Tx k="import.titre" d="Importez votre tracé" />}</span>
-              <span className="block text-[12px] sm:text-[12.5px] text-neutral-500 mt-1.5 leading-none tracking-[0.03em] whitespace-nowrap"><Tx k="import.formats" d="GPX · FIT · TCX · KML" /></span>
+              <span className="block text-[14px] sm:text-[15px] font-semibold text-white leading-snug sm:whitespace-nowrap">{busy ? t('import.lecture', 'Lecture…') : over ? <Tx k="import.deposez" d="Déposez vos tracés" /> : bySource('file').length ? <Tx k="import.ajouter" d="Ajoutez d’autres tracés" /> : <Tx k="import.titre" d="Importez votre tracé" />}</span>
+              <span className="block text-[12px] sm:text-[12.5px] text-neutral-500 mt-1.5 leading-tight sm:leading-none tracking-[0.03em] sm:whitespace-nowrap"><Tx k="import.formats" d="GPX · FIT · TCX · KML" /></span>
             </span>
-            {!busy && <span className="shrink-0 w-[88px] h-10 rounded-lg grid lg:hidden xl:grid place-items-center text-[13px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors"><Tx k="import.parcourir" d="Parcourir" /></span>}
+            {!busy && <span className="shrink-0 w-[88px] h-10 rounded-lg hidden sm:grid lg:hidden xl:grid place-items-center text-[13px] font-semibold text-neutral-100 bg-white/[0.08] group-hover:bg-white/[0.14] transition-colors"><Tx k="import.parcourir" d="Parcourir" /></span>}
           </button>
           {errorFor('file')}
           {list('file')}
@@ -832,15 +832,17 @@ function SiteImport({ c, items, setItems, onNext, opening }) {
           const g = guided[src.id], bad = error.src === src.id && error.msg && links[src.id];
           return (
             <div key={src.id} style={{ '--src': src.color }}>
-              <label className={`h-[76px] sm:h-[84px] flex items-center gap-3 pl-4 sm:pl-5 pr-3.5 sm:pr-4 rounded-[20px] cursor-text bg-white/[0.03] ring-1 transition-colors hover:bg-white/[0.05] focus-within:bg-white/[0.05] ${bad ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-2 focus-within:ring-[color:var(--src)] focus-within:hover:ring-[color:var(--src)]'}`}>
+              <label className={`h-[64px] sm:h-[84px] flex items-center gap-2 sm:gap-3 pl-3 sm:pl-5 pr-2.5 sm:pr-4 rounded-[18px] sm:rounded-[20px] cursor-text bg-white/[0.03] ring-1 transition-colors hover:bg-white/[0.05] focus-within:bg-white/[0.05] ${bad ? 'ring-red-400/60' : 'ring-white/[0.14] hover:ring-white/25 focus-within:ring-2 focus-within:ring-[color:var(--src)] focus-within:hover:ring-[color:var(--src)]'}`}>
                 <img src={ptRes(src.logo[0], src.logo[1])} alt="" width="26" height="26" className="w-7 h-7 sm:w-[30px] sm:h-[30px] rounded-[7px] shrink-0" />
                 <input value={links[src.id]} onChange={(e) => { const v = e.target.value; setLinks((l) => ({ ...l, [src.id]: v })); setError({ src: '', msg: '' }); setGuided((x) => ({ ...x, [src.id]: null })); }}
                   onKeyDown={(e) => { if (e.key === 'Enter') submitLink(src); }}
                   placeholder={narrow ? 'Lien ' + src.name : t('import.' + src.id + '.champ', src.placeholder)} aria-label={'Lien ' + src.name} inputMode="url"
                   style={{ outline: 'none', caretColor: src.color }} className="flex-1 min-w-0 h-full bg-transparent text-[14px] text-white placeholder:text-neutral-500" />
                 <button onClick={(e) => { e.preventDefault(); submitLink(src); }} disabled={linkBusy === src.id}
-                  className="w-[88px] h-10 shrink-0 rounded-lg grid place-items-center text-[13px] font-semibold text-white transition-[filter] hover:brightness-110 disabled:opacity-70" style={{ background: src.color }}>
-                  {linkBusy === src.id ? <UiSpinner size={16} /> : <Tx k={'import.' + src.id + '.bouton'} d="Importer" />}
+                  aria-label={t('import.' + src.id + '.bouton', 'Importer')}
+                  className="w-10 sm:w-[88px] h-10 shrink-0 rounded-lg grid place-items-center text-[13px] font-semibold text-white transition-[filter] hover:brightness-110 disabled:opacity-70" style={{ background: src.color }}>
+                  {/* Écran étroit : flèche seule */}
+                  {linkBusy === src.id ? <UiSpinner size={16} /> : <><span className="hidden sm:inline"><Tx k={'import.' + src.id + '.bouton'} d="Importer" /></span><span className="grid sm:hidden"><I.ChevronRight size={18} /></span></>}
                 </button>
               </label>
               {errorFor(src.id)}
@@ -928,9 +930,11 @@ function SiteStepRail({ step, onGo }) {
 const SITE_POSTER_W = 'max(340px, min(480px, calc((100vh - 120px) / 1.48), calc(100vw - 880px)))';
 const SITE_POSTER_H = `calc(${SITE_POSTER_W} * 1.414 + 48px)`; // cadre A3 + étiquette
 const SITE_POSTER_TOP = `max(20px, calc((100vh - ${SITE_POSTER_H}) / 2))`;
-// Mobile : poster collé en haut de l'écran (hauteur fixe), étapes en dessous, une par écran
-const SITE_MPOSTER_H = '35svh';
-const SITE_MPOSTER_BOX = `calc(${SITE_MPOSTER_H} + 32px)`; // poster + marges haut/bas
+// Mobile : étapes sur 60 % de la largeur, poster collé à droite (centré en hauteur), rogné par le bord
+const SITE_M_COL = '60vw';
+const SITE_M_GAP = '6vw';
+const SITE_M_POSTER_W = 'min(72vw, calc((100svh - 120px) / 1.414))';
+const SITE_M_POSTER_TOP = `calc((100svh - ${SITE_M_POSTER_W} * 1.414) / 2)`;
 // ---------------------------------------------------------------- posts Instagram
 // Banderole de posts : posters Printrace mis en scène chez soi (images générées par
 // scripts/insta/, comptes fictifs). Défilement continu, en pause au survol.
@@ -1091,8 +1095,7 @@ function PrintraceSite() {
     const update = () => {
       raf = 0;
       if (jumpTo.current != null) return; // saut vers une étape en cours : pas de clignotement
-      const po = posterRef.current, off = !mq.matches && po ? po.offsetHeight : 0;
-      const mid = sc.getBoundingClientRect().top + off + (sc.clientHeight - off) / 2;
+      const mid = sc.getBoundingClientRect().top + sc.clientHeight / 2;
       let best = 0, dist = Infinity;
       stepRefs.forEach((r, i) => {
         const el = r.current; if (!el) return;
@@ -1179,12 +1182,17 @@ function PrintraceSite() {
   // Mise en avant : étape active nette, les autres estompées (cliquables pour y aller)
   const dim = (i) => (desktop && step !== i ? 'lg:opacity-30 lg:hover:opacity-55 lg:cursor-pointer lg:scale-[0.98]' : 'opacity-100');
   // Chaque étape occupe un écran ; son contenu est centré à hauteur du poster
-  const stepBox = 'relative flex flex-col justify-start py-6 lg:justify-center lg:min-h-screen lg:py-12 origin-left lg:will-change-[opacity,transform] transition-[opacity,transform] duration-500 ease-out';
-  // Mobile : chaque étape remplit l'écran sous le poster, et le scroll s'arrête sur chacune
-  const mStep = desktop ? undefined : { minHeight: `calc(100svh - ${SITE_MPOSTER_BOX})`, scrollSnapAlign: 'start', scrollSnapStop: 'always', scrollMarginTop: SITE_MPOSTER_BOX };
+  const stepBox = 'relative flex flex-col justify-center py-10 lg:min-h-screen lg:py-12 origin-left lg:will-change-[opacity,transform] transition-[opacity,transform] duration-500 ease-out';
+  // Mobile : chaque étape remplit l'écran (colonne de gauche), le scroll s'arrête sur chacune
+  const mStep = desktop ? undefined : { minHeight: '100svh', scrollSnapAlign: 'start', scrollSnapStop: 'always' };
+  // Mobile : poster rogné à droite ; un appui dessus fait glisser la page pour le voir en entier,
+  // un appui sur les étapes la ramène
+  const [peek, setPeek] = useSiteState(false);
+  useSiteEffect(() => { setPeek(false); }, [step, desktop]);
   const stepProps = (i) => ({
     ref: stepRefs[i], 'data-step': i, style: mStep,
-    onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); } : undefined,
+    onClickCapture: desktop && step !== i ? (e) => { e.preventDefault(); e.stopPropagation(); goTo(i); }
+      : !desktop && peek ? (e) => { e.preventDefault(); e.stopPropagation(); setPeek(false); } : undefined,
   });
 
   // Grand écran : défilement par sections (scroll-snap natif) — le haut de page, puis chaque
@@ -1221,14 +1229,16 @@ function PrintraceSite() {
       </header>
 
       {/* Étapes à gauche (elles défilent), poster centré sur la page et progression à droite (ils restent à l'écran) */}
-      <section aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-0">
-        {/* Mobile : étape 1, poster, puis étapes 2 et 3 (le conteneur s'efface, ses enfants rejoignent la grille) */}
-        <div className="contents lg:block lg:w-full lg:max-w-[360px] lg:ml-auto">
-          <div {...stepProps(0)} className={`order-2 ${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : mStep}>
+      {/* Mobile : étapes sur 60 % de la largeur à gauche, poster collé à droite (rogné par le bord de l'écran) */}
+      <section aria-label="Créer votre poster" className="relative max-w-[1440px] mx-auto px-5 sm:px-8 pb-24 lg:pb-0 grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-x-8 xl:gap-x-12 gap-y-0"
+        style={desktop ? undefined : { gridTemplateColumns: `calc(${SITE_M_COL} - 20px) ${SITE_M_POSTER_W}`, columnGap: SITE_M_GAP, paddingLeft: 20, paddingRight: 0,
+          transform: peek ? `translateX(calc(-1 * (${SITE_M_POSTER_W} + ${SITE_M_COL} + ${SITE_M_GAP} - 100vw + 16px)))` : 'none', transition: 'transform .45s cubic-bezier(.2,.8,.2,1)' }}>
+        <div className="min-w-0 lg:w-full lg:max-w-[360px] lg:ml-auto">
+          <div {...stepProps(0)} className={`${stepBox} lg:!py-0 lg:!pt-24 ${dim(0)}`} style={desktop ? { minHeight: SITE_POSTER_H } : mStep}>
             <SiteStepHead i={0} accent={c.accent} snap={desktop} />
             <div className="mt-5 lg:mt-9"><SiteImport c={c} items={items} setItems={setItems} opening={opening === 'custom'} onNext={() => open('custom')} /></div>
           </div>
-          <div {...stepProps(1)} className={`order-3 ${stepBox} ${dim(1)}`}>
+          <div {...stepProps(1)} className={`${stepBox} ${dim(1)}`}>
             <SiteStepHead i={1} accent={c.accent} snap={desktop} />
             <div className="mt-5 lg:mt-9"><SiteCustomize c={c} items={items} value={custom} onChange={(v) => { stop(); setCustoms((m) => ({ ...m, [caseId]: v })); }} /></div>
             {/* Le site n'est qu'un aperçu : la personnalisation complète se fait dans l'app */}
@@ -1237,24 +1247,37 @@ function PrintraceSite() {
               <span><Tx k="apercu.texte" d="Ceci n’est qu’un aperçu : modèles, typographies, formats… bien plus d’options sur" /> <span className="font-medium text-neutral-300 group-hover:text-white underline decoration-white/20 underline-offset-[3px] group-hover:decoration-white/60"><Tx k="apercu.lien" d="printrace.app" /></span> <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">→</span></span>
             </a>
           </div>
-          <div {...stepProps(2)} className={`order-4 ${stepBox} lg:mb-[40vh] ${dim(2)}`}>
+          <div {...stepProps(2)} className={`${stepBox} lg:mb-[40vh] ${dim(2)}`}>
             <SiteStepHead i={2} accent={c.accent} snap={desktop} />
             <div className="mt-5 lg:mt-9"><SiteFinish c={c} tplId={custom.tpl} value={finish} onChange={setFinish} ready={items.length > 0} opening={opening === 'order'} onOpen={() => (items.length ? open('order') : (location.href = ptLoginUrl()))} /></div>
           </div>
         </div>
 
         {/* Poster : collé au centre de l'écran pendant que les étapes défilent */}
-        <div ref={posterRef} className="order-1 sticky top-0 z-20 self-start -mx-5 sm:-mx-8 px-5 sm:px-8 pt-3 pb-5 lg:z-auto lg:mx-0 lg:px-0 lg:pt-0 lg:pb-0 lg:order-none lg:col-start-2 lg:row-start-1"
-          style={desktop ? { top: SITE_POSTER_TOP, willChange: 'transform', transform: 'translateZ(0)' } : { top: 0, height: SITE_MPOSTER_BOX, background: 'linear-gradient(#0a0a0a 92%, rgba(10,10,10,0))', willChange: 'transform', transform: 'translateZ(0)' }}>
-          <div className="relative mx-auto lg:max-w-none" style={desktop ? { width: SITE_POSTER_W } : { width: `calc(${SITE_MPOSTER_H} / 1.414)` }}>
-            {/* Photo du trip fondue dans le fond, décalée à droite du cadre */}
-            {c.heroBg != null && photos[c.heroBg] && (
-              <div key={c.id} aria-hidden="true" className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] ds-fade-up" style={{
-                maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
-                {/* De plus en plus discrète au fil des étapes 2 et 3 (opacité réglée au scroll) */}
-                <img src={photos[c.heroBg].src} alt="" decoding="async" fetchpriority="low" data-hero-photo className="w-full h-full object-cover saturate-[0.8] opacity-[0.3]" style={{ willChange: 'opacity' }} />
-              </div>
+        <div ref={posterRef} className="sticky self-start col-start-2 row-start-1"
+          style={{ top: desktop ? SITE_POSTER_TOP : SITE_M_POSTER_TOP, willChange: 'transform', transform: 'translateZ(0)' }}>
+          <div className={`relative mx-auto lg:max-w-none ${desktop ? '' : 'cursor-pointer'}`} style={{ width: desktop ? SITE_POSTER_W : SITE_M_POSTER_W }}
+            onClick={desktop ? undefined : () => setPeek((v) => !v)}>
+            {/* Mobile : pastille qui indique qu'on peut faire glisser vers le poster (et revenir) */}
+            {!desktop && (
+              <span aria-hidden="true" className="absolute -left-4 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full grid place-items-center bg-[#1a1a1a]/90 ring-1 ring-white/20 text-white shadow-lg backdrop-blur transition-transform duration-300" style={{ transform: `translateY(-50%) rotate(${peek ? 180 : 0}deg)` }}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 6-6 6 6 6" /></svg>
+              </span>
             )}
+            {/* Photo du trip fondue dans le fond, décalée à droite du cadre */}
+            {/* Une couche par cas d'usage : la photo du cas affiché apparaît en fondu, l'ancienne
+                disparaît en fondu. L'ensemble devient plus discret au fil des étapes 2 et 3
+                (opacité du conteneur réglée au scroll). */}
+            <div aria-hidden="true" data-hero-photo className="pointer-events-none absolute left-[5%] -right-[92%] -top-[22%] -bottom-[16%] opacity-[0.3]" style={{ willChange: 'opacity',
+              maskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)', WebkitMaskImage: 'radial-gradient(closest-side, #000 15%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.12) 75%, transparent 92%)' }}>
+              {SITE_CASES.map((x) => {
+                const ph = x.heroBg != null && (photoSet[x.id] || [])[x.heroBg];
+                return ph && (
+                  <img key={x.id} src={ph.src} alt="" decoding="async" fetchpriority="low"
+                    className={`absolute inset-0 w-full h-full object-cover saturate-[0.8] transition-opacity duration-700 ease-out ${x.id === caseId ? 'opacity-100' : 'opacity-0'}`} style={{ willChange: 'opacity' }} />
+                );
+              })}
+            </div>
             <SitePoster c={c} photos={photoSet[caseId] || null} custom={custom} items={items} finish={finish} compact={!desktop} />
           </div>
         </div>
