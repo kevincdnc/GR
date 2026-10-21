@@ -285,13 +285,15 @@ function poMix(a, b, t) {
   return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
 }
 // Palette de carte « plan » dérivée de la couleur de fond (routes discrètes)
-function poBlueprintPal(bg) {
-  const W = '#ffffff';
+const poRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)).join(',');
+// fg : couleur des traits (blanc sur fond sombre, encre sur papier blanc)
+function poBlueprintPal(bg, fg = '#ffffff') {
+  const W = fg, light = fg !== '#ffffff';
   return {
-    land: poMix(bg, W, 0.07), water: poMix(bg, '#000000', 0.14), coast: poMix(bg, W, 0.55), coastWidth: 1.2,
+    land: poMix(bg, W, 0.07), water: light ? poMix(bg, W, 0.1) : poMix(bg, '#000000', 0.14), coast: poMix(bg, W, 0.55), coastWidth: 1.2,
     road: poMix(bg, W, 0.13), roadMajor: poMix(bg, W, 0.22), path: poMix(bg, W, 0.15), waterway: poMix(bg, W, 0.24),
     wood: poMix(bg, W, 0.1), park: poMix(bg, W, 0.1),
-    label: { color: 'rgba(255,255,255,0.9)', halo: bg, haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: '#ffffff' },
+    label: { color: `rgba(${poRgb(W)},0.9)`, halo: bg, haloWidth: 3.5, upper: true, spacing: 0.14, weight: 600, dot: W },
   };
 }
 // Fonds sombres proposés (rendu sûr à l'impression : blanc et tracé clair ressortent)
@@ -506,9 +508,12 @@ const POSTER_TEMPLATES = [
     id: 'blueprint', name: 'Plan', kind: 'Technique', dark: true, maxPhotos: 3, mapDefault: true,
     // Réglages recommandés pour l'impression (couleurs testées, style de carte, opacité)
     rec: { colors: ['#ffffff', '#facc15'], route: '#ffffff', mapStyle: 'epure', mapOpacity: 40, map: true, bg: '#0f1d33' },
+    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', route: '#0f1d33', colors: ['#0f1d33', '#e4572e'], bgLabel: 'Couleur de l’encre' } },
     bgs: PO_DARK_BGS, photoSlot: true, infos: ['activity', 'start'],
     async draw(ctx, d, w, h) {
-      const u = w / 1200, bg = d.bg || '#0f1d33', line = 'rgba(255,255,255,0.85)';
+      // Mode clair : papier blanc, traits à la couleur choisie (tirage « diazo »)
+      const light = d.mode === 'light', ink = d.bg || '#0f1d33';
+      const u = w / 1200, bg = light ? '#f6f7f9' : ink, FG = light ? ink : FG, fg = (a) => `rgba(${poRgb(FG)},${a})`, line = fg(0.85);
       const M = 50 * u;
       const items = d.stats.map((s) => [s.short || s.label, s.value + (s.unit ? ' ' + s.unit : '')]);
       const cw = w * 0.5, rh = 50 * u, hh = d.subtitle ? 124 * u : 104 * u, ch = hh + items.length * rh;
@@ -517,7 +522,7 @@ const POSTER_TEMPLATES = [
       ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
       // Carte vectorielle dans le cadre, sous la grille
       const R = 38 * u, rx = w - M - 12 * u - 56 * u - R, ry = M + 12 * u + 78 * u + R; // boussole, marges haut/droite
-      await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, poBlueprintPal(bg),
+      await poMap(ctx, d, proj, { x: M + 12 * u, y: M + 12 * u, w: w - 2 * M - 24 * u, h: h - 2 * M - 24 * u }, poBlueprintPal(bg, FG),
         { u, labelRect: { x: M + 30 * u, y: M + 150 * u, w: w - 2 * M - 60 * u, h: cy - M - 170 * u },
           avoid: [{ x0: rx - R - 40 * u, x1: rx + R + 40 * u, y0: ry - R - 40 * u, y1: ry + R + 40 * u }] });
       // Fondu linéaire en haut de la carte : logo, coordonnées et boussole restent lisibles
@@ -532,8 +537,8 @@ const POSTER_TEMPLATES = [
       const gs = w / 48;
       const grid = (r, a1, a2) => {
         ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
-        for (let i = 0, x = 0; x <= w; i++, x += gs) { ctx.fillStyle = i % 4 ? `rgba(255,255,255,${a1})` : `rgba(255,255,255,${a2})`; ctx.fillRect(x, 0, 1.2 * u, h); }
-        for (let i = 0, y = 0; y <= h; i++, y += gs) { ctx.fillStyle = i % 4 ? `rgba(255,255,255,${a1})` : `rgba(255,255,255,${a2})`; ctx.fillRect(0, y, w, 1.2 * u); }
+        for (let i = 0, x = 0; x <= w; i++, x += gs) { ctx.fillStyle = i % 4 ? fg(a1) : fg(a2); ctx.fillRect(x, 0, 1.2 * u, h); }
+        for (let i = 0, y = 0; y <= h; i++, y += gs) { ctx.fillStyle = i % 4 ? fg(a1) : fg(a2); ctx.fillRect(0, y, w, 1.2 * u); }
         ctx.restore();
       };
       const ix = M + 12 * u, iy = M + 12 * u, iw = w - 2 * M - 24 * u, ih = h - 2 * M - 24 * u;
@@ -547,17 +552,17 @@ const POSTER_TEMPLATES = [
       const tSize = 42 * u, pad = 30 * u;
       const blockH = tSize * 0.74 + (d.subtitle ? 14 * u + 16 * u * 0.75 : 0);
       const tBase = cy + (hh - blockH) / 2 + tSize * 0.74;
-      poLine(ctx, d.title || 'Itinéraire', cx + pad, tBase, cw - 2 * pad, tSize, '#fff', { upper: true, spacing: 0.06 });
-      if (d.subtitle) stLabel(ctx, d.subtitle, cx + pad, tBase + 14 * u + 16 * u * 0.75, 16 * u, 'rgba(255,255,255,0.65)');
+      poLine(ctx, d.title || 'Itinéraire', cx + pad, tBase, cw - 2 * pad, tSize, FG, { upper: true, spacing: 0.06 });
+      if (d.subtitle) stLabel(ctx, d.subtitle, cx + pad, tBase + 14 * u + 16 * u * 0.75, 16 * u, fg(0.65));
       const ip = 22 * u; // marges des lignes d'infos
       items.forEach(([k, v], i) => {
         const y = cy + hh + i * rh;
-        ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(cx, y, cw, 1.5 * u);
-        stLabel(ctx, k, cx + ip, y + rh / 2 + 5.5 * u, 15 * u, 'rgba(255,255,255,0.65)');
-        ctx.font = stFont(700, 24 * u, ST_NUM); ctx.fillStyle = '#fff'; ctx.textAlign = 'right';
+        ctx.fillStyle = fg(0.4); ctx.fillRect(cx, y, cw, 1.5 * u);
+        stLabel(ctx, k, cx + ip, y + rh / 2 + 5.5 * u, 15 * u, fg(0.65));
+        ctx.font = stFont(700, 24 * u, ST_NUM); ctx.fillStyle = FG; ctx.textAlign = 'right';
         ctx.fillText(stWrap(ctx, v, cw * 0.58, 1)[0] || '', cx + cw - ip, y + rh / 2 + 8.5 * u);
       });
-      ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(cx + cw * 0.36, cy + hh, 1.5 * u, ch - hh);
+      ctx.fillStyle = fg(0.4); ctx.fillRect(cx + cw * 0.36, cy + hh, 1.5 * u, ch - hh);
       // Photos punaisées à gauche du cartouche
       const leftX = M + 50 * u, leftW = cx - 40 * u - leftX;
       // Zone photos : entre le bord gauche du cadre et le cartouche, sous l'échelle
@@ -568,22 +573,22 @@ const POSTER_TEMPLATES = [
       const legend = !d.photos.length && !(d.preview && d.photoSlot !== false); // sans photo : légende technique
       // Tracé
       // Halo du tracé dans la couleur choisie (ressort mieux qu'un halo blanc)
-      const rc = poCol(d, '#ffffff');
-      const halo = rc === 'routes' ? 'routes' : /^#[0-9a-f]{6}$/i.test(rc) ? poMix(bg, rc, 0.42) : 'rgba(255,255,255,0.35)';
+      const rc = poCol(d, FG);
+      const halo = rc === 'routes' ? 'routes' : /^#[0-9a-f]{6}$/i.test(rc) ? poMix(bg, rc, 0.42) : fg(0.35);
       ctx.save(); ctx.setLineDash([2 * u, 10 * u]);
       stDrawRoutes(ctx, d.routes, proj, { color: halo, width: 18 * u, markers: false });
       ctx.restore();
       stDrawRoutes(ctx, d.routes, proj, { color: rc, width: 4 * u, markers: false });
-      poStartEnd(ctx, d, proj, u, rc === 'routes' ? '#ffffff' : rc, bg);
+      poStartEnd(ctx, d, proj, u, rc === 'routes' ? FG : rc, bg);
       // Nord + échelle
-      poCompass(ctx, rx, ry, R, u, '#ffffff', bg);
+      poCompass(ctx, rx, ry, R, u, FG, bg);
       if (legend) {
         // Légende discrète : colonne d'icônes calée sur le logo, bas aligné sur le cartouche
-        const mk = rc === 'routes' ? '#ffffff' : rc, ic = 44 * u, lh = 34 * u, txt = 'rgba(255,255,255,0.55)';
+        const mk = rc === 'routes' ? FG : rc, ic = 44 * u, lh = 34 * u, txt = fg(0.55);
         const rows = [
           ['Itinéraire', (cx0, y) => {
             ctx.save(); ctx.setLineDash([1.5 * u, 7 * u]); ctx.lineCap = 'round';
-            ctx.strokeStyle = halo === 'routes' ? 'rgba(255,255,255,0.35)' : halo; ctx.lineWidth = 11 * u;
+            ctx.strokeStyle = halo === 'routes' ? fg(0.35) : halo; ctx.lineWidth = 11 * u;
             ctx.beginPath(); ctx.moveTo(cx0 - 14 * u, y); ctx.lineTo(cx0 + 14 * u, y); ctx.stroke(); ctx.restore();
             ctx.strokeStyle = mk; ctx.lineWidth = 3 * u; ctx.lineCap = 'round';
             ctx.beginPath(); ctx.moveTo(cx0 - 14 * u, y); ctx.lineTo(cx0 + 14 * u, y); ctx.stroke();
@@ -597,20 +602,20 @@ const POSTER_TEMPLATES = [
         // Dernière ligne de texte du cartouche → même ligne de base pour l'échelle
         const base = cy + ch - rh / 2;
         const sy = base - 3 * u, ly = sy - 26 * u - rows.length * lh;
-        ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = stFont(600, 12 * u, ST_TXT);
-        stLabel(ctx, 'Légende', leftX, ly - 14 * u, 12 * u, 'rgba(255,255,255,0.4)');
-        ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.fillRect(leftX, ly - 2 * u, 260 * u, 1 * u);
+        ctx.fillStyle = fg(0.4); ctx.font = stFont(600, 12 * u, ST_TXT);
+        stLabel(ctx, 'Légende', leftX, ly - 14 * u, 12 * u, fg(0.4));
+        ctx.fillStyle = fg(0.14); ctx.fillRect(leftX, ly - 2 * u, 260 * u, 1 * u);
         rows.forEach(([label, icon], i) => {
           const y = ly + 12 * u + i * lh + lh / 2 - 6 * u;
           icon(leftX + 14 * u, y);
           stLabel(ctx, label, leftX + ic, y + 4.5 * u, 12.5 * u, txt);
         });
         ctx.save(); ctx.globalAlpha = 0.75;
-        poScaleBar(ctx, d, proj, leftX, sy - 3 * u, 180 * u, '#fff', u);
+        poScaleBar(ctx, d, proj, leftX, sy - 3 * u, 180 * u, FG, u);
         ctx.restore();
-      } else poScaleBar(ctx, d, proj, leftX, cy + 14 * u, Math.min(leftW, w * 0.22), '#fff', u);
-      await poDrawLogo(ctx, M + 50 * u, M + 60 * u, 26 * u, '#ffffff');
-      if (d.coords && d.routes[0]) stLabel(ctx, poCoords(d), M + 50 * u, M + 120 * u, 14 * u, 'rgba(255,255,255,0.7)');
+      } else poScaleBar(ctx, d, proj, leftX, cy + 14 * u, Math.min(leftW, w * 0.22), FG, u);
+      await poDrawLogo(ctx, M + 50 * u, M + 60 * u, 26 * u, FG);
+      if (d.coords && d.routes[0]) stLabel(ctx, poCoords(d), M + 50 * u, M + 120 * u, 14 * u, fg(0.7));
     },
   },
   {
@@ -756,6 +761,71 @@ const POSTER_TEMPLATES = [
           stValue(ctx, st, cx, statsTop + 12 * u + 24 * u + vs * 0.74, vs, ink);
         });
       }
+    },
+  },
+  {
+    // Relevé : planche technique discrète. Carte « gravure » (eau hachurée) dans une
+    // fenêtre graduée avec ses coordonnées d'angle, textes petits, chiffres en liste.
+    id: 'releve', name: 'Relevé', kind: 'Technique', maxPhotos: 0, mapDefault: true,
+    rec: { colors: ['#e4572e', '#ecebe6'], route: '#e4572e', mapStyle: 'gravure', mapOpacity: 100, map: true },
+    modes: { dark: { label: 'Sombre' }, light: { label: 'Clair', colors: ['#e4572e', '#1d1d1b'] } },
+    infos: ['activity', 'start'],
+    async draw(ctx, d, w, h) {
+      const u = w / 1200, light = d.mode === 'light';
+      const bg = light ? '#f6f5f1' : '#141414', INK = light ? '#1d1d1b' : '#ecebe6';
+      const ink = (a) => `rgba(${poRgb(INK)},${a})`;
+      const rc = poCol(d, '#e4572e'), acc = rc === 'routes' ? '#e4572e' : rc;
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+      const M = 96 * u;
+      // Fenêtre de carte
+      const mx = M, my = M + 64 * u, mw = w - 2 * M, mh = Math.round(h - my - M - 300 * u - Math.max(0, d.stats.length - 3) * 44 * u);
+      const proj = stFit(d.routes, { x: mx + 70 * u, y: my + 70 * u, w: mw - 140 * u, h: mh - 140 * u }, 15);
+      const pal = { water: null, hatch: ink(light ? 0.26 : 0.2), hatchGap: 5.5, hatchWidth: 0.8, coast: ink(light ? 0.6 : 0.5), coastWidth: 1,
+        road: ink(0.14), roadMajor: ink(0.24), roadScale: 0.8, waterway: ink(0.3),
+        label: { color: ink(0.6), halo: bg, haloWidth: 3, upper: true, spacing: 0.16, weight: 600, scale: 0.85, dot: ink(0.6) } };
+      await poMap(ctx, d, proj, { x: mx, y: my, w: mw, h: mh }, pal, { u, labelRect: { x: mx + 24 * u, y: my + 24 * u, w: mw - 48 * u, h: mh - 48 * u } });
+      ctx.strokeStyle = ink(0.45); ctx.lineWidth = 1 * u; ctx.strokeRect(mx, my, mw, mh);
+      // Graduations extérieures (haut et gauche) et coordonnées des angles
+      ctx.fillStyle = ink(0.35);
+      for (let x = mx, i = 0; x <= mx + mw + 0.5; x += mw / 20, i++) ctx.fillRect(x - 0.5 * u, my - (i % 5 ? 5 : 10) * u, 1 * u, (i % 5 ? 5 : 10) * u);
+      for (let y = my, i = 0; y <= my + mh + 0.5; y += mh / 28, i++) ctx.fillRect(mx - (i % 5 ? 5 : 10) * u, y - 0.5 * u, (i % 5 ? 5 : 10) * u, 1 * u);
+      const cs = 10.5 * u, deg = (v, p, n) => `${Math.abs(v).toFixed(3)}° ${v >= 0 ? p : n}`;
+      const tl = poUnproj(proj, mx, my), br = poUnproj(proj, mx + mw, my + mh);
+      const small = (t, x, y, al, a = 0.5) => { ctx.font = stFont(500, cs, ST_TXT); ctx.fillStyle = ink(a); stSpaced(ctx, t, x, y, cs * 0.1, al); };
+      small(`${deg(tl[0], 'N', 'S')}   ${deg(tl[1], 'E', 'O')}`, mx + mw, my - 16 * u, 'right');
+      small(`${deg(br[0], 'N', 'S')}   ${deg(br[1], 'E', 'O')}`, mx + mw, my + mh + 22 * u, 'right');
+      // Tracé : fin, précis
+      stDrawRoutes(ctx, d.routes, proj, { color: bg, width: 7 * u, markers: false });
+      stDrawRoutes(ctx, d.routes, proj, { color: rc, width: 2.6 * u, markers: false });
+      const ends = stEnds(d.routes);
+      if (ends) (ends.loop ? [ends.a] : [ends.a, ends.b]).forEach((c, i) => {
+        const [px, py] = proj.px(c[0], c[1]);
+        ctx.beginPath(); ctx.arc(px, py, 6 * u, 0, Math.PI * 2); ctx.fillStyle = bg; ctx.fill(); ctx.lineWidth = 1.3 * u; ctx.strokeStyle = acc; ctx.stroke();
+        if (i || ends.loop) { ctx.beginPath(); ctx.arc(px, py, 2.4 * u, 0, Math.PI * 2); ctx.fillStyle = acc; ctx.fill(); }
+      });
+      // En-tête : logo discret, activité
+      await poDrawLogo(ctx, M, M + 4 * u, 17 * u, INK);
+      if (d.activityLabel) stLabel(ctx, d.activityLabel, w - M, M + 18 * u, 11 * u, ink(0.5), 'right');
+      // Bas : titre et sous-titre à gauche, chiffres en liste à droite
+      const by = my + mh + 92 * u, colW = mw * 0.4, lx = mx, rx = mx + mw - colW;
+      const th = poLinesHeight(ctx, d.title, mw - colW - 60 * u, 46 * u, { maxLines: 3, weight: 500, lh: 1.08 });
+      if (d.title) poLines(ctx, d.title, lx, by - 10 * u, mw - colW - 60 * u, 46 * u, INK, { maxLines: 3, weight: 500, lh: 1.08 });
+      if (d.subtitle) stLabel(ctx, d.subtitle, lx, by - 10 * u + th + 26 * u, 12 * u, ink(0.5));
+      const rowH = 44 * u;
+      d.stats.forEach((st, i) => {
+        const y = by + i * rowH;
+        ctx.fillStyle = ink(0.16); ctx.fillRect(rx, y, colW, 1 * u);
+        stLabel(ctx, st.short || st.label, rx, y + 28 * u, 11 * u, ink(0.5));
+        ctx.font = stFont(600, 22 * u, ST_NUM); ctx.fillStyle = INK; ctx.textAlign = 'right';
+        stFill(ctx, st.value + (st.unit ? ' ' + st.unit : ''), rx + colW, y + 30 * u);
+      });
+      if (d.stats.length) { ctx.fillStyle = ink(0.16); ctx.fillRect(rx, by + d.stats.length * rowH, colW, 1 * u); }
+      // Pied : échelle et coordonnées du départ
+      const fy = h - M + 10 * u;
+      { const sc = poScale(d, proj, 120 * u);
+        if (sc) { ctx.fillStyle = ink(0.6); ctx.fillRect(M, fy, sc.len, 1 * u); [0, 1].forEach((k) => ctx.fillRect(M + sc.len * k - 0.5 * u, fy - 5 * u, 1 * u, 6 * u));
+          small(sc.label, M + sc.len + 10 * u, fy + 4 * u, 'left', 0.55); } }
+      if (d.coords && d.routes[0]) small(poCoords(d), w - M, fy + 4 * u, 'right', 0.45);
     },
   },
   {

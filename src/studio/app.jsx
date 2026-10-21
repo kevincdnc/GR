@@ -19,7 +19,7 @@ const AP_STATE_KEY = 'printrace_app_state_v2';
 const AP_MODELS_KEY = 'printrace_app_models_v2';
 
 // Modèles proposés (dans l'ordre de la grille)
-const AP_TEMPLATES = ['nuit', 'aube', 'blueprint', 'graphite', 'relief', 'galerie', 'photo', 'polaroid'];
+const AP_TEMPLATES = ['nuit', 'aube', 'blueprint', 'graphite', 'releve', 'relief', 'galerie', 'photo', 'polaroid'];
 // Typographies des titres : 3 choix par modèle, testés sur chaque mise en page
 const AP_FONTS = {
   modele: null,
@@ -33,13 +33,14 @@ const AP_FONT_CHOICES = {
   nuit: [['modele', 'Moderne'], ['affiche', 'Affiche'], ['classique', 'Classique']],
   aube: [['modele', 'Moderne'], ['affiche', 'Affiche'], ['classique', 'Classique']],
   graphite: [['modele', 'Technique'], ['classique', 'Classique'], ['affiche', 'Affiche']],
+  releve: [['modele', 'Technique'], ['classique', 'Classique'], ['ancienne', 'Ancienne carte']],
   relief: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['ancienne', 'Ancienne carte']],
   galerie: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['affiche', 'Affiche']],
   photo: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['affiche', 'Affiche']],
   polaroid: [['modele', 'Éditorial'], ['moderne', 'Moderne'], ['ancienne', 'Ancienne carte']],
 };
 // Police « du modèle » (aperçu du bouton) : celle de ses titres
-const AP_NATIVE_FONT = { blueprint: ST_TXT, nuit: ST_TXT, aube: ST_TXT, graphite: ST_TXT, relief: PO_SERIF, galerie: PO_SERIF, photo: PO_SERIF, polaroid: PO_SERIF };
+const AP_NATIVE_FONT = { blueprint: ST_TXT, nuit: ST_TXT, aube: ST_TXT, graphite: ST_TXT, releve: ST_TXT, relief: PO_SERIF, galerie: PO_SERIF, photo: PO_SERIF, polaroid: PO_SERIF };
 // Zoom de la carte : 0 = cadré sur le tracé, puis deux niveaux plus larges
 const AP_ZOOMS = [0, 0.2, 0.45]; // cadré sur le tracé, puis deux niveaux à peine plus larges
 // Carte de France (poster d'accueil, sans tracé)
@@ -292,7 +293,7 @@ function ApToolbar({ tpl, cfg, setCfg, trackColor, photos, bgPhoto, maxPhotos, o
             </label>
           </div>
           {tpl.bgs && (<>
-            <div className={apEyebrow + ' mt-4 mb-2.5'}>Couleur de fond</div>
+            <div className={apEyebrow + ' mt-4 mb-2.5'}>{rec.bgLabel || 'Couleur de fond'}</div>
             <div className="flex items-center gap-1.5 w-max">
               {tpl.bgs.map((b) => {
                 const on = (cfg.bg || rec.bg) === b.hex;

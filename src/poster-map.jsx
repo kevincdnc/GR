@@ -119,6 +119,7 @@ const PM_STYLES = [
   { id: 'epure', name: 'Épurée' },
   { id: 'routes', name: 'Routes' },
   { id: 'nature', name: 'Nature' },
+  { id: 'gravure', name: 'Gravure' },
 ];
 const PM_ROADS = {
   motorway: 2.6, trunk: 2.2, primary: 1.8, secondary: 1.4, tertiary: 1.1,
@@ -127,6 +128,8 @@ const PM_ROADS = {
 const PM_STYLE_DEF = {
   epure: { roads: ['motorway', 'trunk', 'primary'], landcover: false, waterway: false, places: ['city', 'town'], peaks: false, maxLabels: 10 },
   routes: { roads: ['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'minor'], landcover: false, waterway: true, places: ['city', 'town', 'village'], peaks: false, maxLabels: 16 },
+  // Gravure : eau hachurée, routes fines, peu de noms (cartes marines anciennes)
+  gravure: { roads: ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'], landcover: false, waterway: true, places: ['city', 'town'], peaks: false, maxLabels: 8, hatch: true },
   nature: { roads: ['motorway', 'trunk', 'primary', 'secondary', 'track', 'path'], landcover: true, waterway: true, places: ['city', 'town', 'village'], peaks: true, maxLabels: 16 },
 };
 const PM_PLACE_RANK = { city: 0, town: 1, village: 2, hamlet: 3, suburb: 2 };
@@ -247,6 +250,21 @@ async function pmDrawMap(ctx, o) {
   }
   // 2. Eau + trait de côte
   if (pal.water) fillLayer('water', null, pal.water);
+  // Hachures horizontales dans l'eau (style Gravure)
+  if (def.hatch && pal.hatch) pass((t, ox, oy) => {
+    const L = t.water; if (!L) return;
+    const s = tsz / (L.extent || 4096);
+    g.save(); g.beginPath();
+    let any = false;
+    L.features.forEach((F) => { if (F.type !== 3) return; any = true; F.parts.forEach((ring) => { ring.forEach((p, i) => { const x = ox + p[0] * s, y = oy + p[1] * s; if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.closePath(); }); });
+    if (any) {
+      g.clip();
+      const gap = (pal.hatchGap || 5) * u, y0 = Math.floor((oy - rect.y) / gap) * gap + rect.y; // lignes alignées d'une tuile à l'autre
+      g.fillStyle = pal.hatch;
+      for (let y = y0; y < oy + tsz; y += gap) g.fillRect(ox, y, tsz, (pal.hatchWidth || 0.7) * u);
+    }
+    g.restore();
+  });
   if (pal.coast) pass((t, ox, oy) => {
     const L = t.water; if (!L) return;
     g.strokeStyle = pal.coast; g.lineWidth = (pal.coastWidth || 1) * u; g.lineJoin = 'round';
