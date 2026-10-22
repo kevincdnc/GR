@@ -1,9 +1,0 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Printrace : tracé blanc entre deux repères (départ / arrivée) sur fond nuit -->
-  <rect width="32" height="32" rx="7" fill="#0f1d33"/>
-  <path d="M8.5 22.5C11 22.5 11.5 16.5 15 15.8C18.5 15.1 19.2 19 21.6 16.8C23.3 15.2 23.2 12 23.5 9.5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="8.5" cy="22.5" r="2.6" fill="#0f1d33" stroke="#ffffff" stroke-width="1.6"/>
-  <circle cx="8.5" cy="22.5" r="1" fill="#ffffff"/>
-  <circle cx="23.5" cy="9.5" r="2.6" fill="#0f1d33" stroke="#ffffff" stroke-width="1.6"/>
-  <circle cx="23.5" cy="9.5" r="1" fill="#ffffff"/>
-</svg>
