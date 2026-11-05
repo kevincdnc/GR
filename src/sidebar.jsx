@@ -314,6 +314,7 @@ function Sidebar({
                 onDelete={(g) => onAction && onAction('deleteGroup', { group: g })}
                 onShare={(g) => onAction && onAction('share', { group: g })}
                 onPrintrace={(g) => onAction && onAction('printrace', { group: g })}
+                onExportGpx={(g) => onAction && onAction('exportGroupGpx', { group: g })}
                 onClearNewlyCreated={(gid) => {
                   setGroups((gs) => gs.map((g) => g.id === gid ? { ...g, __newlyCreated: false } : g));
                 }} />
@@ -851,7 +852,7 @@ const GROUP_EMOJIS = [
 '🏃', '🚴', '⛷️', '🧗', '☀️', '🌧️', '❄️', '🔥'];
 
 
-function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setDragOver, handleDrop, onToggleExpand, onToggleVisibility, onRename, onSetEmoji, onDelete, onShare, onPrintrace, onClearNewlyCreated }) {
+function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setDragOver, handleDrop, onToggleExpand, onToggleVisibility, onRename, onSetEmoji, onDelete, onShare, onPrintrace, onExportGpx, onClearNewlyCreated }) {
   const [editing, setEditing] = useState(false);
   // Icône du groupe : emoji au choix (ou dossier par défaut)
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
@@ -1046,7 +1047,7 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
             ? (dark ? 'opacity-100 text-neutral-100 bg-neutral-700' : 'opacity-100 text-neutral-900 bg-neutral-200')
             : (dark ? 'opacity-0 group-hover:opacity-100 touch-visible text-neutral-500 hover:text-neutral-100 hover:bg-neutral-700' : 'opacity-0 group-hover:opacity-100 touch-visible text-neutral-400 hover:text-neutral-900 hover:bg-neutral-200')
           }`}
-          title="Actions du groupe (renommer, supprimer)"
+          title="Actions du groupe (exporter, renommer, supprimer)"
           aria-haspopup="menu"
           aria-expanded={menuOpen}>
           <I.More size={15} />
@@ -1060,6 +1061,8 @@ function GroupHeader({ group, vState, dark, accent, grpPad, drag, dragOver, setD
               onClick={() => { setMenuOpen(false); onPrintrace && onPrintrace(group); }} />
             <PopItem dark={dark} icon={<I.Share size={13} />} label="Partager"
               onClick={() => { setMenuOpen(false); onShare && onShare(group); }} />
+            <PopItem dark={dark} icon={<I.Download size={13} />} label="Exporter le GPX"
+              onClick={() => { setMenuOpen(false); onExportGpx && onExportGpx(group); }} />
             <PopItem dark={dark} icon={<I.Edit size={13} />} label="Renommer"
               onClick={() => { setMenuOpen(false); setEditing(true); }} />
             <div className={`h-px mx-2 ${dark ? 'bg-neutral-800' : 'bg-neutral-100'}`}></div>

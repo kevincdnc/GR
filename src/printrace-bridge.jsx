@@ -28,6 +28,22 @@ async function sendToPrintrace(parts, title, toast, resolved = false) {
   }
 }
 
+// Export GPX d'un groupe : tous ses tracés fusionnés en un seul (une trace, un segment), dans l'ordre du groupe
+function exportGroupGpx(parts, title, toast) {
+  const routes = resolveShareRoutes(parts || []);
+  if (!routes.length) { toast && toast('Aucun tracé à exporter dans ce groupe.'); return; }
+  const esc = (v) => String(v || '').replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+  const pts = routes.flatMap((r) => r.coords).map((c) => `<trkpt lat="${(+c[0]).toFixed(6)}" lon="${(+c[1]).toFixed(6)}">${typeof c[2] === 'number' ? `<ele>${Math.round(c[2] * 10) / 10}</ele>` : ''}</trkpt>`);
+  const name = esc(title || 'Groupe');
+  const gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Routdoor" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${name}</name><desc>${routes.length} tracés fusionnés : ${esc(routes.map((r) => r.name).join(', '))}</desc></metadata>\n<trk><name>${name}</name><trkseg>\n${pts.join('\n')}\n</trkseg></trk>\n</gpx>\n`;
+  const slug = String(title || 'groupe').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'groupe';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([gpx], { type: 'application/gpx+xml' })); a.download = slug + '.gpx';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast && toast(routes.length > 1 ? `GPX exporté : ${routes.length} tracés fusionnés` : 'GPX exporté');
+}
+
 // Onglet « Poster » du studio Routdoor : les posters se font sur Printrace
 function PrintraceHandoff({ routes, title, onToast }) {
   const [busy, setBusy] = React.useState(false);

@@ -874,6 +874,12 @@ function App() {
     }
     if (action === 'mergeItins') { mergeItineraries(payload.ids); return; }
     if (action === 'duplicateItins') { duplicateItineraries(payload.ids); return; }
+    if (action === 'exportGroupGpx') {
+      // Export GPX d'un groupe : tous ses tracés (affichés ou non), fusionnés
+      const group = payload && payload.group;
+      if (group) exportGroupGpx(group.itineraries.flatMap(sharePartsOf), group.name, showToast);
+      return;
+    }
     if (action === 'share' || action === 'printrace') {
       // Partage (story, embed, lien) ou envoi sur Printrace : un groupe (ses
       // tracés affichés, sinon tous), une activité (ses sections) ou une section seule.
