@@ -28,6 +28,7 @@ import { createRequire } from 'node:module'
 import { dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import vm from 'node:vm'
+import { createHash } from 'node:crypto'
 import { buildStage } from '../lib/gpx.mjs'
 
 const require = createRequire(import.meta.url)
@@ -230,9 +231,12 @@ export function build({ single = false } = {}) {
       const appCode = esbuild.transformSync(parts.filter((src) => !vendor[src]).map((src) => compiled.get(src) ?? sources[src]).join('\n;\n'),
         { minify: true, target: 'es2019', legalComments: 'none', charset: 'utf8' }).code
       const name = 'js/' + p.src.replace(/\.html$/, '') + '.min.js'
-      writeFileSync(join(out, name), vendorCode + '\n;\n' + appCode)
+      const bundle = vendorCode + '\n;\n' + appCode
+      writeFileSync(join(out, name), bundle)
+      // ?v= empreinte du contenu : après un déploiement, le navigateur recharge le script au lieu de garder l'ancien en cache
+      const v = createHash('sha1').update(bundle).digest('hex').slice(0, 10)
       let html = p.html.replace(classicRe, '')
-        .replace('</head>', `<script defer src="${name}"></script>\n</head>`)
+        .replace('</head>', `<script defer src="${name}?v=${v}"></script>\n</head>`)
       // Pré-rendu : le HTML de la page est calculé ici (React côté serveur), pour
       // un affichage immédiat avant le JavaScript et un contenu lisible par les moteurs
       if (p.prerender) html = html.replace('<div id="root"></div>', () => `<div id="root">${prerender(appCode, p.src)}</div>`)
