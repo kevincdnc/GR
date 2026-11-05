@@ -28,20 +28,38 @@ async function sendToPrintrace(parts, title, toast, resolved = false) {
   }
 }
 
-// Export GPX d'un groupe : tous ses tracés fusionnés en un seul (une trace, un segment), dans l'ordre du groupe
+// Export GPX d'un groupe : une trace (<trk>) par tracé, dans l'ordre du chemin (chaque étape enchaînée à celle
+// qui part le plus près de son arrivée), sans ligne droite entre deux étapes. Les chiffres de Routdoor
+// (distance, D+, D−, durée, date) sont joints à chaque trace (<extensions>), relus par Printrace.
+function rdChainOrder(routes) {
+  const d = (a, b) => stHaversine(a, b);
+  const S = (r) => r.coords[0], E = (r) => r.coords[r.coords.length - 1];
+  // Départ : le tracé dont le début ne prolonge aucun autre (le plus loin de toutes les arrivées)
+  const lone = (r) => Math.min(Infinity, ...routes.filter((q) => q !== r).map((q) => d(E(q), S(r))));
+  let cur = routes.reduce((b, r) => (lone(r) > lone(b) ? r : b), routes[0]);
+  const out = [cur], left = new Set(routes.filter((r) => r !== cur));
+  while (left.size) {
+    let best = null, bd = Infinity;
+    left.forEach((r) => { const k = d(E(cur), S(r)); if (k < bd) { bd = k; best = r; } });
+    out.push(best); left.delete(best); cur = best;
+  }
+  return out;
+}
 function exportGroupGpx(parts, title, toast) {
-  const routes = resolveShareRoutes(parts || []);
-  if (!routes.length) { toast && toast('Aucun tracé à exporter dans ce groupe.'); return; }
+  const found = resolveShareRoutes(parts || []);
+  if (!found.length) { toast && toast('Aucun tracé à exporter dans ce groupe.'); return; }
+  const routes = rdChainOrder(found);
   const esc = (v) => String(v || '').replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
-  const pts = routes.flatMap((r) => r.coords).map((c) => `<trkpt lat="${(+c[0]).toFixed(6)}" lon="${(+c[1]).toFixed(6)}">${typeof c[2] === 'number' ? `<ele>${Math.round(c[2] * 10) / 10}</ele>` : ''}</trkpt>`);
+  const pt = (c) => `<trkpt lat="${(+c[0]).toFixed(6)}" lon="${(+c[1]).toFixed(6)}">${typeof c[2] === 'number' ? `<ele>${Math.round(c[2] * 10) / 10}</ele>` : ''}</trkpt>`;
+  const trk = (r) => `<trk><name>${esc(r.name)}</name><extensions><rd:stats distanceKm="${(+r.distance || 0).toFixed(2)}" ascentM="${Math.round(r.ascent || 0)}" descentM="${Math.round(r.descent || 0)}" durationMin="${Math.round(r.durationMin || 0)}" durationReal="${r.durationReal ? 1 : 0}" date="${esc(r.date)}" activity="${esc(r.activity)}"/></extensions><trkseg>\n${r.coords.map(pt).join('\n')}\n</trkseg></trk>`;
   const name = esc(title || 'Groupe');
-  const gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Routdoor" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${name}</name><desc>${routes.length} tracés fusionnés : ${esc(routes.map((r) => r.name).join(', '))}</desc></metadata>\n<trk><name>${name}</name><trkseg>\n${pts.join('\n')}\n</trkseg></trk>\n</gpx>\n`;
-  const slug = String(title || 'groupe').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'groupe';
+  const gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Routdoor" xmlns="http://www.topografix.com/GPX/1/1" xmlns:rd="https://routdoor.app/gpx/1">\n<metadata><name>${name}</name><desc>${routes.length} tracés : ${esc(routes.map((r) => r.name).join(', '))}</desc></metadata>\n${routes.map(trk).join('\n')}\n</gpx>\n`;
+  const slug = String(title || 'groupe').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'groupe';
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([gpx], { type: 'application/gpx+xml' })); a.download = slug + '.gpx';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  toast && toast(routes.length > 1 ? `GPX exporté : ${routes.length} tracés fusionnés` : 'GPX exporté');
+  toast && toast(routes.length > 1 ? `GPX exporté : ${routes.length} tracés, dans l’ordre du chemin` : 'GPX exporté');
 }
 
 // Onglet « Poster » du studio Routdoor : les posters se font sur Printrace
